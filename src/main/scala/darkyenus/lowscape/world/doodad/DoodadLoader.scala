@@ -1,4 +1,4 @@
-package darkyenus.lowscape.world
+package darkyenus.lowscape.world.doodad
 
 import com.badlogic.gdx.graphics.VertexAttributes.Usage
 import com.badlogic.gdx.graphics._

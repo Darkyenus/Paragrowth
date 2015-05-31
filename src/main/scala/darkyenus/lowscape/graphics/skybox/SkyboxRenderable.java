@@ -1,4 +1,4 @@
-package darkyenus.lowscape.world.skybox;
+package darkyenus.lowscape.graphics.skybox;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
@@ -13,7 +13,7 @@ import com.badlogic.gdx.graphics.g3d.shaders.BaseShader;
 import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.math.Matrix4;
-import darkyenus.lowscape.world.LowscapeRenderableSorter;
+import darkyenus.lowscape.graphics.LowscapeRenderableSorter;
 
 /**
  * @author Darkyen

@@ -1,4 +1,4 @@
-package darkyenus.lowscape.world;
+package darkyenus.lowscape.graphics;
 
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.utils.DefaultRenderableSorter;

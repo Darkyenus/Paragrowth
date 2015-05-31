@@ -1,4 +1,4 @@
-package darkyenus.lowscape.world;
+package darkyenus.lowscape.world.doodad;
 
 /**
  * Private property.

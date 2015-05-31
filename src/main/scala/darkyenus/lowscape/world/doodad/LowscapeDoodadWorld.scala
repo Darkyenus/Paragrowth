@@ -1,16 +1,13 @@
-package darkyenus.lowscape.world
+package darkyenus.lowscape.world.doodad
 
 import com.badlogic.gdx.graphics._
 import com.badlogic.gdx.graphics.g2d.TextureRegion
+import com.badlogic.gdx.graphics.g3d._
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
-import com.badlogic.gdx.graphics.g3d._
-import com.badlogic.gdx.graphics.g3d.particles.ParticleShader.AlignMode
-import com.badlogic.gdx.graphics.g3d.particles.batches.BillboardParticleBatch
-import com.badlogic.gdx.math
 import com.badlogic.gdx.math.{MathUtils, Vector3}
-import com.badlogic.gdx.utils.{Pool, Array => GArray}
-import darkyenus.lowscape.world.StaticDoodadPart.StaticDoodadPart
+import com.badlogic.gdx.utils.{Array => GArray, Pool}
+import darkyenus.lowscape.world.doodad.StaticDoodadPart.StaticDoodadPart
 
 /**
  * Private property.
