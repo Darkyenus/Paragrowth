@@ -10,9 +10,9 @@ organization := "darkyenus"
 
 crossPaths := false
 
-val gdxVersion = "1.5.0"
+val gdxVersion = "1.6.1"
 
-baseDirectory in Compile := baseDirectory.value / "assets"
+baseDirectory in (Compile, run) := baseDirectory.value / "assets"
 
 fork in run := true
 
@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.badlogicgames.gdx" % "gdx-platform" % gdxVersion classifier "natives-desktop"
 )
 
-scalacOptions ++= Seq("-deprecation","-feature")
+autoScalaLibrary := false
 
 TaskKey[Unit]("packResources") := {
   LWJGLLauncher.launch(new PackingOperation(file("./resources"), file("./assets")))
