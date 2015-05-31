@@ -18,7 +18,6 @@ public class TerrainPatchwork implements RenderableProvider {
 
     private final Camera camera;
     private final float[][] heights;
-    private final Shader terrainShader = null;
     private final TerrainPatch[] patches;
     private final int worldSizeLimit;
 
@@ -26,8 +25,10 @@ public class TerrainPatchwork implements RenderableProvider {
         this.camera = camera;
 
         final float patchMinHeight = -100f, patchMaxHeight = 1000f;
+        final Shader terrainShader = null;
 
-        this.heights = new float[patchAmount * patchSize - patchAmount + 1][patchAmount * patchSize - patchAmount + 1];
+        heights = new float[patchAmount * patchSize - patchAmount + 1][patchAmount * patchSize - patchAmount + 1];
+
         patches = new TerrainPatch[patchAmount * patchAmount];
         for (int i = 0; i < patches.length; i++) {
             final int x = i % patchAmount;
