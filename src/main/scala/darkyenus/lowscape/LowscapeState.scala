@@ -1,16 +1,12 @@
 package darkyenus.lowscape
 
-import com.badlogic.gdx.graphics.VertexAttributes.Usage
 import com.badlogic.gdx.graphics.g3d._
-import com.badlogic.gdx.graphics.g3d.attributes.{DepthTestAttribute, ColorAttribute, IntAttribute}
-import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader
-import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader.Config
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
-import com.badlogic.gdx.graphics.{Color, GL20, PerspectiveCamera}
+import com.badlogic.gdx.graphics.{GL20, PerspectiveCamera}
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.badlogic.gdx.{Gdx, InputProcessor, Screen}
 import darkyenus.lowscape.world.LowscapeRenderableSorter
+import darkyenus.lowscape.world.skybox.SkyboxRenderable
 
 /**
  * Private property.
@@ -32,21 +28,7 @@ abstract class LowscapeState extends Screen with InputProcessor {
 
   def renderWorld(modelBatch: ModelBatch)
 
-  val skyboxRenderable = {
-    val modelBuilder = new ModelBuilder()
-    val model = modelBuilder.createBox(2f, 2f, 2f,new Material(IntAttribute.createCullFace(GL20.GL_NONE), new DepthTestAttribute(0, false)), Usage.Position)
-    val instance = new ModelInstance(model)
-    val renderable = new Renderable
-    instance.getRenderable(renderable)
-
-    val config = new Config()
-    config.fragmentShader = Gdx.files.local("sky.frag").readString()
-    config.vertexShader = Gdx.files.local("sky.vert").readString()
-    renderable.shader = new DefaultShader(renderable, config)
-    renderable.shader.init()
-    renderable.userData = LowscapeRenderableSorter.SKYBOX
-    renderable
-  }
+  val skyboxRenderable = new SkyboxRenderable
 
   override def render(delta: Float): Unit = {
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
