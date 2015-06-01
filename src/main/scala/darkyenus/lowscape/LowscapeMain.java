@@ -15,8 +15,7 @@ import darkyenus.lowscape.game.LowscapeState;
  */
 public class LowscapeMain extends Game {
 
-    private final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
-
+    public static final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
 
     @Override
     public void create() {
@@ -27,7 +26,6 @@ public class LowscapeMain extends Game {
         assetManager.finishLoading();
 
         final Skin defaultSkin = assetManager.get("UISkin.json");
-        TextureAtlas worldAtlas = assetManager.get("World.atlas");
 
         setScreen(new LowscapeState(spriteBatch, defaultSkin));
     }
