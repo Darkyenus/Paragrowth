@@ -1,6 +1,5 @@
 package darkyenus.lowscape.world.doodad;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,8 +11,6 @@ import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.FloatAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
-import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
-import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
 import com.badlogic.gdx.math.MathUtils;
@@ -28,17 +25,6 @@ import static com.badlogic.gdx.math.MathUtils.sin;
 public class DoodadFactory {
     private final TextureAtlas worldAtlas = LowscapeMain.assetManager.get("World.atlas");
     private final MeshBuilder meshBuilder = new MeshBuilder();
-    private final DefaultShaderProvider shaderProvider;
-    {
-        DefaultShader.Config config = new DefaultShader.Config();
-        config.fragmentShader = Gdx.files.local("doodad.frag").readString();
-        config.defaultCullFace = 0;
-        config.numBones = 0;
-        config.numDirectionalLights = 0;
-        config.numPointLights = 0;
-        config.numSpotLights = 0;
-        shaderProvider = new DefaultShaderProvider(config);
-    }
 
     private final VertexInfo vBl = new VertexInfo();
     private final VertexInfo vBr = new VertexInfo();
@@ -72,6 +58,8 @@ public class DoodadFactory {
         float rotation = 0f;
 
         Texture texture = null;
+        int maxTextureDimension = 0;
+
         for(TextureRegion region:regions){
             vBr.position.set(region.getRegionWidth()/2 * scale * cos(rotation),region.getRegionWidth()/2 * scale * sin(rotation),0f);
             vBl.position.set(vBr.position).scl(-1f);
@@ -93,6 +81,12 @@ public class DoodadFactory {
             }else{
                 assert texture == region.getTexture();
             }
+            if(maxTextureDimension < region.getRegionWidth()){
+                maxTextureDimension = region.getRegionWidth();
+            }
+            if(maxTextureDimension < region.getRegionHeight()){
+                maxTextureDimension = region.getRegionHeight();
+            }
         }
         final Mesh mesh = meshBuilder.end();
         final Material material = new Material(
@@ -100,6 +94,6 @@ public class DoodadFactory {
                 IntAttribute.createCullFace(0),
                 FloatAttribute.createAlphaTest(0.5f),
                 new BlendingAttribute());
-        return new Doodad(mesh, material);
+        return new Doodad(mesh, material, maxTextureDimension*scale);
     }
 }

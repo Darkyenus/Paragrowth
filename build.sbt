@@ -14,6 +14,8 @@ val gdxVersion = "1.6.1"
 
 baseDirectory in (Compile, run) := baseDirectory.value / "assets"
 
+baseDirectory in (Compile, hotswap_i) := baseDirectory.value / "assets"
+
 fork in run := true
 
 libraryDependencies ++= Seq(

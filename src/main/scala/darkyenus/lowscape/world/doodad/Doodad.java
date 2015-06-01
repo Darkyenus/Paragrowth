@@ -4,8 +4,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
-import com.badlogic.gdx.graphics.g3d.utils.ShaderProvider;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Pool;
 
 /**
@@ -15,10 +13,12 @@ public class Doodad {
 
     private final Mesh mesh;
     private final Material material;
+    public final float radius;
 
-    public Doodad(Mesh mesh, Material material) {
+    public Doodad(Mesh mesh, Material material, float radius) {
         this.mesh = mesh;
         this.material = material;
+        this.radius = radius;
     }
 
     public Renderable getRenderable(Pool<Renderable> pool){
