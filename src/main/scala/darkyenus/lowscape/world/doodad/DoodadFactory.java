@@ -23,7 +23,7 @@ import static com.badlogic.gdx.math.MathUtils.sin;
  * @author Darkyen
  */
 public class DoodadFactory {
-    private final TextureAtlas worldAtlas = LowscapeMain.assetManager.get("World.atlas");
+    protected final TextureAtlas worldAtlas = LowscapeMain.assetManager.get("World.atlas");
     private final MeshBuilder meshBuilder = new MeshBuilder();
 
     private final VertexInfo vBl = new VertexInfo();
@@ -53,8 +53,8 @@ public class DoodadFactory {
     public Doodad createPaperModel(float scale, TextureRegion...regions){
         assert regions.length >= 1;
 
-        meshBuilder.begin(Usage.Position | Usage.TextureCoordinates /*| Usage.ColorPacked*/, GL20.GL_TRIANGLES);
-        float rotationStep = MathUtils.PI2 / regions.length;
+        meshBuilder.begin(Usage.Position | Usage.TextureCoordinates, GL20.GL_TRIANGLES);
+        float rotationStep = MathUtils.PI / regions.length;
         float rotation = 0f;
 
         Texture texture = null;

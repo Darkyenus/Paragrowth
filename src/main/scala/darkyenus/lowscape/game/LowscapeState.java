@@ -21,6 +21,7 @@ import darkyenus.lowscape.graphics.skybox.SkyboxRenderable;
 import darkyenus.lowscape.input.HeightmapPersonController;
 import darkyenus.lowscape.world.doodad.Doodad;
 import darkyenus.lowscape.world.doodad.DoodadFactory;
+import darkyenus.lowscape.world.doodad.DoodadLibrary;
 import darkyenus.lowscape.world.doodad.DoodadWorld;
 import darkyenus.lowscape.world.terrain.TerrainPatchwork;
 
@@ -81,20 +82,14 @@ public final class LowscapeState extends ScreenAdapter {
     }
 
     private final DoodadFactory doodadFactory = new DoodadFactory();
+    private final DoodadLibrary doodadLibrary = new DoodadLibrary(doodadFactory);
     private final DoodadWorld doodadWorld;
-    private final Doodad pine = doodadFactory.createPaperModel(1f, "pine", "pine", "pine");
 
 
     @Override
     public void show() {
         Gdx.input.setInputProcessor(cameraController);
         worldCam.update();
-
-
-        doodadWorld.addDoodad(pine).setToTranslation(130f,130f, 0f);
-        doodadWorld.addDoodad(pine).setToTranslation(131f,131f, 1f);
-        doodadWorld.addDoodad(pine).setToTranslation(132f,132f, 2f);
-        doodadWorld.addDoodad(pine).setToTranslation(133f,133f, 3f);
 
         //terrain.generateMesh((x, y) => 25f * MathUtils.sinDeg(time*2f + (x * 180f) / 32) * MathUtils.sinDeg(time*2f - (y * 180f) / 32))
         terrain.updateMesh();
@@ -129,7 +124,7 @@ public final class LowscapeState extends ScreenAdapter {
         {
             float pineX = MathUtils.random(256f);
             float pineY = MathUtils.random(256f);
-            doodadWorld.addDoodad(pine).setToTranslation(pineX,pineY, terrain.heightAt(pineX,pineY));
+            doodadWorld.addDoodad(doodadLibrary.DOODADS[MathUtils.random.nextInt(doodadLibrary.DOODADS.length)]).setToTranslation(pineX, pineY, terrain.heightAt(pineX, pineY));
         }
 
         cameraController.update(delta);
