@@ -42,14 +42,6 @@ public class DoodadFactory {
         vTr.hasUV = true;
     }
 
-    public Doodad createPaperModel(float scale, String...textureRegionName){
-        TextureRegion[] regions = new TextureRegion[textureRegionName.length];
-        for (int i = 0; i < textureRegionName.length; i++) {
-            regions[i] = worldAtlas.findRegion(textureRegionName[i]);
-        }
-        return createPaperModel(scale, regions);
-    }
-
     public Doodad createPaperModel(float scale, TextureRegion...regions){
         assert regions.length >= 1;
 

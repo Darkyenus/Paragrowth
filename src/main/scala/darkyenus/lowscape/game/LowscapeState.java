@@ -19,10 +19,10 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import darkyenus.lowscape.graphics.LowscapeRenderableSorter;
 import darkyenus.lowscape.graphics.skybox.SkyboxRenderable;
 import darkyenus.lowscape.input.HeightmapPersonController;
-import darkyenus.lowscape.world.doodad.Doodad;
 import darkyenus.lowscape.world.doodad.DoodadFactory;
 import darkyenus.lowscape.world.doodad.DoodadLibrary;
 import darkyenus.lowscape.world.doodad.DoodadWorld;
+import darkyenus.lowscape.world.terrain.PerlinNoiseGenerator;
 import darkyenus.lowscape.world.terrain.TerrainPatchwork;
 
 /**
@@ -65,7 +65,7 @@ public final class LowscapeState extends ScreenAdapter {
         environment.add(new DirectionalLight().set(0.8f, 0.7f, 0.9f, -1f, -0.8f, -0.2f));
 
         worldCam.up.set(0,0,1f);
-        worldCam.near = 0.1f;
+        worldCam.near = 0.01f;
         worldCam.far = 1000f;
 
         worldCam.position.set(128f, 128f, 10f);
@@ -85,14 +85,25 @@ public final class LowscapeState extends ScreenAdapter {
     private final DoodadLibrary doodadLibrary = new DoodadLibrary(doodadFactory);
     private final DoodadWorld doodadWorld;
 
+    private void regenerateTerrain(){
+        float[][] terrainNoise = PerlinNoiseGenerator.generatePerlinNoise(256,256,13, 43l);
+
+        terrain.generateMesh((x,y) -> {
+            if(x < 0 || y < 0 || x >= 256 || y >= 256){
+                return 0f;
+            }else{
+                return terrainNoise[x][y] * 80f;
+            }
+        });
+        terrain.updateMesh();
+    }
 
     @Override
     public void show() {
         Gdx.input.setInputProcessor(cameraController);
         worldCam.update();
 
-        //terrain.generateMesh((x, y) => 25f * MathUtils.sinDeg(time*2f + (x * 180f) / 32) * MathUtils.sinDeg(time*2f - (y * 180f) / 32))
-        terrain.updateMesh();
+        regenerateTerrain();
     }
 
     @Override
@@ -119,8 +130,7 @@ public final class LowscapeState extends ScreenAdapter {
     }
 
     private void updateWorld(float delta) {
-        //terrain.generateMesh((x, y) => 25f * MathUtils.sinDeg(time*18f + (x * 180f) / 128) * MathUtils.sinDeg(time*18f - (y * 180f) / 128))
-        //terrain.updateMesh()
+        regenerateTerrain();
         {
             float pineX = MathUtils.random(256f);
             float pineY = MathUtils.random(256f);

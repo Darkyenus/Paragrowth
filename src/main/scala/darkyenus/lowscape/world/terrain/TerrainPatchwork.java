@@ -47,19 +47,18 @@ public class TerrainPatchwork implements RenderableProvider {
         updateMesh();
     }
 
-    /*
-    def generateMesh(tabulator:(Int,Int) => Float): Unit ={
-        var x = 0
-        var y = 0
-        while(x < heights.length){
-            while(y < heights.length){
-                heights(x)(y) = tabulator(x,y)
-                y += 1
+    public void generateMesh(TerrainGenerator generator){
+        for (int x = 0, h = heights.length; x < h; x++) {
+            for (int y = 0; y < h; y++) {
+                heights[x][y] = generator.getHeight(x,y);
             }
-            y = 0
-            x += 1
         }
-    }*/
+    }
+
+    @FunctionalInterface
+    public interface TerrainGenerator {
+        float getHeight(int x,int y);
+    }
 
     public void updateMesh(){
         for(TerrainPatch patch:patches){

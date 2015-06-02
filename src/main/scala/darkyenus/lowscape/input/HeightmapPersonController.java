@@ -29,15 +29,15 @@ public final class HeightmapPersonController extends InputAdapter {
     private static final int JUMP = Keys.SPACE;
 
     /** Velocity in units per second for moving forward, backward and strafing left/right. */
-    public final float velocity = 4.5f;
+    public final float velocity = 0.45f;
     /** Sets how many degrees to rotate per pixel the mouse moved. */
     public final float degreesPerPixel = 0.5f;
     /** Height of camera when standing */
-    public final float height = 1.75f;
+    public final float height = 0.175f;
     /** World gravity in this world */
-    public final float gravity = 3.3f;
+    public final float gravity = 0.33f;
     /** Initial jump speed */
-    public final float jumpPower = 0.43f;
+    public final float jumpPower = 0.043f;
 
     private final Vector3 tmp = new Vector3();
     private final Vector3 tmp2 = new Vector3();
