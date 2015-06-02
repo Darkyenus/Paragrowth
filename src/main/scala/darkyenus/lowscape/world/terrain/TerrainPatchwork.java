@@ -22,7 +22,7 @@ public class TerrainPatchwork implements RenderableProvider {
     private final TerrainPatch[] patches;
     private final int worldSizeLimit;
 
-    public TerrainPatchwork(int patchAmount, int patchSize, Camera camera, TerrainTextureProvider textures) {
+    public TerrainPatchwork(int patchAmount, int patchSize, Camera camera, TerrainTextureProvider textures, TerrainGenerator terrainGenerator) {
         this.camera = camera;
 
         final float patchMinHeight = -100f, patchMaxHeight = 1000f;
@@ -44,6 +44,10 @@ public class TerrainPatchwork implements RenderableProvider {
         }
 
         worldSizeLimit = patchAmount * patchSize - patchAmount;
+
+        if(terrainGenerator != null){
+            generateMesh(terrainGenerator);
+        }
 
         updateMesh();
     }
@@ -73,14 +77,7 @@ public class TerrainPatchwork implements RenderableProvider {
     }
 
     public final float heightAt(float x, float y) {
-        final int lowX = (int) x;
-        final int lowY = (int) y;
-        if(lowX < 0 || lowY < 0 || lowX >= worldSizeLimit || lowY >= worldSizeLimit){
-            return 0;
-        }
-        final float bottomX = MathUtils.lerp(heights[lowX][lowY],heights[lowX + 1][lowY],x - lowX);
-        final float topX = MathUtils.lerp(heights[lowX][lowY + 1],heights[lowX + 1][lowY+1],x - lowX);
-        return MathUtils.lerp(bottomX, topX, y - lowY);
+        return Noise.getHeight(heights, worldSizeLimit, x, y);
     }
 
     @Override

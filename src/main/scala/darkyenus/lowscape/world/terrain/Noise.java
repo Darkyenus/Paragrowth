@@ -24,7 +24,7 @@ import java.util.Random;
  * and altered.
  *  Adapted from <a href="http://devmag.org.za/2009/04/25/perlin-noise/">http://devmag.org.za/2009/04/25/perlin-noise/</a>
  * @author badlogic */
-public class PerlinNoiseGenerator {
+public class Noise {
 
 	public static float[][] generateWhiteNoise (int width, int height, long seed) {
 		Random random = new Random(seed);
@@ -59,6 +59,7 @@ public class PerlinNoiseGenerator {
 				float vertical_blend = (j - sample_j0) * sampleFrequency;
 				float top = interpolate(baseNoise[sample_i0][sample_j0], baseNoise[sample_i1][sample_j0], horizontal_blend);
 				float bottom = interpolate(baseNoise[sample_i0][sample_j1], baseNoise[sample_i1][sample_j1], horizontal_blend);
+				//noinspection SuspiciousNameCombination
 				smoothNoise[i][j] = interpolate(top, bottom, vertical_blend);
 			}
 		}
@@ -72,8 +73,8 @@ public class PerlinNoiseGenerator {
 		float[][][] smoothNoise = new float[octaveCount][][]; // an array of 2D arrays containing
 		float persistance = 0.7f;
 
-		for (int i = 0; i < octaveCount; i++) {
-			smoothNoise[i] = generateSmoothNoise(baseNoise, i);
+		for (int octave = 0; octave < octaveCount; octave++) {
+			smoothNoise[octave] = generateSmoothNoise(baseNoise, octave);
 		}
 
 		float[][] perlinNoise = new float[width][height]; // an array of floats initialised to 0
@@ -104,5 +105,16 @@ public class PerlinNoiseGenerator {
 	public static float[][] generatePerlinNoise (int width, int height, int octaveCount, long seed) {
 		float[][] baseNoise = generateWhiteNoise(width, height, seed);
 		return generatePerlinNoise(baseNoise, octaveCount);
+	}
+
+	public static float getHeight(float[][] noise, int noiseSize, float x, float y){
+		final int lowX = (int) x;
+		final int lowY = (int) y;
+		if(lowX < 0 || lowY < 0 || lowX >= noiseSize || lowY >= noiseSize){
+			return 0;
+		}
+		final float bottomX = MathUtils.lerp(noise[lowX][lowY],noise[lowX + 1][lowY],x - lowX);
+		final float topX = MathUtils.lerp(noise[lowX][lowY + 1],noise[lowX + 1][lowY+1],x - lowX);
+		return MathUtils.lerp(bottomX, topX, y - lowY);
 	}
 }

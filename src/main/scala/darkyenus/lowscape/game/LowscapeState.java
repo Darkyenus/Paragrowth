@@ -22,7 +22,7 @@ import darkyenus.lowscape.input.HeightmapPersonController;
 import darkyenus.lowscape.world.doodad.DoodadFactory;
 import darkyenus.lowscape.world.doodad.DoodadLibrary;
 import darkyenus.lowscape.world.doodad.DoodadWorld;
-import darkyenus.lowscape.world.terrain.PerlinNoiseGenerator;
+import darkyenus.lowscape.world.terrain.Noise;
 import darkyenus.lowscape.world.terrain.TerrainPatchwork;
 import darkyenus.lowscape.world.terrain.WorldGenerator;
 
@@ -93,7 +93,7 @@ public final class LowscapeState extends ScreenAdapter {
     private final DoodadWorld doodadWorld;
 
     private void regenerateTerrain(){
-        float[][] terrainNoise = PerlinNoiseGenerator.generatePerlinNoise(256,256,13, 43l);
+        float[][] terrainNoise = Noise.generatePerlinNoise(256, 256, 13, 43l);
 
         terrain.generateMesh((x,y) -> {
             if(x < 0 || y < 0 || x >= 256 || y >= 256){
