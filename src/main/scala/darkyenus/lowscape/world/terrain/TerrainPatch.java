@@ -1,14 +1,12 @@
 package darkyenus.lowscape.world.terrain;
 
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.VertexAttribute;
-import com.badlogic.gdx.graphics.VertexAttributes;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.graphics.g3d.Shader;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
@@ -29,6 +27,7 @@ public class TerrainPatch implements RenderableProvider {
     protected final BoundingBox boundingBox;
     private final Shader shader;
 
+    private final int vertexSize;
     private final float[] vertices;
 
     private final Mesh mesh;
@@ -37,7 +36,7 @@ public class TerrainPatch implements RenderableProvider {
 
     private final Renderable[] stripRenderables;
 
-    public TerrainPatch(float[][] heights, int size, int xOffset, int yOffset, BoundingBox boundingBox, Shader shader) {
+    public TerrainPatch(float[][] heights, int size, int xOffset, int yOffset, BoundingBox boundingBox, Shader shader, Texture terrainTexture) {
         assert size > 0 && size <= 256 : "Terrain size must be positive and at most 256";
         this.heights = heights;
         this.size = size;
@@ -46,10 +45,12 @@ public class TerrainPatch implements RenderableProvider {
         this.boundingBox = boundingBox;
         this.shader = shader;
 
-        vertices = new float[size * size * (3+3)];
+        vertexSize = 3+3+2;
+        vertices = new float[size * size * vertexSize];
         mesh = new Mesh(false,true,size*size,size * 2 * (size - 1),new VertexAttributes(
-                new VertexAttribute(VertexAttributes.Usage.Position, 3, ShaderProgram.POSITION_ATTRIBUTE),
-                new VertexAttribute(VertexAttributes.Usage.Normal, 3, ShaderProgram.NORMAL_ATTRIBUTE)
+                VertexAttribute.Position(),//3
+                VertexAttribute.Normal(),//3
+                VertexAttribute.TexCoords(0)//2
         ));
 
         //Generate indices
@@ -70,7 +71,10 @@ public class TerrainPatch implements RenderableProvider {
         }
 
         mesh.setIndices(indices);
-        terrainMaterial = new Material(ColorAttribute.createDiffuse(0.1f, 0.9f, 0.2f, 1f));
+        terrainMaterial = new Material(
+                //ColorAttribute.createDiffuse(0.1f, 0.9f, 0.2f, 1f),
+                TextureAttribute.createDiffuse(terrainTexture)
+        );
         stripRenderables = new Renderable[this.size - 1];
         for (int i = 0; i < stripRenderables.length; i++) {
             stripRenderables[i] = new Renderable();
@@ -85,12 +89,14 @@ public class TerrainPatch implements RenderableProvider {
     private final Vector3 vt = new Vector3();
 
     public void updateMesh(){
+        float uvStep = 1f/size;
+
         int x = xOffset;
         int i = 0;
         while(x < xOffset + size){
             int y = yOffset;
             while(y < yOffset + size){
-                vertices[i + 0] = x;
+                vertices[i] = x;
                 vertices[i + 1] = y;
                 vertices[i + 2] = heights[x][y];
 
@@ -126,7 +132,11 @@ public class TerrainPatch implements RenderableProvider {
                     vertices[i + 5] = vn.z;
                 }
 
-                i += 6;
+                //Normal
+                vertices[i + 6] = x * uvStep;
+                vertices[i + 7] = y * uvStep;
+
+                i += vertexSize;
                 y += 1;
             }
             x += 1;

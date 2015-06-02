@@ -1,6 +1,7 @@
 package darkyenus.lowscape.world.terrain;
 
 import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.graphics.g3d.Shader;
@@ -21,7 +22,7 @@ public class TerrainPatchwork implements RenderableProvider {
     private final TerrainPatch[] patches;
     private final int worldSizeLimit;
 
-    public TerrainPatchwork(int patchAmount, int patchSize, Camera camera) {
+    public TerrainPatchwork(int patchAmount, int patchSize, Camera camera, TerrainTextureProvider textures) {
         this.camera = camera;
 
         final float patchMinHeight = -100f, patchMaxHeight = 1000f;
@@ -37,7 +38,7 @@ public class TerrainPatchwork implements RenderableProvider {
                     new Vector3(x * patchSize, y * patchSize, patchMinHeight),
                     new Vector3(x * patchSize + patchSize, y * patchSize + patchSize, patchMaxHeight));
 
-            TerrainPatch patch = new TerrainPatch(heights,patchSize,x * patchSize - x,y * patchSize - y, boundingBox, terrainShader);
+            TerrainPatch patch = new TerrainPatch(heights,patchSize,x * patchSize - x,y * patchSize - y, boundingBox, terrainShader, textures.getTexture(x,y));
             patch.updateRenderables();
             patches[i] = patch;
         }
@@ -58,6 +59,11 @@ public class TerrainPatchwork implements RenderableProvider {
     @FunctionalInterface
     public interface TerrainGenerator {
         float getHeight(int x,int y);
+    }
+
+    @FunctionalInterface
+    public interface TerrainTextureProvider {
+        Texture getTexture(int patchX, int patchY);
     }
 
     public void updateMesh(){

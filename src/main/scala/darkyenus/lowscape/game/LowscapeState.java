@@ -24,6 +24,7 @@ import darkyenus.lowscape.world.doodad.DoodadLibrary;
 import darkyenus.lowscape.world.doodad.DoodadWorld;
 import darkyenus.lowscape.world.terrain.PerlinNoiseGenerator;
 import darkyenus.lowscape.world.terrain.TerrainPatchwork;
+import darkyenus.lowscape.world.terrain.WorldGenerator;
 
 /**
  * @author Darkyen
@@ -57,8 +58,7 @@ public final class LowscapeState extends ScreenAdapter {
 
         hudStage.getRoot().setTransform(false);
         skyboxRenderable = new SkyboxRenderable();
-        terrain = new TerrainPatchwork(1,256,worldCam);
-        cameraController = new HeightmapPersonController(worldCam,terrain);
+
         environment = new Environment();
 
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.4f, 0.6f, 1f));
@@ -78,11 +78,18 @@ public final class LowscapeState extends ScreenAdapter {
         hudTable.add(statsLabel).top().left();
         hudStage.addActor(hudTable);
 
-        doodadWorld = new DoodadWorld(worldCam);
+        DoodadFactory doodadFactory = new DoodadFactory();
+        doodadLibrary = new DoodadLibrary(doodadFactory);
+
+        //Terrain generation
+        final WorldGenerator.World world = WorldGenerator.generate(worldCam, 1, 42l, doodadLibrary);
+        terrain = world.terrain;
+        doodadWorld = world.doodadWorld;
+
+        cameraController = new HeightmapPersonController(worldCam,terrain);
     }
 
-    private final DoodadFactory doodadFactory = new DoodadFactory();
-    private final DoodadLibrary doodadLibrary = new DoodadLibrary(doodadFactory);
+    private final DoodadLibrary doodadLibrary;
     private final DoodadWorld doodadWorld;
 
     private void regenerateTerrain(){
@@ -103,7 +110,7 @@ public final class LowscapeState extends ScreenAdapter {
         Gdx.input.setInputProcessor(cameraController);
         worldCam.update();
 
-        regenerateTerrain();
+        //regenerateTerrain();
     }
 
     @Override
@@ -130,11 +137,11 @@ public final class LowscapeState extends ScreenAdapter {
     }
 
     private void updateWorld(float delta) {
-        regenerateTerrain();
+        //regenerateTerrain();
         {
             float pineX = MathUtils.random(256f);
             float pineY = MathUtils.random(256f);
-            doodadWorld.addDoodad(doodadLibrary.DOODADS[MathUtils.random.nextInt(doodadLibrary.DOODADS.length)]).setToTranslation(pineX, pineY, terrain.heightAt(pineX, pineY));
+            //doodadWorld.addDoodad(doodadLibrary.DOODADS[MathUtils.random.nextInt(doodadLibrary.DOODADS.length)]).setToTranslation(pineX, pineY, terrain.heightAt(pineX, pineY));
         }
 
         cameraController.update(delta);
