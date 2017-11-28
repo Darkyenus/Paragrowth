@@ -1,4 +1,3 @@
-.DS_Store
-.idea
-target
-assets
+/assets/
+/build/cache/
+/build/logs/
