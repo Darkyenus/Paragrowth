@@ -1,4 +1,4 @@
-package com.darkyen.paragrowth.world.terrain;
+package com.darkyen.paragrowth.terrain.generator;
 
 /**
  *

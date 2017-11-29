@@ -1,12 +1,14 @@
 package com.darkyen.paragrowth;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.assets.loaders.resolvers.LocalFileHandleResolver;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.darkyen.paragrowth.game.ParagrowthState;
 
@@ -19,7 +21,14 @@ public class ParagrowthMain extends Game {
 
     @Override
     public void create() {
-        final SpriteBatch spriteBatch = new SpriteBatch();
+        final ShaderProgram batchShader = new ShaderProgram(
+                Gdx.files.local("default_vert.glsl"),
+                Gdx.files.local("default_frag.glsl")
+        );
+        if (!batchShader.isCompiled()) {
+            throw new IllegalStateException("batchShader did not compile:\n"+batchShader.getLog());
+        }
+        final SpriteBatch spriteBatch = new SpriteBatch(1000, batchShader);
         assetManager.load("UISkin.json",Skin.class);
         assetManager.load("World.atlas",TextureAtlas.class);
 

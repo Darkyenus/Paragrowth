@@ -1,4 +1,4 @@
-package com.darkyen.paragrowth.terrain;
+package com.darkyen.paragrowth.terrain.generator;
 
 import java.awt.*;
 

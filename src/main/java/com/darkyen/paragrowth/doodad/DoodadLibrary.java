@@ -1,4 +1,4 @@
-package com.darkyen.paragrowth.world.doodad;
+package com.darkyen.paragrowth.doodad;
 
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;

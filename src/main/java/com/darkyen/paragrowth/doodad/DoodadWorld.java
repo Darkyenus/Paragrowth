@@ -1,4 +1,4 @@
-package com.darkyen.paragrowth.world.doodad;
+package com.darkyen.paragrowth.doodad;
 
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.Renderable;

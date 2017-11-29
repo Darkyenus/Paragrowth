@@ -1,4 +1,4 @@
-package com.darkyen.paragrowth.world.terrain;
+package com.darkyen.paragrowth.terrain;
 
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.Renderable;
@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
+import com.darkyen.paragrowth.terrain.generator.TerrainGenerator;
 
 /**
  * A collection of terrain patches.

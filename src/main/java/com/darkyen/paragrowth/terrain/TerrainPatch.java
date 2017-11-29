@@ -1,10 +1,11 @@
-package com.darkyen.paragrowth.world.terrain;
+package com.darkyen.paragrowth.terrain;
 
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.darkyen.paragrowth.terrain.generator.TerrainGenerator;
 
 /**
  * Piece of terrain made from equilateral triangles, each with own flat color.

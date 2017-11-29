@@ -10,21 +10,18 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.darkyen.paragrowth.graphics.LowscapeRenderableSorter;
-import com.darkyen.paragrowth.graphics.skybox.SkyboxRenderable;
-import com.darkyen.paragrowth.input.HeightmapPersonController;
-import com.darkyen.paragrowth.world.doodad.DoodadFactory;
-import com.darkyen.paragrowth.world.doodad.DoodadLibrary;
-import com.darkyen.paragrowth.world.terrain.TerrainPatchwork;
-import com.darkyen.paragrowth.world.terrain.WorldGenerator;
-import com.darkyen.paragrowth.world.doodad.DoodadWorld;
+import com.darkyen.paragrowth.skybox.SkyboxRenderable;
+import com.darkyen.paragrowth.doodad.DoodadFactory;
+import com.darkyen.paragrowth.doodad.DoodadLibrary;
+import com.darkyen.paragrowth.doodad.DoodadWorld;
+import com.darkyen.paragrowth.terrain.TerrainPatchwork;
+import com.darkyen.paragrowth.terrain.WorldGenerator;
 
 /**
  * @author Darkyen
@@ -54,7 +51,7 @@ public final class ParagrowthState extends ScreenAdapter {
     private final DoodadWorld doodadWorld;
 
     public ParagrowthState(Batch batch, Skin skin) {
-        modelBatch = new ModelBatch(new LowscapeRenderableSorter());
+        modelBatch = new ModelBatch();
         worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
         hudView = new ScreenViewport();

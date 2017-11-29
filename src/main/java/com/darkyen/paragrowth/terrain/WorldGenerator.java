@@ -1,4 +1,4 @@
-package com.darkyen.paragrowth.world.terrain;
+package com.darkyen.paragrowth.terrain;
 
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
@@ -7,8 +7,11 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.utils.NumberUtils;
-import com.darkyen.paragrowth.world.doodad.DoodadLibrary;
-import com.darkyen.paragrowth.world.doodad.DoodadWorld;
+import com.darkyen.paragrowth.doodad.DoodadLibrary;
+import com.darkyen.paragrowth.doodad.DoodadWorld;
+import com.darkyen.paragrowth.terrain.generator.HydraulicNoise;
+import com.darkyen.paragrowth.terrain.generator.Noise;
+import com.darkyen.paragrowth.terrain.generator.TerrainGenerator;
 
 import java.util.Random;
 
