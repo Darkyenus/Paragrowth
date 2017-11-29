@@ -3,159 +3,205 @@ package com.darkyen.paragrowth.world.terrain;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
-import com.badlogic.gdx.graphics.g3d.RenderableProvider;
-import com.badlogic.gdx.graphics.g3d.Shader;
-import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Pool;
 
 /**
+ * Piece of terrain made from equilateral triangles, each with own flat color.
  *
- * Due to how are indices handled, size can be 256 at most
- *
- * @author Darkyen
+ * Fits into single renderable.
  */
-public class TerrainPatch implements RenderableProvider {
-    private final float[][] heights;
-    private final int size, xOffset, yOffset;
+class TerrainPatch {
+
+    /*
+    triangles = (size-1)^2*2
+    indices = (size-1)^2*2*3
+    max indices = 2^16
+    => size <= 105.512, patch size must be odd
+    => size = 105
+     */
+
+    public static final int PATCH_SIZE = 105;
+
+    private static final float X_STEP = 1f;
+    private static final float X_STAGGER = 0.5f;
+    private static final float Y_STEP = (float)(Math.sqrt(3.0) / 2.0);
+
+    public static final float PATCH_WIDTH = (PATCH_SIZE - 1) * X_STEP;
+    public static final float PATCH_HEIGHT = (PATCH_SIZE - 1) * Y_STEP;
+
+    private static final int TRIANGLE_COUNT = (PATCH_SIZE - 1) * (PATCH_SIZE - 1) * 2;
+    private static final int INDEX_COUNT = TRIANGLE_COUNT * 3;
+    private static final int VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + (PATCH_SIZE - 1) * (PATCH_SIZE - 1);
+    private static final int VERTEX_SIZE_FLOATS = 3+1;
+
+    /*
+    Arrangement:
+    0 \/\/\/\/\/\/\ odd
+    1 /\/\/\/\/\/\/ even
+    2 \/\/\/\/\/\/\
+    3 /\/\/\/\/\/\/
+    4
+
+    X step: 1
+    X stagger: 0.5
+    Y step: sqrt(3)/2
+     */
+
     private final Matrix4 transform = new Matrix4();
-    protected final BoundingBox boundingBox;
-    private final Shader shader;
-
-    private final int vertexSize;
-    private final float[] vertices;
-
+    final BoundingBox boundingBox = new BoundingBox();
     private final Mesh mesh;
-
     private final Material terrainMaterial;
 
-    private final Renderable[] stripRenderables;
+    final float[] heightMap = new float[PATCH_SIZE * PATCH_SIZE];
 
-    public TerrainPatch(float[][] heights, int size, int xOffset, int yOffset, BoundingBox boundingBox, Shader shader, Texture terrainTexture) {
-        assert size > 0 && size <= 256 : "Terrain size must be positive and at most 256";
-        this.heights = heights;
-        this.size = size;
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
-        this.boundingBox = boundingBox;
-        this.shader = shader;
+    public TerrainPatch(float xOffset, float yOffset, TerrainGenerator generator) {
+        //this.transform.translate(xOffset, yOffset, 0f);
+        this.boundingBox.min.set(xOffset, yOffset, 0f);
+        this.boundingBox.max.set(this.boundingBox.min).add(PATCH_WIDTH, PATCH_HEIGHT, 100f);
 
-        vertexSize = 3+3+2;
-        vertices = new float[size * size * vertexSize];
-        mesh = new Mesh(false,true,size*size,size * 2 * (size - 1),new VertexAttributes(
+        final float[] vertices = new float[VERTEX_COUNT * VERTEX_SIZE_FLOATS];
+        mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, new VertexAttributes(
                 VertexAttribute.Position(),//3
-                VertexAttribute.Normal(),//3
-                VertexAttribute.TexCoords(0)//2
+                VertexAttribute.ColorPacked()//1
         ));
 
-        //Generate indices
-        final short[] indices = new short[size * 2 * (size - 1)];
-        int index = 0;
-        for (int strip = 0; strip < size - 1; strip++) {
-            for (int x = 0; x < size; x++) {
-                indices[index++] = (short)(strip * size + x);
-                int s = strip * size + size + x;
-                indices[index++] = (short)s;
-            }
-        }
-        int strip = 0;
+        //Generate vertices
+        {
+            final float X_HALF_STEP = X_STEP * 0.5f;
+            final float Y_HALF_STEP = Y_STEP * 0.5f;
 
-        while(strip < size - 1){
+            int h = 0;
+            int v = 0;
+            float yPos = yOffset;
+            // Stepping through hourglass middles
+            for (int y = 1; y < PATCH_SIZE; y += 2) {
+                float xPos = xOffset;
+                // Do a line of top X that makes the first row
 
-            strip += 1;
-        }
+                // Top of even row
+                float height = heightMap[h++] = generator.getHeight(xPos, yPos);
+                for (int x = 0; x < PATCH_SIZE-1; x++) {
 
-        mesh.setIndices(indices);
-        terrainMaterial = new Material(
-                //ColorAttribute.createDiffuse(0.1f, 0.9f, 0.2f, 1f),
-                TextureAttribute.createDiffuse(terrainTexture)
-        );
-        stripRenderables = new Renderable[this.size - 1];
-        for (int i = 0; i < stripRenderables.length; i++) {
-            stripRenderables[i] = new Renderable();
-        }
-    }
+                    // Top left of red
+                    vertices[v++] = xPos;
+                    vertices[v++] = yPos;
+                    vertices[v++] = height;
+                    vertices[v++] = generator.getColor(xPos + X_HALF_STEP, yPos + Y_HALF_STEP);
 
-    private final Vector3 va = new Vector3();
-    private final Vector3 vb = new Vector3();
-    private final Vector3 vc = new Vector3();
-    private final Vector3 vd = new Vector3();
-    private final Vector3 vn = new Vector3();
-    private final Vector3 vt = new Vector3();
+                    xPos += X_STEP;
+                    height = heightMap[h++] = generator.getHeight(xPos, yPos);
 
-    public void updateMesh(){
-        float uvStep = 1f/size;
-
-        int x = xOffset;
-        int i = 0;
-        while(x < xOffset + size){
-            int y = yOffset;
-            while(y < yOffset + size){
-                vertices[i] = x;
-                vertices[i + 1] = y;
-                vertices[i + 2] = heights[x][y];
-
-                if(x == 0 || y == 0 || x == heights.length - 1 || y == heights[x].length - 1){
-                    vertices[i + 3] = 0f;
-                    vertices[i + 4] = 0f;
-                    vertices[i + 5] = 1f; //Simple upward pointing normal since not enough sampling points
-                }else{
-                    //http://forum.unity3d.com/threads/calculate-vertex-normals-in-shader-from-heightmap.169871/
-                    final float hA = heights[x][y - 1];
-                    final float hB = heights[x + 1][y];
-                    final float hC = heights[x][y + 1];
-                    final float hD = heights[x - 1][y];
-                    final float hN = heights[x][y];
-                    va.set(0,1,hA - hN);
-                    vb.set(1,0,hB - hN);
-                    vc.set(0,-1,hC - hN);
-                    vd.set(-1,0,hD - hN);
-
-                    vt.set(va).crs(vb);
-                    vn.set(vt);
-                    vt.set(vb).crs(vc);
-                    vn.add(vt);
-                    vt.set(vc).crs(vd);
-                    vn.add(vt);
-                    vt.set(vd).crs(va);
-                    vn.add(vt);
-
-                    vn.scl(1f/ -4f).nor();
-
-                    vertices[i + 3] = vn.x;
-                    vertices[i + 4] = vn.y;
-                    vertices[i + 5] = vn.z;
+                    // Top of green
+                    vertices[v++] = xPos;
+                    vertices[v++] = yPos;
+                    vertices[v++] = height;
+                    vertices[v++] = Color.GREEN.toFloatBits();//generator.getColor(xPos, yPos + Y_HALF_STEP);
                 }
 
-                //Normal
-                vertices[i + 6] = x * uvStep;
-                vertices[i + 7] = y * uvStep;
+                yPos += Y_STEP;
+                xPos = xOffset + X_STAGGER;
+                height = heightMap[h++] = generator.getHeight(xPos, yPos);
 
-                i += vertexSize;
-                y += 1;
+                // Top of odd row
+                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                    // Top of dark red
+                    vertices[v++] = xPos;
+                    vertices[v++] = yPos;
+                    vertices[v++] = height;
+                    vertices[v++] = Color.MAROON.toFloatBits();//generator.getColor(xPos, yPos + Y_HALF_STEP);
+
+                    xPos += X_STEP;
+                    height = heightMap[h++] = generator.getHeight(xPos, yPos);
+
+                    // Top right of dark green
+                    vertices[v++] = xPos;
+                    vertices[v++] = yPos;
+                    vertices[v++] = height;
+                    vertices[v++] = Color.FOREST.toFloatBits();//generator.getColor(xPos - X_HALF_STEP, yPos + Y_HALF_STEP);
+                }
+
+                yPos += Y_STEP;
             }
-            x += 1;
+
+            // Do one more bottom row, without colors
+            final float NO_COLOR = Color.MAGENTA.toFloatBits();
+            float xPos = xOffset;
+            float height = heightMap[h++] = generator.getHeight(xPos, yPos);
+            for (int x = 0; x < PATCH_SIZE-1; x++) {
+                // Top left of red
+                vertices[v++] = xPos;
+                vertices[v++] = yPos;
+                vertices[v++] = height;
+                vertices[v++] = NO_COLOR;
+
+                xPos += X_STEP;
+                height = heightMap[h++] = generator.getHeight(xPos, yPos);
+
+                // Top of green
+                vertices[v++] = xPos;
+                vertices[v++] = yPos;
+                vertices[v++] = height;
+                vertices[v++] = NO_COLOR;
+            }
+
+            mesh.setVertices(vertices);
         }
-        mesh.setVertices(vertices);
+
+        //Generate indices
+        {
+            final int ROW_AMOUNT = PATCH_SIZE + PATCH_SIZE - 2;
+            final short[] indices = new short[INDEX_COUNT];
+            int i = 0;
+
+            // Do all of the double-strips
+            for (int y = 0; y + 1 < PATCH_SIZE; y += 2) {
+                // First Red
+                indices[i++] = (short) (y * ROW_AMOUNT);
+                indices[i++] = (short) (y * ROW_AMOUNT + 1);
+                indices[i++] = (short) (y * ROW_AMOUNT + ROW_AMOUNT);
+
+                // Other Red
+                for (int x = 1; x < PATCH_SIZE-1; x++) {
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + 1);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT - 1);
+                }
+
+                // All Green
+                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                    indices[i++] = (short) (x*2 + 1 + y * ROW_AMOUNT);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + 1);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT);
+                }
+
+                // All Dark Red
+                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT);
+                }
+
+                // All Dark Green
+                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + 1);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1);
+                    indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT);
+                }
+            }
+
+            mesh.setIndices(indices);
+        }
+
+        terrainMaterial = new Material();
     }
 
-    public void updateRenderables(){
-        final int size2 = size * 2;
+    void fillRenderable(Renderable renderable) {
+        renderable.meshPart.set(null, mesh, 0, INDEX_COUNT, GL20.GL_TRIANGLES);
+        renderable.material = terrainMaterial;
+        renderable.worldTransform.set(transform);
+        renderable.userData = this;
 
-        for (int strip = 0; strip < stripRenderables.length; strip++) {
-            Renderable terrain = stripRenderables[strip];
-            terrain.meshPart.set(null, mesh, strip * size2, size2, GL20.GL_TRIANGLE_STRIP);
-            terrain.material = terrainMaterial;
-            terrain.worldTransform.set(transform);
-            terrain.shader = shader;
-        }
-    }
-
-    @Override
-    public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
-        renderables.addAll(stripRenderables,0,stripRenderables.length);
+        renderable.shader = TerrainShader.get(renderable);
     }
 }

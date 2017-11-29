@@ -1,10 +1,12 @@
 package com.darkyen.paragrowth.world.terrain;
 
 import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.RandomXS128;
+import com.badlogic.gdx.utils.NumberUtils;
 import com.darkyen.paragrowth.world.doodad.DoodadLibrary;
 import com.darkyen.paragrowth.world.doodad.DoodadWorld;
 
@@ -60,9 +62,17 @@ public class WorldGenerator {
             }
         }
 
-        final TerrainPatchwork terrainPatchwork = new TerrainPatchwork(size, patchSize, camera,
-                (x,y) -> new Texture(terrainTextures[x][y],false),
-                (x,y) -> terrainNoise[x][y] * terrainNoiseScale);
+        final TerrainPatchwork terrainPatchwork = new TerrainPatchwork(size, camera, new TerrainGenerator() {
+            @Override
+            public float getHeight(float x, float y) {
+                return Noise.getHeight(terrainNoise, terrainNoiseSize, x, y) * terrainNoiseScale;
+            }
+
+            @Override
+            public float getColor(float x, float y) {
+                return NumberUtils.intToFloatColor(Color.rgba8888(MathUtils.random(), MathUtils.random(), MathUtils.random(), 1f));
+            }
+        });
 
         return new World(doodadWorld, terrainPatchwork);
     }

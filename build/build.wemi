@@ -1,4 +1,5 @@
 import com.darkyen.resourcepacker.PackingOperation
+import com.darkyen.resourcepacker.PreferSymlinks
 import wemi.Keys.runDirectory
 import wemi.Keys.runOptions
 import wemi.dependency.Repository
@@ -22,7 +23,7 @@ val paragrowth by project {
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx-platform:$gdxVersion", attributes = Repository.M2.M2ClassifierAttribute to "natives-desktop") }
 
     packResources set {
-        resourcePack(PackingOperation(projectRoot / "resources", projectRoot / "assets"))
+        resourcePack(PackingOperation(projectRoot / "resources", projectRoot / "assets", listOf(PreferSymlinks to true)))
     }
 
     mainClass set { "com.darkyen.paragrowth.ParagrowthMain" }

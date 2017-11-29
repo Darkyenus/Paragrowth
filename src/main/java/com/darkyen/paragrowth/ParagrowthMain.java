@@ -8,7 +8,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.darkyen.paragrowth.game.LowscapeState;
+import com.darkyen.paragrowth.game.ParagrowthState;
 
 /**
  * @author Darkyen
@@ -27,12 +27,13 @@ public class ParagrowthMain extends Game {
 
         final Skin defaultSkin = assetManager.get("UISkin.json");
 
-        setScreen(new LowscapeState(spriteBatch, defaultSkin));
+        setScreen(new ParagrowthState(spriteBatch, defaultSkin));
     }
 
     public static void main(String[] args){
         Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
         configuration.setTitle("Lowscape");
+        configuration.useOpenGL3(true, 3, 2);
         configuration.setWindowedMode(800, 600);
 
         new Lwjgl3Application(new ParagrowthMain(),configuration);

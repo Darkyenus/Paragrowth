@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.utils.DefaultShaderProvider;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -28,7 +29,7 @@ import com.darkyen.paragrowth.world.doodad.DoodadWorld;
 /**
  * @author Darkyen
  */
-public final class LowscapeState extends ScreenAdapter {
+public final class ParagrowthState extends ScreenAdapter {
 
     //2D
     private final ScreenViewport hudView;
@@ -52,7 +53,7 @@ public final class LowscapeState extends ScreenAdapter {
     private final DoodadLibrary doodadLibrary;
     private final DoodadWorld doodadWorld;
 
-    public LowscapeState(Batch batch, Skin skin) {
+    public ParagrowthState(Batch batch, Skin skin) {
         modelBatch = new ModelBatch(new LowscapeRenderableSorter());
         worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
@@ -71,7 +72,7 @@ public final class LowscapeState extends ScreenAdapter {
         worldCam.near = 0.01f;
         worldCam.far = 1000f;
 
-        worldCam.position.set(128f, 128f, 10f);
+        worldCam.position.set(1f, 1f, 10f);
         worldCam.direction.set(1,0,0);
         final Table hudTable = new Table(skin);
         statsLabel = new Label("Stats!", skin,"font-ui-small", Color.WHITE);
@@ -85,7 +86,7 @@ public final class LowscapeState extends ScreenAdapter {
         doodadLibrary = new DoodadLibrary(doodadFactory);
 
         //Terrain generation
-        final WorldGenerator.World world = WorldGenerator.generate(worldCam, 1, 42l, doodadLibrary);
+        final WorldGenerator.World world = WorldGenerator.generate(worldCam, 2, 42L, doodadLibrary);
         terrain = world.terrain;
         doodadWorld = world.doodadWorld;
 
