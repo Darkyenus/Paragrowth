@@ -18,9 +18,11 @@ public class WorldGenerator implements TerrainProvider {
     public WorldGenerator(WorldCharacteristics characteristics) {
         this.characteristics = characteristics;
 
-        final int worldSize = (int) MathUtils.clamp(Math.pow(Math.log(characteristics.size + 1f), 3f) * 10f + 10f, 10f, 500f);
+        final int worldSize = (int)(MathUtils.clamp((float)Math.sqrt(characteristics.size), 1f, 30f) * 100f);
 
-        noise = Noise.islandize(Noise.generatePerlinNoise(Noise.generateHydraulicNoise(worldSize, characteristics.seed, 500, 0.005f), 3, 0.5f), 250f, -1f);
+        noise = Noise.max(Noise.islandize(Noise.generateSimplexNoise(worldSize, worldSize,
+                System.currentTimeMillis(), 1f,
+                1f/80f, 2f, 5, 40f, 0.5f), -0.1f), 0f);
     }
 
     @Override
@@ -35,21 +37,13 @@ public class WorldGenerator implements TerrainProvider {
 
     @Override
     public float getHeight(float x, float y) {
-        final float height = Noise.getHeight(noise, x, y);
-        if (height < 0f) {
-            return 0f;
-        }
-        return height;
+        return Noise.getHeight(noise, x, y);
     }
 
     @Override
     public float getColor(float x, float y) {
-        if (true) {
-            return NumberUtils.intToFloatColor((255 << 24) | (MathUtils.random.nextInt(256) << 16) | (MathUtils.random.nextInt(256) << 8) | MathUtils.random.nextInt(256));
-        }
-
         final float height = Noise.getHeight(noise, x, y);
-        if (height <= 0f) {
+        if (height == 0f) {
             return Color.BLUE.toFloatBits();
         } else if (height < 1f) {
             return Color.YELLOW.toFloatBits();

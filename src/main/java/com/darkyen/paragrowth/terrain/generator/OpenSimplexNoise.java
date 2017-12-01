@@ -3,19 +3,15 @@ package com.darkyen.paragrowth.terrain.generator;
 /**
  * Adapted from https://gist.github.com/digitalshadow/134a3a02b67cecd72181
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "WeakerAccess"})
 public final class OpenSimplexNoise {
 
-    private final byte[] perm;
-    private final byte[] perm2D;
-    private final byte[] perm3D;
-    private final byte[] perm4D;
+    private final byte[] perm = new byte[256];
+    private final byte[] perm2D = new byte[256];
+    private final byte[] perm3D = new byte[256];
+    private final byte[] perm4D = new byte[256];
 
-    public OpenSimplexNoise(long seed) {
-        perm = new byte[256];
-        perm2D = new byte[256];
-        perm3D = new byte[256];
-        perm4D = new byte[256];
+    public void initialize(long seed) {
         final byte[] source = new byte[256];
         for (int i = 0; i < 256; i++) {
             source[i] = (byte) i;
@@ -37,22 +33,22 @@ public final class OpenSimplexNoise {
         }
     }
 
-    public final double evaluate(final double x, final double y) {
-        final double stretchOffset = (x + y) * Contribution2.STRETCH_2D;
-        final double xs = x + stretchOffset;
-        final double ys = y + stretchOffset;
+    public final float evaluate(final float x, final float y) {
+        final float stretchOffset = (x + y) * Contribution2.STRETCH_2D;
+        final float xs = x + stretchOffset;
+        final float ys = y + stretchOffset;
 
         final int xsb = floor(xs);
         final int ysb = floor(ys);
 
-        final double squishOffset = (xsb + ysb) * Contribution2.SQUISH_2D;
-        final double dx0 = x - (xsb + squishOffset);
-        final double dy0 = y - (ysb + squishOffset);
+        final float squishOffset = (xsb + ysb) * Contribution2.SQUISH_2D;
+        final float dx0 = x - (xsb + squishOffset);
+        final float dy0 = y - (ysb + squishOffset);
 
-        final double xins = xs - xsb;
-        final double yins = ys - ysb;
+        final float xins = xs - xsb;
+        final float yins = ys - ysb;
 
-        final double inSum = xins + yins;
+        final float inSum = xins + yins;
 
         final int hash =
                 (int) (xins - yins + 1) |
@@ -62,17 +58,17 @@ public final class OpenSimplexNoise {
 
         Contribution2 c = Contribution2.lookup2D[hash];
 
-        double value = 0.0;
+        float value = 0f;
         while (c != null) {
-            final double dx = dx0 + c.dx;
-            final double dy = dy0 + c.dy;
-            double attn = 2 - dx * dx - dy * dy;
+            final float dx = dx0 + c.dx;
+            final float dy = dy0 + c.dy;
+            float attn = 2 - dx * dx - dy * dy;
             if (attn > 0) {
                 final int px = xsb + c.xsb;
                 final int py = ysb + c.ysb;
 
                 final byte i = perm2D[(perm[px & 0xFF] + py) & 0xFF];
-                final double valuePart = Contribution2.gradients2D[i] * dx + Contribution2.gradients2D[i + 1] * dy;
+                final float valuePart = Contribution2.gradients2D[i] * dx + Contribution2.gradients2D[i + 1] * dy;
 
                 attn *= attn;
                 value += attn * attn * valuePart;
@@ -82,26 +78,26 @@ public final class OpenSimplexNoise {
         return value * Contribution2.NORM_2D;
     }
 
-    public final double evaluate(final double x, final double y, final double z) {
-        final double stretchOffset = (x + y + z) * Contribution3.STRETCH_3D;
-        final double xs = x + stretchOffset;
-        final double ys = y + stretchOffset;
-        final double zs = z + stretchOffset;
+    public final float evaluate(final float x, final float y, final float z) {
+        final float stretchOffset = (x + y + z) * Contribution3.STRETCH_3D;
+        final float xs = x + stretchOffset;
+        final float ys = y + stretchOffset;
+        final float zs = z + stretchOffset;
 
         final int xsb = floor(xs);
         final int ysb = floor(ys);
         final int zsb = floor(zs);
 
-        final double squishOffset = (xsb + ysb + zsb) * Contribution3.SQUISH_3D;
-        final double dx0 = x - (xsb + squishOffset);
-        final double dy0 = y - (ysb + squishOffset);
-        final double dz0 = z - (zsb + squishOffset);
+        final float squishOffset = (xsb + ysb + zsb) * Contribution3.SQUISH_3D;
+        final float dx0 = x - (xsb + squishOffset);
+        final float dy0 = y - (ysb + squishOffset);
+        final float dz0 = z - (zsb + squishOffset);
 
-        final double xins = xs - xsb;
-        final double yins = ys - ysb;
-        final double zins = zs - zsb;
+        final float xins = xs - xsb;
+        final float yins = ys - ysb;
+        final float zins = zs - zsb;
 
-        final double inSum = xins + yins + zins;
+        final float inSum = xins + yins + zins;
 
         final int hash =
                 (int) (yins - zins + 1) |
@@ -114,19 +110,19 @@ public final class OpenSimplexNoise {
 
         Contribution3 c = Contribution3.lookup3D[hash];
 
-        double value = 0.0;
+        float value = 0;
         while (c != null) {
-            final double dx = dx0 + c.dx;
-            final double dy = dy0 + c.dy;
-            final double dz = dz0 + c.dz;
-            double attn = 2 - dx * dx - dy * dy - dz * dz;
+            final float dx = dx0 + c.dx;
+            final float dy = dy0 + c.dy;
+            final float dz = dz0 + c.dz;
+            float attn = 2 - dx * dx - dy * dy - dz * dz;
             if (attn > 0) {
                 final int px = xsb + c.xsb;
                 final int py = ysb + c.ysb;
                 final int pz = zsb + c.zsb;
 
                 final byte i = perm3D[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF];
-                final double valuePart = Contribution3.gradients3D[i] * dx + Contribution3.gradients3D[i + 1] * dy + Contribution3.gradients3D[i + 2] * dz;
+                final float valuePart = Contribution3.gradients3D[i] * dx + Contribution3.gradients3D[i + 1] * dy + Contribution3.gradients3D[i + 2] * dz;
 
                 attn *= attn;
                 value += attn * attn * valuePart;
@@ -137,30 +133,30 @@ public final class OpenSimplexNoise {
         return value * Contribution3.NORM_3D;
     }
 
-    public final double evaluate(final double x, final double y, final double z, final double w) {
-        final double stretchOffset = (x + y + z + w) * Contribution4.STRETCH_4D;
-        final double xs = x + stretchOffset;
-        final double ys = y + stretchOffset;
-        final double zs = z + stretchOffset;
-        final double ws = w + stretchOffset;
+    public final float evaluate(final float x, final float y, final float z, final float w) {
+        final float stretchOffset = (x + y + z + w) * Contribution4.STRETCH_4D;
+        final float xs = x + stretchOffset;
+        final float ys = y + stretchOffset;
+        final float zs = z + stretchOffset;
+        final float ws = w + stretchOffset;
 
         final int xsb = floor(xs);
         final int ysb = floor(ys);
         final int zsb = floor(zs);
         final int wsb = floor(ws);
 
-        final double squishOffset = (xsb + ysb + zsb + wsb) * Contribution4.SQUISH_4D;
-        final double dx0 = x - (xsb + squishOffset);
-        final double dy0 = y - (ysb + squishOffset);
-        final double dz0 = z - (zsb + squishOffset);
-        final double dw0 = w - (wsb + squishOffset);
+        final float squishOffset = (xsb + ysb + zsb + wsb) * Contribution4.SQUISH_4D;
+        final float dx0 = x - (xsb + squishOffset);
+        final float dy0 = y - (ysb + squishOffset);
+        final float dz0 = z - (zsb + squishOffset);
+        final float dw0 = w - (wsb + squishOffset);
 
-        final double xins = xs - xsb;
-        final double yins = ys - ysb;
-        final double zins = zs - zsb;
-        final double wins = ws - wsb;
+        final float xins = xs - xsb;
+        final float yins = ys - ysb;
+        final float zins = zs - zsb;
+        final float wins = ws - wsb;
 
-        final double inSum = xins + yins + zins + wins;
+        final float inSum = xins + yins + zins + wins;
 
         final int hash =
                 (int) (zins - wins + 1) |
@@ -177,13 +173,13 @@ public final class OpenSimplexNoise {
 
         Contribution4 c = Contribution4.lookup4D[hash];
 
-        double value = 0.0;
+        float value = 0;
         while (c != null) {
-            final double dx = dx0 + c.dx;
-            final double dy = dy0 + c.dy;
-            final double dz = dz0 + c.dz;
-            final double dw = dw0 + c.dw;
-            double attn = 2 - dx * dx - dy * dy - dz * dz - dw * dw;
+            final float dx = dx0 + c.dx;
+            final float dy = dy0 + c.dy;
+            final float dz = dz0 + c.dz;
+            final float dw = dw0 + c.dw;
+            float attn = 2 - dx * dx - dy * dy - dz * dz - dw * dw;
             if (attn > 0) {
                 final int px = xsb + c.xsb;
                 final int py = ysb + c.ysb;
@@ -191,7 +187,7 @@ public final class OpenSimplexNoise {
                 final int pw = wsb + c.wsb;
 
                 final byte i = perm4D[(perm[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF] + pw) & 0xFF];
-                final double valuePart = Contribution4.gradients4D[i] * dx + Contribution4.gradients4D[i + 1] * dy + Contribution4.gradients4D[i + 2] * dz + Contribution4.gradients4D[i + 3] * dw;
+                final float valuePart = Contribution4.gradients4D[i] * dx + Contribution4.gradients4D[i + 1] * dy + Contribution4.gradients4D[i + 2] * dz + Contribution4.gradients4D[i + 3] * dw;
 
                 attn *= attn;
                 value += attn * attn * valuePart;
@@ -202,11 +198,11 @@ public final class OpenSimplexNoise {
         return value * Contribution4.NORM_4D;
     }
 
-    private static class Contribution2 {
+    private static final class Contribution2 {
 
-        private static final double STRETCH_2D = -0.211324865405187;    //(1/Math.sqrt(2+1)-1)/2;
-        private static final double SQUISH_2D = 0.366025403784439;      //(Math.sqrt(2+1)-1)/2;
-        private static final double NORM_2D = 1.0 / 47.0;
+        private static final float STRETCH_2D = -0.211324865405187f;    //(1/Math.sqrt(2+1)-1)/2;
+        private static final float SQUISH_2D = 0.366025403784439f;      //(Math.sqrt(2+1)-1)/2;
+        private static final float NORM_2D = 1f / 47f;
 
         private static final Contribution2[] lookup2D;
 
@@ -241,7 +237,7 @@ public final class OpenSimplexNoise {
             }
         }
 
-        private static final double[] gradients2D =
+        private static final float[] gradients2D =
                 {
                         5, 2, 2, 5,
                         -5, 2, -2, 5,
@@ -249,11 +245,11 @@ public final class OpenSimplexNoise {
                         -5, -2, -2, -5,
                 };
 
-        final double dx, dy;
+        final float dx, dy;
         final int xsb, ysb;
         Contribution2 Next;
 
-        Contribution2(final double multiplier, final int xsb, final int ysb) {
+        Contribution2(final float multiplier, final int xsb, final int ysb) {
             dx = -xsb - multiplier * SQUISH_2D;
             dy = -ysb - multiplier * SQUISH_2D;
             this.xsb = xsb;
@@ -262,15 +258,15 @@ public final class OpenSimplexNoise {
 
     }
 
-    private static class Contribution3 {
+    private static final class Contribution3 {
 
-        private static final double STRETCH_3D = -1.0 / 6.0;            //(1/Math.sqrt(3+1)-1)/3;
-        private static final double SQUISH_3D = 1.0 / 3.0;              //(Math.sqrt(3+1)-1)/3;
-        private static final double NORM_3D = 1.0 / 103.0;
+        private static final float STRETCH_3D = -1f / 6f;            //(1/Math.sqrt(3+1)-1)/3;
+        private static final float SQUISH_3D = 1f / 3f;              //(Math.sqrt(3+1)-1)/3;
+        private static final float NORM_3D = 1f / 103f;
 
         private static final Contribution3[] lookup3D;
 
-        private static final double[] gradients3D =
+        private static final float[] gradients3D =
                 {
                         -11, 4, 4, -4, 11, 4, -4, 4, 11,
                         11, 4, 4, 4, 11, 4, 4, 4, 11,
@@ -316,11 +312,11 @@ public final class OpenSimplexNoise {
             }
         }
 
-        final double dx, dy, dz;
+        final float dx, dy, dz;
         final int xsb, ysb, zsb;
         Contribution3 Next;
 
-        Contribution3(final double multiplier, final int xsb, final int ysb, final int zsb) {
+        Contribution3(final float multiplier, final int xsb, final int ysb, final int zsb) {
             dx = -xsb - multiplier * SQUISH_3D;
             dy = -ysb - multiplier * SQUISH_3D;
             dz = -zsb - multiplier * SQUISH_3D;
@@ -331,15 +327,15 @@ public final class OpenSimplexNoise {
 
     }
 
-    private static class Contribution4 {
+    private static final class Contribution4 {
 
-        private static final double SQUISH_4D = 0.309016994374947;      //(Math.sqrt(4+1)-1)/4;
-        private static final double STRETCH_4D = -0.138196601125011;    //(1/Math.sqrt(4+1)-1)/4;
-        private static final double NORM_4D = 1.0 / 30.0;
+        private static final float SQUISH_4D = 0.309016994374947f;      //(Math.sqrt(4+1)-1)/4;
+        private static final float STRETCH_4D = -0.138196601125011f;    //(1/Math.sqrt(4+1)-1)/4;
+        private static final float NORM_4D = 1f / 30f;
 
         private static final Contribution4[] lookup4D;
 
-        private final static double[] gradients4D =
+        private final static float[] gradients4D =
                 {
                         3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3,
                         -3, 1, 1, 1, -1, 3, 1, 1, -1, 1, 3, 1, -1, 1, 1, 3,
@@ -394,11 +390,11 @@ public final class OpenSimplexNoise {
             }
         }
 
-        final double dx, dy, dz, dw;
+        final float dx, dy, dz, dw;
         final int xsb, ysb, zsb, wsb;
         Contribution4 Next;
 
-        Contribution4(final double multiplier, final int xsb, final int ysb, final int zsb, final int wsb) {
+        Contribution4(final float multiplier, final int xsb, final int ysb, final int zsb, final int wsb) {
             dx = -xsb - multiplier * SQUISH_4D;
             dy = -ysb - multiplier * SQUISH_4D;
             dz = -zsb - multiplier * SQUISH_4D;
@@ -411,7 +407,7 @@ public final class OpenSimplexNoise {
 
     }
 
-    private static int floor(final double x) {
+    private static int floor(final float x) {
         final int xi = (int) x;
         return x < xi ? xi - 1 : xi;
     }

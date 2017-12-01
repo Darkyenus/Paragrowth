@@ -11,6 +11,9 @@ public class WorldCharacteristics {
      * Size of the world.
      *
      * From 0 to +inf.
+     * 0 -> Tiny
+     * 100 -> Medium
+     * 1000 -> Large
      */
     public float size;
 
@@ -40,6 +43,10 @@ public class WorldCharacteristics {
         c.coherence = MathUtils.random(0f, 1f);
         c.seed = MathUtils.random.nextLong();
         return c;
+    }
+
+    public static WorldCharacteristics fromText(CharSequence text) {
+        return WorldCharacteristics.random();
     }
 
     @Override

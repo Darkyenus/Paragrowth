@@ -5,20 +5,18 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.darkyen.paragrowth.ParagrowthMain;
 import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.WorldGenerator;
-import com.darkyen.paragrowth.doodad.DoodadFactory;
-import com.darkyen.paragrowth.doodad.DoodadLibrary;
+import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.skybox.SkyboxRenderable;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 import org.lwjgl.opengl.GL32;
@@ -26,7 +24,7 @@ import org.lwjgl.opengl.GL32;
 /**
  * @author Darkyen
  */
-public final class ParagrowthState extends ScreenAdapter {
+public final class WanderState extends ScreenAdapter {
 
     //2D
     private final ScreenViewport hudView;
@@ -44,18 +42,17 @@ public final class ParagrowthState extends ScreenAdapter {
     private final TerrainPatchwork terrain;
 
     //Input
+    private final GameInput gameInput;
     private final HeightmapPersonController cameraController;
 
     //Doodads
-    private final DoodadLibrary doodadLibrary;
-    //private final DoodadWorld doodadWorld;
 
-    public ParagrowthState(Batch batch, Skin skin) {
+    public WanderState(WorldCharacteristics worldCharacteristics) {
         modelBatch = new ModelBatch();
         worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
         hudView = new ScreenViewport();
-        hudStage = new Stage(hudView, batch);
+        hudStage = new Stage(hudView, ParagrowthMain.batch());
 
         hudStage.getRoot().setTransform(false);
         skyboxRenderable = new SkyboxRenderable();
@@ -71,28 +68,27 @@ public final class ParagrowthState extends ScreenAdapter {
 
         worldCam.position.set(1f, 1f, 10f);
         worldCam.direction.set(1,0,0);
-        final Table hudTable = new Table(skin);
-        statsLabel = new Label("Stats!", skin,"font-ui-small", Color.WHITE);
+        final Table hudTable = new Table(ParagrowthMain.skin());
+        statsLabel = new Label("Stats!", ParagrowthMain.skin(),"font-ui", Color.WHITE);
 
         hudTable.setFillParent(true);
         hudTable.top().left();
         hudTable.add(statsLabel).top().left();
         hudStage.addActor(hudTable);
 
-        DoodadFactory doodadFactory = new DoodadFactory();
-        doodadLibrary = new DoodadLibrary(doodadFactory);
-
         //Terrain generation
-        final WorldGenerator generator = new WorldGenerator(WorldCharacteristics.random());
+        final WorldGenerator generator = new WorldGenerator(worldCharacteristics);
         terrain = new TerrainPatchwork(worldCam, generator);
         //doodadWorld = world.doodadWorld;
 
         cameraController = new HeightmapPersonController(worldCam,terrain);
+        gameInput = new GameInput(cameraController.INPUT);
+        gameInput.build();
     }
 
     @Override
     public void show() {
-        Gdx.input.setInputProcessor(cameraController);
+        Gdx.input.setInputProcessor(gameInput);
         worldCam.update();
     }
 

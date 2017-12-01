@@ -27,6 +27,10 @@ val paragrowth by project {
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx:$gdxVersion") }
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion") }
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx-platform:$gdxVersion", attributes = Repository.M2.M2ClassifierAttribute to "natives-desktop") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", attributes = Repository.M2.M2ClassifierAttribute to "natives-linux") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", attributes = Repository.M2.M2ClassifierAttribute to "natives-macos") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", attributes = Repository.M2.M2ClassifierAttribute to "natives-windows") }
 
     packResources set {
         resourcePack(PackingOperation(projectRoot / "resources", projectRoot / "assets", listOf(PreferSymlinks to true)))

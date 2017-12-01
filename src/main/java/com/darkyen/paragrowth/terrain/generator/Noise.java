@@ -98,6 +98,40 @@ public final class Noise {
         return perlinNoise;
     }
 
+    public static float[][] generateSimplexNoise(int width, int height,
+                                                 long seed, float initialHeight,
+                                                 float initialScale, float scaleMultiplier,
+                                                 int octaveCount, float initialAmplitude, float amplitudeMultiplier) {
+        final OpenSimplexNoise noise = new OpenSimplexNoise();
+
+        final float[][] result = new float[width][height];
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                result[x][y] = initialHeight;
+            }
+        }
+
+        float amplitude = initialAmplitude;
+        float scale = initialScale;
+
+
+        for (int octave = 0; octave < octaveCount; octave++) {
+            noise.initialize(seed + octave);
+
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    result[x][y] += noise.evaluate(x * scale, y * scale) * amplitude;
+                }
+            }
+
+            scale *= scaleMultiplier;
+            amplitude *= amplitudeMultiplier;
+        }
+
+        return result;
+    }
+
     public static float[][] generatePerlinNoise(int width, int height, int octaveCount, float persistence, long seed) {
         float[][] baseNoise = generateWhiteNoise(width, height, seed);
         return generatePerlinNoise(baseNoise, octaveCount, persistence);
@@ -145,7 +179,43 @@ public final class Noise {
             for (int y = 0; y < height; y++) {
                 final float yFactor = (float) Math.cos((((float)y / height) - 0.5f) * Math.PI);
 
-                noise[x][y] = noise[x][y] * xFactor * yFactor * scale + offset;
+                final float factor = xFactor * yFactor;
+
+                noise[x][y] = noise[x][y] * factor * factor * scale + offset;
+            }
+        }
+
+        return noise;
+    }
+
+    public static float[][] islandize(float[][] noise,float offset) {
+        final int width = noise.length;
+        final int height = noise[0].length;
+
+        for (int x = 0; x < width; x++) {
+            final float xFactor = (float) Math.cos((((float)x / width) - 0.5f) * Math.PI);
+            for (int y = 0; y < height; y++) {
+                final float yFactor = (float) Math.cos((((float)y / height) - 0.5f) * Math.PI);
+
+                final float factor = xFactor * yFactor;
+
+                noise[x][y] = noise[x][y] * factor * factor + offset;
+            }
+        }
+
+        return noise;
+    }
+
+    public static float[][] max(float[][] noise, float minValue) {
+        final int width = noise.length;
+        final int height = noise[0].length;
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                final float h = noise[x][y];
+                if (h < minValue) {
+                    noise[x][y] = minValue;
+                }
             }
         }
 

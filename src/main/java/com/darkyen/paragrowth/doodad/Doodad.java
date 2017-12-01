@@ -28,4 +28,25 @@ public class Doodad {
         renderable.shader = DoodadShader.get(renderable);
         return renderable;
     }
+
+    private static class Node {
+        NodeShape shape;
+        float baseScaleFactor;
+        float tipScaleFactor;
+        float lengthFactor;
+
+
+    }
+
+    private enum NodeShape {
+        /**
+         * Made with a quad from two triangles.
+         */
+        RECTANGLE,
+        /**
+         * Made with two symmetric triangles, sharing first and last point, and going to opposite sides.
+         */
+        LEAF,
+        TRIANGLE
+    }
 }

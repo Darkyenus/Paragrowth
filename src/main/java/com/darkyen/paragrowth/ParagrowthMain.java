@@ -7,17 +7,24 @@ import com.badlogic.gdx.assets.loaders.resolvers.LocalFileHandleResolver;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.darkyen.paragrowth.game.ParagrowthState;
+import com.darkyen.paragrowth.game.WanderState;
 
 /**
  * @author Darkyen
  */
 public class ParagrowthMain extends Game {
 
-    public static final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
+
+    public static ParagrowthMain INSTANCE;
+    {
+        INSTANCE = this;
+    }
+
+    private static final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
+    private static Skin skin;
+    private static SpriteBatch batch;
 
     @Override
     public void create() {
@@ -28,15 +35,13 @@ public class ParagrowthMain extends Game {
         if (!batchShader.isCompiled()) {
             throw new IllegalStateException("batchShader did not compile:\n"+batchShader.getLog());
         }
-        final SpriteBatch spriteBatch = new SpriteBatch(1000, batchShader);
+        ParagrowthMain.batch = new SpriteBatch(1000, batchShader);
         assetManager.load("UISkin.json",Skin.class);
-        assetManager.load("World.atlas",TextureAtlas.class);
-
         assetManager.finishLoading();
 
-        final Skin defaultSkin = assetManager.get("UISkin.json");
+        ParagrowthMain.skin = assetManager.get("UISkin.json");
 
-        setScreen(new ParagrowthState(spriteBatch, defaultSkin));
+        setScreen(new WanderState(WorldCharacteristics.random()));
     }
 
     public static void main(String[] args){
@@ -48,4 +53,11 @@ public class ParagrowthMain extends Game {
         new Lwjgl3Application(new ParagrowthMain(),configuration);
     }
 
+    public static SpriteBatch batch() {
+        return batch;
+    }
+
+    public static Skin skin() {
+        return skin;
+    }
 }
