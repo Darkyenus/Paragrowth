@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.collision.BoundingBox;
-import com.darkyen.paragrowth.terrain.generator.TerrainGenerator;
+import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
 
 /**
  * Piece of terrain made from equilateral triangles, each with own flat color.
@@ -23,17 +23,18 @@ class TerrainPatch {
      */
 
     public static final int PATCH_SIZE = 105;
+    public static final int PATCH_UNIT_SIZE = PATCH_SIZE - 1;
 
-    private static final float X_STEP = 1f;
-    private static final float X_STAGGER = 0.5f;
-    private static final float Y_STEP = (float)(Math.sqrt(3.0) / 2.0);
+    static final float X_STEP = 1f;
+    static final float X_STAGGER = 0.5f;
+    static final float Y_STEP = (float)(Math.sqrt(3.0) / 2.0);
 
-    public static final float PATCH_WIDTH = (PATCH_SIZE - 1) * X_STEP;
-    public static final float PATCH_HEIGHT = (PATCH_SIZE - 1) * Y_STEP;
+    public static final float PATCH_WIDTH = PATCH_UNIT_SIZE * X_STEP;
+    public static final float PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP;
 
-    private static final int TRIANGLE_COUNT = (PATCH_SIZE - 1) * (PATCH_SIZE - 1) * 2;
+    private static final int TRIANGLE_COUNT = PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2;
     private static final int INDEX_COUNT = TRIANGLE_COUNT * 3;
-    private static final int VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + (PATCH_SIZE - 1) * (PATCH_SIZE - 1);
+    private static final int VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE;
     private static final int VERTEX_SIZE_FLOATS = 3+1;
 
     /*
@@ -56,7 +57,7 @@ class TerrainPatch {
 
     final float[] heightMap = new float[PATCH_SIZE * PATCH_SIZE];
 
-    public TerrainPatch(float xOffset, float yOffset, TerrainGenerator generator) {
+    public TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
         //this.transform.translate(xOffset, yOffset, 0f);
         this.boundingBox.min.set(xOffset, yOffset, 0f);
         this.boundingBox.max.set(this.boundingBox.min).add(PATCH_WIDTH, PATCH_HEIGHT, 100f);
@@ -82,7 +83,7 @@ class TerrainPatch {
 
                 // Top of even row
                 float height = heightMap[h++] = generator.getHeight(xPos, yPos);
-                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                for (int x = 0; x < PATCH_UNIT_SIZE; x++) {
 
                     // Top left of red
                     vertices[v++] = xPos;
@@ -97,7 +98,7 @@ class TerrainPatch {
                     vertices[v++] = xPos;
                     vertices[v++] = yPos;
                     vertices[v++] = height;
-                    vertices[v++] = Color.GREEN.toFloatBits();//generator.getColor(xPos, yPos + Y_HALF_STEP);
+                    vertices[v++] = generator.getColor(xPos, yPos + Y_HALF_STEP);
                 }
 
                 yPos += Y_STEP;
@@ -105,12 +106,12 @@ class TerrainPatch {
                 height = heightMap[h++] = generator.getHeight(xPos, yPos);
 
                 // Top of odd row
-                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                for (int x = 0; x < PATCH_UNIT_SIZE; x++) {
                     // Top of dark red
                     vertices[v++] = xPos;
                     vertices[v++] = yPos;
                     vertices[v++] = height;
-                    vertices[v++] = Color.MAROON.toFloatBits();//generator.getColor(xPos, yPos + Y_HALF_STEP);
+                    vertices[v++] = generator.getColor(xPos, yPos + Y_HALF_STEP);
 
                     xPos += X_STEP;
                     height = heightMap[h++] = generator.getHeight(xPos, yPos);
@@ -119,7 +120,7 @@ class TerrainPatch {
                     vertices[v++] = xPos;
                     vertices[v++] = yPos;
                     vertices[v++] = height;
-                    vertices[v++] = Color.FOREST.toFloatBits();//generator.getColor(xPos - X_HALF_STEP, yPos + Y_HALF_STEP);
+                    vertices[v++] = generator.getColor(xPos - X_HALF_STEP, yPos + Y_HALF_STEP);
                 }
 
                 yPos += Y_STEP;
@@ -129,7 +130,7 @@ class TerrainPatch {
             final float NO_COLOR = Color.MAGENTA.toFloatBits();
             float xPos = xOffset;
             float height = heightMap[h++] = generator.getHeight(xPos, yPos);
-            for (int x = 0; x < PATCH_SIZE-1; x++) {
+            for (int x = 0; x < PATCH_UNIT_SIZE; x++) {
                 // Top left of red
                 vertices[v++] = xPos;
                 vertices[v++] = yPos;
@@ -156,35 +157,35 @@ class TerrainPatch {
             int i = 0;
 
             // Do all of the double-strips
-            for (int y = 0; y + 1 < PATCH_SIZE; y += 2) {
+            for (int y = 0; y < PATCH_UNIT_SIZE; y += 2) {
                 // First Red
                 indices[i++] = (short) (y * ROW_AMOUNT);
                 indices[i++] = (short) (y * ROW_AMOUNT + 1);
                 indices[i++] = (short) (y * ROW_AMOUNT + ROW_AMOUNT);
 
                 // Other Red
-                for (int x = 1; x < PATCH_SIZE-1; x++) {
+                for (int x = 1; x < PATCH_UNIT_SIZE; x++) {
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + 1);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT - 1);
                 }
 
                 // All Green
-                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                for (int x = 0; x < PATCH_UNIT_SIZE; x++) {
                     indices[i++] = (short) (x*2 + 1 + y * ROW_AMOUNT);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + 1);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT);
                 }
 
                 // All Dark Red
-                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                for (int x = 0; x < PATCH_UNIT_SIZE; x++) {
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT);
                 }
 
                 // All Dark Green
-                for (int x = 0; x < PATCH_SIZE-1; x++) {
+                for (int x = 0; x < PATCH_UNIT_SIZE; x++) {
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + 1);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1);
                     indices[i++] = (short) (x*2 + y * ROW_AMOUNT + ROW_AMOUNT);

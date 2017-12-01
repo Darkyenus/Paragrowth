@@ -10,18 +10,19 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.darkyen.paragrowth.skybox.SkyboxRenderable;
+import com.darkyen.paragrowth.WorldCharacteristics;
+import com.darkyen.paragrowth.WorldGenerator;
 import com.darkyen.paragrowth.doodad.DoodadFactory;
 import com.darkyen.paragrowth.doodad.DoodadLibrary;
-import com.darkyen.paragrowth.doodad.DoodadWorld;
+import com.darkyen.paragrowth.skybox.SkyboxRenderable;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
-import com.darkyen.paragrowth.terrain.WorldGenerator;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL32;
 
 /**
  * @author Darkyen
@@ -48,7 +49,7 @@ public final class ParagrowthState extends ScreenAdapter {
 
     //Doodads
     private final DoodadLibrary doodadLibrary;
-    private final DoodadWorld doodadWorld;
+    //private final DoodadWorld doodadWorld;
 
     public ParagrowthState(Batch batch, Skin skin) {
         modelBatch = new ModelBatch();
@@ -83,9 +84,9 @@ public final class ParagrowthState extends ScreenAdapter {
         doodadLibrary = new DoodadLibrary(doodadFactory);
 
         //Terrain generation
-        final WorldGenerator.World world = WorldGenerator.generate(worldCam, 2, 42L, doodadLibrary);
-        terrain = world.terrain;
-        doodadWorld = world.doodadWorld;
+        final WorldGenerator generator = new WorldGenerator(WorldCharacteristics.random());
+        terrain = new TerrainPatchwork(worldCam, generator);
+        //doodadWorld = world.doodadWorld;
 
         cameraController = new HeightmapPersonController(worldCam,terrain);
     }
@@ -99,6 +100,7 @@ public final class ParagrowthState extends ScreenAdapter {
     @Override
     public void render(float delta) {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        GL32.glProvokingVertex(GL32.GL_FIRST_VERTEX_CONVENTION);// Needed for heightmap
         updateWorld(delta);
         hudStage.act(delta);
 
@@ -106,7 +108,7 @@ public final class ParagrowthState extends ScreenAdapter {
 
         modelBatch.render(skyboxRenderable);
         modelBatch.render(terrain,environment);
-        modelBatch.render(doodadWorld, environment);
+        //modelBatch.render(doodadWorld, environment);
 
         modelBatch.end();
 
@@ -119,19 +121,17 @@ public final class ParagrowthState extends ScreenAdapter {
         hudView.update(width,height,true);
     }
 
-    private void updateWorld(float delta) {
-        {
-            float pineX = MathUtils.random(256f);
-            float pineY = MathUtils.random(256f);
-            //doodadWorld.addDoodad(doodadLibrary.DOODADS[MathUtils.random.nextInt(doodadLibrary.DOODADS.length)]).setToTranslation(pineX, pineY, terrain.heightAt(pineX, pineY));
-        }
+    public static final StringBuilder extraStats = new StringBuilder();
 
+    private void updateWorld(float delta) {
         cameraController.update(delta);
 
         statsLabel.setText("FPS: "+Gdx.graphics.getFramesPerSecond()
                 +"\nX: "+worldCam.position.x
                 +"\nY: "+worldCam.position.y
-                +"\nZ: "+worldCam.position.z);
+                +"\nZ: "+worldCam.position.z+"\n"+extraStats);
+
+        extraStats.setLength(0);
     }
 
 }

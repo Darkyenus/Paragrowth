@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2011 See AUTHORS file.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,105 +16,167 @@
 
 package com.darkyen.paragrowth.terrain.generator;
 
-import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.RandomXS128;
 
 import java.util.Random;
 
-/** Copied from https://github.com/libgdx/libgdx/blob/master/tests/gdx-tests/src/com/badlogic/gdx/tests/g3d/voxel/PerlinNoiseGenerator.java
+import static com.badlogic.gdx.math.MathUtils.lerp;
+
+/**
+ * Copied from https://github.com/libgdx/libgdx/blob/master/tests/gdx-tests/src/com/badlogic/gdx/tests/g3d/voxel/PerlinNoiseGenerator.java
  * and altered.
- *  Adapted from <a href="http://devmag.org.za/2009/04/25/perlin-noise/">http://devmag.org.za/2009/04/25/perlin-noise/</a>
- * @author badlogic */
-public class Noise {
+ * Adapted from <a href="http://devmag.org.za/2009/04/25/perlin-noise/">http://devmag.org.za/2009/04/25/perlin-noise/</a>
+ *
+ * @author badlogic
+ */
+public final class Noise {
 
-	public static float[][] generateWhiteNoise (int width, int height, long seed) {
-		Random random = new Random(seed);
-		float[][] noise = new float[width][height];
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				noise[x][y] = random.nextFloat();
-			}
-		}
-		return noise;
-	}
+    private static float[][] generateWhiteNoise(int width, int height, long seed) {
+        Random random = new Random(seed);
+        float[][] noise = new float[width][height];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                noise[x][y] = random.nextFloat();
+            }
+        }
+        return noise;
+    }
 
-	public static float interpolate (float x0, float x1, float alpha) {
-		return x0 * (1 - alpha) + alpha * x1;
-	}
+    private static float[][] generateSmoothNoise(float[][] baseNoise, int octave) {
+        final int width = baseNoise.length;
+        final int height = baseNoise[0].length;
+        final float[][] smoothNoise = new float[width][height];
 
-	public static float[][] generateSmoothNoise (float[][] baseNoise, int octave) {
-		int width = baseNoise.length;
-		int height = baseNoise[0].length;
-		float[][] smoothNoise = new float[width][height];
+        final int samplePeriod = 1 << octave;
+        final float sampleFrequency = 1.0f / samplePeriod;
+        for (int x = 0; x < width; x++) {
+            int sample_x0 = (x >>> octave) << octave;
+            int sample_x1 = (sample_x0 + samplePeriod) % width;
+            float horizontal_blend = (x - sample_x0) * sampleFrequency;
 
-		int samplePeriod = 1 << octave; // calculates 2 ^ k
-		float sampleFrequency = 1.0f / samplePeriod;
-		for (int i = 0; i < width; i++) {
-			int sample_i0 = (i / samplePeriod) * samplePeriod;
-			int sample_i1 = (sample_i0 + samplePeriod) % width; // wrap around
-			float horizontal_blend = (i - sample_i0) * sampleFrequency;
+            for (int y = 0; y < height; y++) {
+                int sample_y0 = (y >>> octave) << octave;
+                int sample_y1 = (sample_y0 + samplePeriod) % height;
+                float vertical_blend = (y - sample_y0) * sampleFrequency;
+                float top = lerp(baseNoise[sample_x0][sample_y0], baseNoise[sample_x1][sample_y0], horizontal_blend);
+                float bottom = lerp(baseNoise[sample_x0][sample_y1], baseNoise[sample_x1][sample_y1], horizontal_blend);
+                //noinspection SuspiciousNameCombination
+                smoothNoise[x][y] = lerp(top, bottom, vertical_blend);
+            }
+        }
 
-			for (int j = 0; j < height; j++) {
-				int sample_j0 = (j / samplePeriod) * samplePeriod;
-				int sample_j1 = (sample_j0 + samplePeriod) % height; // wrap around
-				float vertical_blend = (j - sample_j0) * sampleFrequency;
-				float top = interpolate(baseNoise[sample_i0][sample_j0], baseNoise[sample_i1][sample_j0], horizontal_blend);
-				float bottom = interpolate(baseNoise[sample_i0][sample_j1], baseNoise[sample_i1][sample_j1], horizontal_blend);
-				//noinspection SuspiciousNameCombination
-				smoothNoise[i][j] = interpolate(top, bottom, vertical_blend);
-			}
-		}
+        return smoothNoise;
+    }
 
-		return smoothNoise;
-	}
+    public static float[][] generatePerlinNoise(float[][] baseNoise, int octaveCount, float persistence) {
+        int width = baseNoise.length;
+        int height = baseNoise[0].length;
 
-	public static float[][] generatePerlinNoise (float[][] baseNoise, int octaveCount) {
-		int width = baseNoise.length;
-		int height = baseNoise[0].length;
-		float[][][] smoothNoise = new float[octaveCount][][]; // an array of 2D arrays containing
-		float persistance = 0.7f;
+        final float[][] perlinNoise = new float[width][height];
 
-		for (int octave = 0; octave < octaveCount; octave++) {
-			smoothNoise[octave] = generateSmoothNoise(baseNoise, octave);
-		}
+        float amplitude = 1.0f;
+        float totalAmplitude = 0.0f;
 
-		float[][] perlinNoise = new float[width][height]; // an array of floats initialised to 0
+        for (int octave = octaveCount - 1; octave >= 0; octave--) {
+            final float[][] smoothNoise = generateSmoothNoise(baseNoise, octave);
+            amplitude *= persistence;
+            totalAmplitude += amplitude;
 
-		float amplitude = 1.0f;
-		float totalAmplitude = 0.0f;
+            for (int i = 0; i < width; i++) {
+                for (int j = 0; j < height; j++) {
+                    perlinNoise[i][j] += smoothNoise[i][j] * amplitude;
+                }
+            }
+        }
 
-		for (int octave = octaveCount - 1; octave >= 0; octave--) {
-			amplitude *= persistance;
-			totalAmplitude += amplitude;
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                perlinNoise[i][j] /= totalAmplitude;
+            }
+        }
 
-			for (int i = 0; i < width; i++) {
-				for (int j = 0; j < height; j++) {
-					perlinNoise[i][j] += smoothNoise[octave][i][j] * amplitude;
-				}
-			}
-		}
+        return perlinNoise;
+    }
 
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				perlinNoise[i][j] /= totalAmplitude;
-			}
-		}
+    public static float[][] generatePerlinNoise(int width, int height, int octaveCount, float persistence, long seed) {
+        float[][] baseNoise = generateWhiteNoise(width, height, seed);
+        return generatePerlinNoise(baseNoise, octaveCount, persistence);
+    }
 
-		return perlinNoise;
-	}
+    public static float[][] generateHydraulicNoise(int size, long seed, int iterations, float step) {
+        final Random r = new RandomXS128(seed);
+        final float[][] m = new float[size][size]; // Map
 
-	public static float[][] generatePerlinNoise (int width, int height, int octaveCount, long seed) {
-		float[][] baseNoise = generateWhiteNoise(width, height, seed);
-		return generatePerlinNoise(baseNoise, octaveCount);
-	}
+        for (int i = 0; i < iterations; i++) {
+            final int line0X = r.nextInt(size);
+            final int line0Y = r.nextInt(size);
+            final int line1X = r.nextInt(size);
+            final int line1Y = r.nextInt(size);
 
-	public static float getHeight(float[][] noise, int noiseSize, float x, float y){
-		final int lowX = (int) x;
-		final int lowY = (int) y;
-		if(lowX < 0 || lowY < 0 || lowX >= noiseSize || lowY >= noiseSize){
-			return 0;
-		}
-		final float bottomX = MathUtils.lerp(noise[lowX][lowY],noise[lowX + 1][lowY],x - lowX);
-		final float topX = MathUtils.lerp(noise[lowX][lowY + 1],noise[lowX + 1][lowY+1],x - lowX);
-		return MathUtils.lerp(bottomX, topX, y - lowY);
-	}
+            final int a = line0Y - line1Y;
+            final int b = line1X - line0X;
+            final int c = line0X * line1Y - line1X * line0Y;
+
+            for (int y = 0; y < size; y++) {
+                int e = b * y + c;
+                for (int x = 0; x < size; x++) {
+
+                    if (e > 0) {
+                        m[x][y] += step;
+                    } else {
+                        m[x][y] -= step;
+
+                    }
+
+                    e += a;
+                }
+            }
+        }
+
+        return m;
+    }
+
+    public static float[][] islandize(float[][] noise, float scale, float offset) {
+        final int width = noise.length;
+        final int height = noise[0].length;
+
+        for (int x = 0; x < width; x++) {
+            final float xFactor = (float) Math.cos((((float)x / width) - 0.5f) * Math.PI);
+            for (int y = 0; y < height; y++) {
+                final float yFactor = (float) Math.cos((((float)y / height) - 0.5f) * Math.PI);
+
+                noise[x][y] = noise[x][y] * xFactor * yFactor * scale + offset;
+            }
+        }
+
+        return noise;
+    }
+
+    public static float getHeight(float[][] noise, float x, float y) {
+        int lowX = (int) x;
+        int highX = lowX + 1;
+        float alphaX = x - lowX;
+        if (lowX < 0) {
+            lowX = highX = 0;
+            alphaX = 0f;
+        } else if (highX >= noise.length) {
+            lowX = highX = noise.length - 1;
+            alphaX = 0f;
+        }
+
+        int lowY = (int) y;
+        int highY = lowY + 1;
+        float alphaY = y - lowY;
+        if (lowY < 0) {
+            lowY = highY = 0;
+            alphaY = 0f;
+        } else if (highY >= noise[0].length) {
+            lowY = highY = noise[0].length - 1;
+            alphaY = 0f;
+        }
+
+        final float bottomX = lerp(noise[lowX][lowY], noise[highX][lowY], alphaX);
+        final float topX = lerp(noise[lowX][highY], noise[highX][highY], alphaX);
+        return lerp(bottomX, topX, alphaY);
+    }
 }

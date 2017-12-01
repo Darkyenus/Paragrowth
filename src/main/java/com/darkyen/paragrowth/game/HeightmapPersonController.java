@@ -1,6 +1,7 @@
 package com.darkyen.paragrowth.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.math.Vector3;
@@ -28,12 +29,14 @@ public final class HeightmapPersonController extends InputAdapter {
     private static final int BACKWARD = Keys.S;
     private static final int JUMP = Keys.SPACE;
 
+    private boolean slowDebug = false;
+
     /** Velocity in units per second for moving forward, backward and strafing left/right. */
-    public final float velocity = 20f;//0.45f;
+    public final float velocity = 4.5f;
     /** Sets how many degrees to rotate per pixel the mouse moved. */
     public final float degreesPerPixel = 0.5f;
     /** Height of camera when standing */
-    public final float height = 0.175f;
+    public final float height = 1.75f;
     /** World gravity in this world */
     public final float gravity = 0.33f;
     /** Initial jump speed */
@@ -44,6 +47,9 @@ public final class HeightmapPersonController extends InputAdapter {
 
     @Override
     public boolean keyDown(int keycode) {
+        if (keycode == Input.Keys.F4) {
+            slowDebug = !slowDebug;
+        }
         keys.put(keycode, keycode);
         return true;
     }
@@ -82,6 +88,15 @@ public final class HeightmapPersonController extends InputAdapter {
         tmp2.z = 0f;
         tmp2.nor();
 
+        final float velocity;
+        if (Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT)) {
+            velocity = this.velocity * 2f;
+        } else if (slowDebug) {
+            velocity = this.velocity * 0.03f;
+        } else {
+            velocity = this.velocity;
+        }
+
         if (keys.containsKey(FORWARD)) {
             tmp.set(tmp2).scl(deltaTime * velocity);
             camera.position.add(tmp);
@@ -99,6 +114,7 @@ public final class HeightmapPersonController extends InputAdapter {
             camera.position.add(tmp);
         }
 
+        final float height = slowDebug ? 0.02f : this.height;
         float standingHeight = map.heightAt(camera.position.x,camera.position.y) + height;
         if(standing){
             if(keys.containsKey(JUMP)){

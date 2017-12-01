@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 import com.darkyen.resourcepacker.PackingOperation
 import com.darkyen.resourcepacker.PreferSymlinks
 import wemi.Keys.runDirectory
@@ -10,7 +12,11 @@ import wemi.util.div
 
 val packResources by key<Unit>("Packs resources")
 
-@Suppress("unused")
+val terrainTest by configuration("Terrain testing") {
+    mainClass set { "com.darkyen.paragrowth.terrain.generator.TerrainTest" }
+    runOptions remove {"-XstartOnFirstThread"}
+}
+
 val paragrowth by project {
     projectName set { "paragrowth" }
     projectGroup set { "com.darkyen" }

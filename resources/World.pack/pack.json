@@ -1,7 +1,0 @@
-{
-duplicatePadding: true,
-paddingX: 1,
-paddingY: 1,
-filterMin: Nearest,
-filterMag: Nearest
-}
