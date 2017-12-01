@@ -22,15 +22,15 @@ class TerrainPatch {
     => size = 105
      */
 
-    public static final int PATCH_SIZE = 105;
-    public static final int PATCH_UNIT_SIZE = PATCH_SIZE - 1;
+    static final int PATCH_SIZE = 105;
+    static final int PATCH_UNIT_SIZE = PATCH_SIZE - 1;
 
     static final float X_STEP = 1f;
     static final float X_STAGGER = 0.5f;
     static final float Y_STEP = (float)(Math.sqrt(3.0) / 2.0);
 
-    public static final float PATCH_WIDTH = PATCH_UNIT_SIZE * X_STEP;
-    public static final float PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP;
+    static final float PATCH_WIDTH = PATCH_UNIT_SIZE * X_STEP;
+    static final float PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP;
 
     private static final int TRIANGLE_COUNT = PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2;
     private static final int INDEX_COUNT = TRIANGLE_COUNT * 3;
@@ -57,7 +57,7 @@ class TerrainPatch {
 
     final float[] heightMap = new float[PATCH_SIZE * PATCH_SIZE];
 
-    public TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
+    TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
         //this.transform.translate(xOffset, yOffset, 0f);
         this.boundingBox.min.set(xOffset, yOffset, 0f);
         this.boundingBox.max.set(this.boundingBox.min).add(PATCH_WIDTH, PATCH_HEIGHT, 100f);

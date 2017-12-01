@@ -21,7 +21,6 @@ import com.darkyen.paragrowth.doodad.DoodadFactory;
 import com.darkyen.paragrowth.doodad.DoodadLibrary;
 import com.darkyen.paragrowth.skybox.SkyboxRenderable;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 
 /**

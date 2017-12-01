@@ -7,7 +7,6 @@ import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
-import com.darkyen.paragrowth.game.ParagrowthState;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
 
 import static com.darkyen.paragrowth.terrain.TerrainPatch.*;
@@ -52,6 +51,7 @@ public class TerrainPatchwork implements RenderableProvider {
         return patches[patchY * patchAmountY + patchX].heightMap[inPatchY * PATCH_SIZE + inPatchX];
     }
 
+    @SuppressWarnings("UnnecessaryLocalVariable") // For easier to debug math
     public final float heightAt(float x, float y) {
         final float gridY = y / Y_STEP;
         final int baseY = (int) Math.floor(gridY);
@@ -65,11 +65,6 @@ public class TerrainPatchwork implements RenderableProvider {
         final int baseX = (int) Math.floor(skewedX);
         final float xFrac = skewedX - baseX;
 
-        ParagrowthState.extraStats.append("gridX: ").append(skewedX).append("\n");
-        ParagrowthState.extraStats.append("gridY: ").append(gridY).append("\n");
-        ParagrowthState.extraStats.append("baseX: ").append(baseX).append("\n");
-        ParagrowthState.extraStats.append("baseY: ").append(baseY).append("\n");
-
 
         /*
         We are somewhere in a triangle, with straight on top or on bottom.
@@ -78,50 +73,41 @@ public class TerrainPatchwork implements RenderableProvider {
         Also, we need interpolation factor for the base and point.
          */
 
-        final int trigBaseY;
-        final int trigPointX;
-        final int trigPointY;
+        final int trigBaseYOff;
+        final int trigPointXOff;
+        final int trigPointYOff;
 
         if (odd) {
             if (yFrac < 1f - xFrac) {
-                trigBaseY = baseY;
-
-                trigPointX = baseX;
-                trigPointY = baseY + 1;
-                ParagrowthState.extraStats.append("Odd low\n");
+                trigBaseYOff = 0;
+                trigPointXOff = 0;
+                trigPointYOff = 1;
             } else {
-                trigBaseY = baseY + 1;
-
-                trigPointX = baseX + 1;
-                trigPointY = baseY;
-                ParagrowthState.extraStats.append("Odd high\n");
+                trigBaseYOff = 1;
+                trigPointXOff = 1;
+                trigPointYOff = 0;
             }
         } else {
             if (yFrac < xFrac) {
-                trigBaseY = baseY;
-
-                trigPointX = baseX + 1;
-                trigPointY = baseY + 1;
-                ParagrowthState.extraStats.append("Even low\n");
+                trigBaseYOff = 0;
+                trigPointXOff = 1;
+                trigPointYOff = 1;
             } else {
-                trigBaseY = baseY + 1;
-
-                trigPointX = baseX;
-                trigPointY = baseY;
-                ParagrowthState.extraStats.append("Even high\n");
+                trigBaseYOff = 1;
+                trigPointXOff = 0;
+                trigPointYOff = 0;
             }
-
         }
 
         // Convert to barycentric
         // https://en.wikipedia.org/wiki/Barycentric_coordinate_system
         // P1 = base left, P2 = base right, P3 = point
         final int x1 = 0;
-        final int y1 = trigBaseY - baseY;
+        final int y1 = trigBaseYOff;
         final int x2 = 1;
         final int y2 = y1;
-        final int x3 = trigPointX - baseX;
-        final int y3 = trigPointY - baseY;
+        final int x3 = trigPointXOff;
+        final int y3 = trigPointYOff;
 
         final float xp = xFrac;
         final float yp = yFrac;
@@ -131,17 +117,9 @@ public class TerrainPatchwork implements RenderableProvider {
         final float a2 = ((y3 - y1)*(xp - x3) + (x1 - x3)*(yp - y3)) / detT;
         final float a3 = 1f - a1 - a2;
 
-        final float hBaseLeft = heightAtVertex(baseX, trigBaseY);
-        final float hBaseRight = heightAtVertex(baseX + 1, trigBaseY);
-        final float hPoint = heightAtVertex(trigPointX, trigPointY);
-
-        ParagrowthState.extraStats.append("L: ").append(a1).append('\n');
-        ParagrowthState.extraStats.append("R: ").append(a2).append('\n');
-        ParagrowthState.extraStats.append("P: ").append(a3).append('\n');
-
-        ParagrowthState.extraStats.append("hL: ").append(hBaseLeft).append('\n');
-        ParagrowthState.extraStats.append("hR: ").append(hBaseRight).append('\n');
-        ParagrowthState.extraStats.append("hP: ").append(hPoint).append('\n');
+        final float hBaseLeft = heightAtVertex(baseX, baseY + trigBaseYOff);
+        final float hBaseRight = heightAtVertex(baseX + 1, baseY + trigBaseYOff);
+        final float hPoint = heightAtVertex(baseX + trigPointXOff, baseY + trigPointYOff);
 
         return hBaseLeft * a1 + hBaseRight * a2 + hPoint * a3;
     }
