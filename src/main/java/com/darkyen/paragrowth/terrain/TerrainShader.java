@@ -7,17 +7,28 @@ import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.Shader;
 import com.badlogic.gdx.graphics.g3d.shaders.BaseShader;
 import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.darkyen.paragrowth.util.PrioritizedShader;
+import com.darkyen.util.AutoReloadShaderProgram;
 
 /**
  *
  */
-class TerrainShader extends BaseShader {
-
-    private final int u_projViewWorldTrans;
+class TerrainShader extends BaseShader implements PrioritizedShader {
 
     private TerrainShader() {
-        u_projViewWorldTrans = register(DefaultShader.Inputs.projViewWorldTrans, DefaultShader.Setters.projViewWorldTrans);
+        register(DefaultShader.Inputs.worldTrans, DefaultShader.Setters.worldTrans);
+        register(DefaultShader.Inputs.projViewTrans, DefaultShader.Setters.projViewTrans);
+        register(new Uniform("u_time"), new GlobalSetter() {
+
+            private final long startTime = System.currentTimeMillis();
+
+            @Override
+            public void set(BaseShader shader, int inputID, Renderable renderable, Attributes combinedAttributes) {
+                final float time = (System.currentTimeMillis() - startTime) / 1000f;
+
+                shader.set(inputID, time);
+            }
+        });
     }
 
     @Override
@@ -41,7 +52,7 @@ class TerrainShader extends BaseShader {
     public void render (Renderable renderable, Attributes combinedAttributes) {
         context.setBlending(false, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         context.setCullFace(GL20.GL_BACK);
-        context.setDepthTest(GL20.GL_LEQUAL, 0f, 1f);
+        context.setDepthTest(GL20.GL_LESS, 0f, 1f);
         context.setDepthMask(true);
 
         super.render(renderable, combinedAttributes);
@@ -55,9 +66,14 @@ class TerrainShader extends BaseShader {
         }
 
         instance = new TerrainShader();
-        instance.init(new ShaderProgram(Gdx.files.local("terrain_vert.glsl"), Gdx.files.local("terrain_frag.glsl")), renderable);
+        instance.init(new AutoReloadShaderProgram(Gdx.files.local("terrain_vert.glsl"), Gdx.files.local("terrain_frag.glsl")), renderable);
 
         INSTANCE = instance;
         return instance;
+    }
+
+    @Override
+    public int priority() {
+        return TERRAIN;
     }
 }

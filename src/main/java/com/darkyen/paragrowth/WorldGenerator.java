@@ -21,8 +21,8 @@ public class WorldGenerator implements TerrainProvider {
         final int worldSize = (int)(MathUtils.clamp((float)Math.sqrt(characteristics.size), 1f, 30f) * 100f);
 
         noise = Noise.max(Noise.islandize(Noise.generateSimplexNoise(worldSize, worldSize,
-                System.currentTimeMillis(), 1f,
-                1f/80f, 2f, 5, 40f, 0.5f), -0.1f), 0f);
+                characteristics.seed, 1f,
+                1f/80f, 2f, 5, 40f, 0.5f), -1f), -1f);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class WorldGenerator implements TerrainProvider {
     @Override
     public float getColor(float x, float y) {
         final float height = Noise.getHeight(noise, x, y);
-        if (height == 0f) {
+        if (height <= 0f) {
             return Color.BLUE.toFloatBits();
         } else if (height < 1f) {
             return Color.YELLOW.toFloatBits();

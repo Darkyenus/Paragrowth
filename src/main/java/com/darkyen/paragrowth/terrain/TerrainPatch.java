@@ -3,8 +3,9 @@ package com.darkyen.paragrowth.terrain;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
+import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.collision.BoundingBox;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Disposable;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
 
@@ -33,6 +34,12 @@ class TerrainPatch implements Disposable {
     static final float PATCH_WIDTH = PATCH_UNIT_SIZE * X_STEP;
     static final float PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP;
 
+    private static final float MAX_MAP_HEIGHT = 200f;
+    private static final float PATCH_RADIUS_X = (PATCH_WIDTH + X_STEP) * 0.5f;
+    private static final float PATCH_RADIUS_Y = (PATCH_HEIGHT + Y_STEP) * 0.5f;
+    private static final float PATCH_RADIUS_Z = (MAX_MAP_HEIGHT) * 0.5f;
+    private static final float PATCH_RADIUS = (float) Math.sqrt(PATCH_RADIUS_X*PATCH_RADIUS_X + PATCH_RADIUS_Y*PATCH_RADIUS_Y + PATCH_RADIUS_Z*PATCH_RADIUS_Z);
+
     private static final int TRIANGLE_COUNT = PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2;
     private static final int INDEX_COUNT = TRIANGLE_COUNT * 3;
     private static final int VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE;
@@ -51,18 +58,21 @@ class TerrainPatch implements Disposable {
     Y step: sqrt(3)/2
      */
 
-    private final Matrix4 transform = new Matrix4();
-    final BoundingBox boundingBox = new BoundingBox();
+    private final Vector3 center = new Vector3();
+    final Matrix4 transform = new Matrix4();
     private final Mesh mesh;
     private final Material terrainMaterial;
 
     final float[] heightMap = new float[PATCH_SIZE * PATCH_SIZE];
 
-    TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
-        //this.transform.translate(xOffset, yOffset, 0f);
-        this.boundingBox.min.set(xOffset, yOffset, 0f);
-        this.boundingBox.max.set(this.boundingBox.min).add(PATCH_WIDTH, PATCH_HEIGHT, 100f);
+    private static final Vector3 inFrustum_center = new Vector3();
+    boolean inFrustum(Frustum frustum, float offX, float offY) {
+        final Vector3 center = inFrustum_center.set(this.center).mul(transform);
+        return frustum.boundsInFrustum(center.x + offX, center.y + offY, center.z, PATCH_RADIUS_X, PATCH_RADIUS_Y, PATCH_RADIUS_Z);
+    }
 
+    TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
+        this.center.set(xOffset + PATCH_WIDTH*0.5f, yOffset + PATCH_HEIGHT*0.5f, MAX_MAP_HEIGHT*0.5f);
         final float[] vertices = new float[VERTEX_COUNT * VERTEX_SIZE_FLOATS];
         mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, new VertexAttributes(
                 VertexAttribute.Position(),//3
@@ -203,6 +213,8 @@ class TerrainPatch implements Disposable {
         renderable.meshPart.set(null, mesh, 0, INDEX_COUNT, GL20.GL_TRIANGLES);
         renderable.material = terrainMaterial;
         renderable.worldTransform.set(transform);
+        renderable.meshPart.center.set(center);
+        renderable.meshPart.radius = PATCH_RADIUS;
         renderable.userData = this;
 
         renderable.shader = TerrainShader.get(renderable);

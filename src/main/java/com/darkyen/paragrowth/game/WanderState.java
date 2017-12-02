@@ -2,16 +2,19 @@ package com.darkyen.paragrowth.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.Renderable;
+import com.badlogic.gdx.graphics.g3d.utils.RenderableSorter;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.darkyen.paragrowth.ParagrowthMain;
 import com.darkyen.paragrowth.WorldCharacteristics;
@@ -19,6 +22,7 @@ import com.darkyen.paragrowth.WorldGenerator;
 import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.skybox.SkyboxRenderable;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
+import com.darkyen.paragrowth.util.PrioritizedShader;
 import org.lwjgl.opengl.GL32;
 
 /**
@@ -48,7 +52,7 @@ public final class WanderState extends ScreenAdapter {
     //Doodads
 
     public WanderState(WorldCharacteristics worldCharacteristics) {
-        modelBatch = new ModelBatch();
+        modelBatch = new ModelBatch(PrioritizedShader.SORTER);
         worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
         hudView = new ScreenViewport();
@@ -59,12 +63,9 @@ public final class WanderState extends ScreenAdapter {
 
         environment = new Environment();
 
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.4f, 0.6f, 1f));
-        environment.add(new DirectionalLight().set(0.8f, 0.7f, 0.9f, -1f, -0.8f, -0.2f));
-
         worldCam.up.set(0,0,1f);
         worldCam.near = 0.01f;
-        worldCam.far = 1000f;
+        worldCam.far = 700f;
 
         worldCam.position.set(1f, 1f, 10f);
         worldCam.direction.set(1,0,0);
@@ -102,7 +103,7 @@ public final class WanderState extends ScreenAdapter {
         modelBatch.begin(worldCam);
 
         modelBatch.render(skyboxRenderable);
-        modelBatch.render(terrain,environment);
+        modelBatch.render(terrain, environment);
         //modelBatch.render(doodadWorld, environment);
 
         modelBatch.end();

@@ -6,7 +6,6 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.math.Vector3;
 import com.darkyen.paragrowth.ParagrowthMain;
-import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 

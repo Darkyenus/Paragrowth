@@ -8,11 +8,13 @@ import com.badlogic.gdx.graphics.g3d.Shader;
 import com.badlogic.gdx.graphics.g3d.shaders.BaseShader;
 import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.darkyen.paragrowth.util.PrioritizedShader;
+import com.darkyen.util.AutoReloadShaderProgram;
 
 /**
  *
  */
-class DoodadShader extends BaseShader {
+class DoodadShader extends BaseShader implements PrioritizedShader {
 
     private DoodadShader() {
         register(DefaultShader.Inputs.projViewWorldTrans, DefaultShader.Setters.projViewWorldTrans);
@@ -39,7 +41,7 @@ class DoodadShader extends BaseShader {
     public void render (Renderable renderable, Attributes combinedAttributes) {
         context.setBlending(false, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         context.setCullFace(GL20.GL_NONE);
-        context.setDepthTest(GL20.GL_LEQUAL, 0f, 1f);
+        context.setDepthTest(GL20.GL_LESS, 0f, 1f);
         context.setDepthMask(true);
 
         super.render(renderable, combinedAttributes);
@@ -53,9 +55,14 @@ class DoodadShader extends BaseShader {
         }
 
         instance = new DoodadShader();
-        instance.init(new ShaderProgram(Gdx.files.local("doodad_vert.glsl"), Gdx.files.local("doodad_frag.glsl")), renderable);
+        instance.init(new AutoReloadShaderProgram(Gdx.files.local("doodad_vert.glsl"), Gdx.files.local("doodad_frag.glsl")), renderable);
 
         INSTANCE = instance;
         return instance;
+    }
+
+    @Override
+    public int priority() {
+        return DOODADS;
     }
 }

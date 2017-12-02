@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.darkyen.paragrowth.game.WanderState;
+import com.darkyen.util.AutoReloadShaderProgram;
 
 /**
  * @author Darkyen
@@ -28,7 +29,7 @@ public class ParagrowthMain extends Game {
 
     @Override
     public void create() {
-        final ShaderProgram batchShader = new ShaderProgram(
+        final ShaderProgram batchShader = new AutoReloadShaderProgram(
                 Gdx.files.local("default_vert.glsl"),
                 Gdx.files.local("default_frag.glsl")
         );

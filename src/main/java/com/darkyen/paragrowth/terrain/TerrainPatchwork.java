@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.Pool;
@@ -22,6 +23,7 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
     private final int patchAmountX;
     private final int patchAmountY;
     private final TerrainPatch[] patches;
+    private final TerrainPatch seaPatch;
 
     public TerrainPatchwork(Camera camera, TerrainProvider terrainProvider) {
         this.camera = camera;
@@ -35,6 +37,9 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
                 patches[i++] = new TerrainPatch(x * PATCH_WIDTH, y * PATCH_HEIGHT, terrainProvider);
             }
         }
+
+        this.seaPatch = new TerrainPatch(-PATCH_WIDTH, -PATCH_HEIGHT, terrainProvider);
+        this.seaPatch.transform.translate(PATCH_WIDTH, PATCH_HEIGHT, 0f);
     }
 
     private float heightAtVertex(int x, int y) {
@@ -49,7 +54,7 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
 
         final int inPatchX = Math.floorMod(x, PATCH_UNIT_SIZE);
         final int inPatchY = Math.floorMod(y, PATCH_UNIT_SIZE);
-        return patches[patchY * patchAmountY + patchX].heightMap[inPatchY * PATCH_SIZE + inPatchX];
+        return patches[patchY * patchAmountX + patchX].heightMap[inPatchY * PATCH_SIZE + inPatchX];
     }
 
     @SuppressWarnings("UnnecessaryLocalVariable") // For easier to debug math
@@ -125,14 +130,49 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
         return hBaseLeft * a1 + hBaseRight * a2 + hPoint * a3;
     }
 
+    public static int worldXToPatch(float x) {
+        return (int) Math.floor(x / PATCH_WIDTH);
+    }
+
+    public static int worldYToPatch(float y) {
+        return (int) Math.floor(y / PATCH_HEIGHT);
+    }
+
+    private final BoundingBox getRenderables_bounds = new BoundingBox();
+
     @Override
     public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
         final Frustum frustum = camera.frustum;
-        for (TerrainPatch patch: patches){
-            if (frustum.boundsInFrustum(patch.boundingBox)) {
-                final Renderable renderable = pool.obtain();
-                patch.fillRenderable(renderable);
-                renderables.add(renderable);
+        final BoundingBox bounds = this.getRenderables_bounds.set(frustum.planePoints);
+
+        final int lowX = (int) Math.floor((bounds.min.x - TerrainPatch.X_STEP) / PATCH_WIDTH);
+        final int highX = (int) Math.ceil((bounds.max.x + TerrainPatch.X_STEP) / PATCH_WIDTH);
+
+        final int lowY = (int) Math.floor((bounds.min.y - TerrainPatch.Y_STEP) / PATCH_HEIGHT);
+        final int highY = (int) Math.ceil((bounds.max.y + TerrainPatch.Y_STEP) / PATCH_HEIGHT);
+
+        for (int y = lowY; y <= highY; y++) {
+            for (int x = lowX; x <= highX; x++) {
+
+                if (x >= 0 && y >= 0 && x < patchAmountX && y < patchAmountY) {
+                    final TerrainPatch patch = patches[patchAmountX * y + x];
+                    if (patch.inFrustum(frustum, 0f, 0f)) {
+                        final Renderable renderable = pool.obtain();
+                        patch.fillRenderable(renderable);
+                        renderables.add(renderable);
+                    }
+                } else {
+                    final TerrainPatch patch = seaPatch;
+                    final float xOff = x * PATCH_WIDTH;
+                    final float yOff = y * PATCH_HEIGHT;
+
+                    if (patch.inFrustum(frustum, xOff, yOff)) {
+                        final Renderable renderable = pool.obtain();
+                        patch.fillRenderable(renderable);
+                        renderable.worldTransform.translate(xOff, yOff, 0f);
+                        renderables.add(renderable);
+                    }
+                }
             }
         }
     }
@@ -141,5 +181,6 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
         for (TerrainPatch patch : patches) {
             patch.dispose();
         }
+        seaPatch.dispose();
     }
 }
