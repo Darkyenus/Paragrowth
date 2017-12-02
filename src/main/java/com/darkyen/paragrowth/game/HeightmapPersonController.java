@@ -62,11 +62,11 @@ public final class HeightmapPersonController {
     }
 
     /** Velocity in units per second for moving forward, backward and strafing left/right. */
-    public final float velocity = 4.5f;
+    public final float velocity = 4.5f/2f;
     /** Sets how many degrees to rotate per pixel the mouse moved. */
     public final float degreesPerPixel = 0.5f;
     /** Height of camera when standing */
-    public final float height = 1.75f;
+    public final float height = 1.75f/2f;
 
     private final Vector3 tmp = new Vector3();
     private final Vector3 tmp2 = new Vector3();

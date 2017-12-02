@@ -2,19 +2,14 @@ package com.darkyen.paragrowth.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
-import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
-import com.badlogic.gdx.graphics.g3d.Renderable;
-import com.badlogic.gdx.graphics.g3d.utils.RenderableSorter;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.darkyen.paragrowth.ParagrowthMain;
 import com.darkyen.paragrowth.WorldCharacteristics;
@@ -82,9 +77,11 @@ public final class WanderState extends ScreenAdapter {
         terrain = new TerrainPatchwork(worldCam, generator);
         //doodadWorld = world.doodadWorld;
 
-        cameraController = new HeightmapPersonController(worldCam,terrain);
+        cameraController = new HeightmapPersonController(worldCam, terrain);
         gameInput = new GameInput(cameraController.INPUT);
         gameInput.build();
+
+        generator.setupInitialPosition(worldCam.position);
     }
 
     @Override

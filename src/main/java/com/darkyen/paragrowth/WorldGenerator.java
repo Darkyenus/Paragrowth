@@ -2,6 +2,8 @@ package com.darkyen.paragrowth;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.RandomXS128;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.NumberUtils;
 import com.darkyen.paragrowth.terrain.generator.Noise;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
@@ -14,7 +16,6 @@ public class WorldGenerator implements TerrainProvider {
     private final WorldCharacteristics characteristics;
     private final float[][] noise;
 
-
     public WorldGenerator(WorldCharacteristics characteristics) {
         this.characteristics = characteristics;
 
@@ -22,7 +23,7 @@ public class WorldGenerator implements TerrainProvider {
 
         noise = Noise.max(Noise.islandize(Noise.generateSimplexNoise(worldSize, worldSize,
                 characteristics.seed, 1f,
-                1f/80f, 2f, 5, 40f, 0.5f), -1f), -1f);
+                1f/200f, 2f, 5, 40f, 0.5f), -1f), -1f);
     }
 
     @Override
@@ -38,6 +39,26 @@ public class WorldGenerator implements TerrainProvider {
     @Override
     public float getHeight(float x, float y) {
         return Noise.getHeight(noise, x, y);
+    }
+
+    private static final RandomXS128 setupInitialPosition_RNG = new RandomXS128();
+    public void setupInitialPosition(Vector3 pos) {
+        final RandomXS128 RNG = setupInitialPosition_RNG;
+        RNG.setSeed(characteristics.seed);
+
+        float x = 0f;
+        float y = 0f;
+        float z = 0f;
+        for (int i = 0; i < 100; i++) {
+            x = RNG.nextFloat() * getWidth();
+            y = RNG.nextFloat() * getHeight();
+            z = getHeight(x, y);
+            if (z > 0.1f) {
+                break;
+            }
+        }
+
+        pos.set(x,y,z);
     }
 
     @Override
