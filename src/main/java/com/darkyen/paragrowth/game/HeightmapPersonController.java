@@ -2,6 +2,7 @@ package com.darkyen.paragrowth.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.math.Vector3;
 import com.darkyen.paragrowth.ParagrowthMain;
@@ -32,7 +33,11 @@ public final class HeightmapPersonController {
     private final GameInput.BoundFunction TO_WRITE_MODE = GameInput.function("To Write Mode", GameInput.Binding.bindKeyboard(Keys.ENTER))
             .listen((times, pressed) -> {
                 if (pressed) {
+                    final Screen oldScreen = ParagrowthMain.INSTANCE.getScreen();
                     ParagrowthMain.INSTANCE.setScreen(new WriteState());
+                    if (oldScreen instanceof WanderState) {
+                        oldScreen.dispose();
+                    }
                 }
                 return false;
             });

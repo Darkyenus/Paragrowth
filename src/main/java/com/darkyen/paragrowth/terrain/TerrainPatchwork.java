@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.Pool;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
 
@@ -14,7 +15,7 @@ import static com.darkyen.paragrowth.terrain.TerrainPatch.*;
 /**
  * A collection of terrain patches.
  */
-public class TerrainPatchwork implements RenderableProvider {
+public class TerrainPatchwork implements RenderableProvider, Disposable {
 
     private final Camera camera;
 
@@ -133,6 +134,12 @@ public class TerrainPatchwork implements RenderableProvider {
                 patch.fillRenderable(renderable);
                 renderables.add(renderable);
             }
+        }
+    }
+
+    public void dispose() {
+        for (TerrainPatch patch : patches) {
+            patch.dispose();
         }
     }
 }

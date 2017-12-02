@@ -129,4 +129,11 @@ public final class WanderState extends ScreenAdapter {
         extraStats.setLength(0);
     }
 
+    @Override
+    public void dispose() {
+        hudStage.dispose();
+        modelBatch.dispose();
+        skyboxRenderable.dispose();
+        terrain.dispose();
+    }
 }

@@ -28,4 +28,8 @@ public class SkyboxRenderable extends Renderable {
 
         this.shader = SkyboxShader.get(this);
     }
+
+    public void dispose() {
+        this.meshPart.mesh.dispose();
+    }
 }

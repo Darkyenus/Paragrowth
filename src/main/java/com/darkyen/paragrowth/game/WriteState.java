@@ -12,7 +12,6 @@ import com.darkyen.paragrowth.ParagrowthMain;
 import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.font.Font;
 import com.darkyen.paragrowth.font.FontLoader;
-import com.darkyen.paragrowth.font.Glyph;
 import com.darkyen.paragrowth.font.GlyphLayout;
 import com.darkyen.paragrowth.util.ColorKt;
 
@@ -49,11 +48,7 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
-        final Glyph a = FONT2.glyphs.get('A');
-        batch.draw(FONT2.pages[0], 100, 100, 100, 100);
-        batch.draw(FONT2.pages[a.pageIndex], Gdx.input.getX(), Gdx.input.getY(), 100f, 100f, a.u, a.v, a.u2, a.v2);
-
-        glyphLayout.draw(batch, viewport.getWorldWidth() * 0.1f, viewport.getWorldHeight()*0.5f);
+        glyphLayout.draw(batch, viewport.getWorldWidth() * 0.1f, Math.max(viewport.getWorldHeight()*0.9f, viewport.getWorldHeight()*0.1f + glyphLayout.height));
         batch.end();
     }
 

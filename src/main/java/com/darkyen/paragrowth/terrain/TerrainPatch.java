@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.badlogic.gdx.utils.Disposable;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
 
 /**
@@ -12,7 +13,7 @@ import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
  *
  * Fits into single renderable.
  */
-class TerrainPatch {
+class TerrainPatch implements Disposable {
 
     /*
     triangles = (size-1)^2*2
@@ -205,5 +206,9 @@ class TerrainPatch {
         renderable.userData = this;
 
         renderable.shader = TerrainShader.get(renderable);
+    }
+
+    public void dispose() {
+        mesh.dispose();
     }
 }
