@@ -43,7 +43,12 @@ class TerrainPatch implements Disposable {
     private static final int TRIANGLE_COUNT = PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2;
     private static final int INDEX_COUNT = TRIANGLE_COUNT * 3;
     private static final int VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE;
-    private static final int VERTEX_SIZE_FLOATS = 3+1;
+
+    private static final VertexAttributes MESH_ATTRIBUTES = new VertexAttributes(
+            VertexAttribute.Position(),//3
+            VertexAttribute.ColorPacked()//1
+    );
+    private static final int VERTEX_SIZE_FLOATS = MESH_ATTRIBUTES.vertexSize / Float.BYTES;
 
     /*
     Arrangement:
@@ -74,10 +79,7 @@ class TerrainPatch implements Disposable {
     TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
         this.center.set(xOffset + PATCH_WIDTH*0.5f, yOffset + PATCH_HEIGHT*0.5f, MAX_MAP_HEIGHT*0.5f);
         final float[] vertices = new float[VERTEX_COUNT * VERTEX_SIZE_FLOATS];
-        mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, new VertexAttributes(
-                VertexAttribute.Position(),//3
-                VertexAttribute.ColorPacked()//1
-        ));
+        mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, MESH_ATTRIBUTES);
 
         //Generate vertices
         {

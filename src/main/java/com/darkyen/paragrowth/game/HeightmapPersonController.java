@@ -27,7 +27,7 @@ public final class HeightmapPersonController {
                 Gdx.input.setCursorCatched(pressed);
                 return true;
             });
-    private final GameInput.BoundFunction SLOW_DEBUG = GameInput.toggleFunction("Slow Debug", GameInput.Binding.bindKeyboard(Input.Keys.F4));
+    private final GameInput.BoundFunction MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", GameInput.Binding.bindKeyboard(Input.Keys.F4));
 
     private final GameInput.BoundFunction TO_WRITE_MODE = GameInput.function("To Write Mode", GameInput.Binding.bindKeyboard(Keys.ENTER))
             .listen((times, pressed) -> {
@@ -49,7 +49,7 @@ public final class HeightmapPersonController {
             SPRINT,
 
             TRACE_CAMERA,
-            SLOW_DEBUG,
+            MOVEMENT_DEBUG,
             TO_WRITE_MODE
     };
 
@@ -95,13 +95,23 @@ public final class HeightmapPersonController {
         tmp2.z = 0f;
         tmp2.nor();
 
+        final float height;
         final float velocity;
-        if (SPRINT.isPressed()) {
-            velocity = this.velocity * 2f;
-        } else if (SLOW_DEBUG.isPressed()) {
-            velocity = this.velocity * 0.03f;
+        if (MOVEMENT_DEBUG.isPressed()) {
+            if (SPRINT.isPressed()) {
+                velocity = this.velocity * 16f;
+                height = 8f;
+            } else {
+                velocity = this.velocity * 0.03f;
+                height = 0.02f;
+            }
         } else {
-            velocity = this.velocity;
+            height = this.height;
+            if (SPRINT.isPressed()) {
+                velocity = this.velocity * 2f;
+            } else {
+                velocity = this.velocity;
+            }
         }
 
         if (FORWARD.isPressed()) {
@@ -121,8 +131,8 @@ public final class HeightmapPersonController {
             camera.position.add(tmp);
         }
 
-        final float height = SLOW_DEBUG.isPressed() ? 0.02f : this.height;
-        camera.position.z = map.heightAt(camera.position.x,camera.position.y) + height;
+
+        camera.position.z = Math.max(map.heightAt(camera.position.x,camera.position.y), -0.5f * height) + height;
 
         camera.update(true);
     }

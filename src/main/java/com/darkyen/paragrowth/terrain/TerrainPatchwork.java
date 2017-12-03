@@ -45,11 +45,11 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
     private float heightAtVertex(int x, int y) {
         final int patchX = Math.floorDiv(x, PATCH_UNIT_SIZE);
         if (patchX < 0 || patchX >= patchAmountX) {
-            return 0f;
+            return -1f;
         }
         final int patchY = Math.floorDiv(y, PATCH_UNIT_SIZE);
         if (patchY < 0 || patchY >= patchAmountY) {
-            return 0f;
+            return -1f;
         }
 
         final int inPatchX = Math.floorMod(x, PATCH_UNIT_SIZE);
@@ -70,7 +70,6 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
 
         final int baseX = (int) Math.floor(skewedX);
         final float xFrac = skewedX - baseX;
-
 
         /*
         We are somewhere in a triangle, with straight on top or on bottom.

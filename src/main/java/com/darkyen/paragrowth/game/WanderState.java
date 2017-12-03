@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.darkyen.paragrowth.ParagrowthMain;
 import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.WorldGenerator;
+import com.darkyen.paragrowth.doodad.DoodadWorld;
 import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.skybox.SkyboxRenderable;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
@@ -24,6 +25,8 @@ import org.lwjgl.opengl.GL32;
  * @author Darkyen
  */
 public final class WanderState extends ScreenAdapter {
+
+    private final WorldCharacteristics worldCharacteristics;
 
     //2D
     private final ScreenViewport hudView;
@@ -39,14 +42,15 @@ public final class WanderState extends ScreenAdapter {
     //3D Objects
     private final SkyboxRenderable skyboxRenderable;
     private final TerrainPatchwork terrain;
+    private final DoodadWorld doodads;
 
     //Input
     private final GameInput gameInput;
     private final HeightmapPersonController cameraController;
 
-    //Doodads
-
     public WanderState(WorldCharacteristics worldCharacteristics) {
+        this.worldCharacteristics = worldCharacteristics;
+        System.out.println(worldCharacteristics);
         modelBatch = new ModelBatch(PrioritizedShader.SORTER);
         worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
@@ -73,9 +77,9 @@ public final class WanderState extends ScreenAdapter {
         hudStage.addActor(hudTable);
 
         //Terrain generation
-        final WorldGenerator generator = new WorldGenerator(worldCharacteristics);
-        terrain = new TerrainPatchwork(worldCam, generator);
-        //doodadWorld = world.doodadWorld;
+        final WorldGenerator generator = new WorldGenerator(worldCam, worldCharacteristics);
+        terrain = generator.terrainPatchwork;
+        doodads = generator.doodadWorld;
 
         cameraController = new HeightmapPersonController(worldCam, terrain);
         gameInput = new GameInput(cameraController.INPUT);
@@ -101,7 +105,7 @@ public final class WanderState extends ScreenAdapter {
 
         modelBatch.render(skyboxRenderable);
         modelBatch.render(terrain, environment);
-        //modelBatch.render(doodadWorld, environment);
+        modelBatch.render(doodads, environment);
 
         modelBatch.end();
 
@@ -122,7 +126,8 @@ public final class WanderState extends ScreenAdapter {
         statsLabel.setText("FPS: "+Gdx.graphics.getFramesPerSecond()
                 +"\nX: "+worldCam.position.x
                 +"\nY: "+worldCam.position.y
-                +"\nZ: "+worldCam.position.z+"\n"+extraStats);
+                +"\nZ: "+worldCam.position.z
+                +"\n"+extraStats);
 
         extraStats.setLength(0);
     }
