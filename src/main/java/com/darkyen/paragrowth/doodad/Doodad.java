@@ -1,7 +1,6 @@
 package com.darkyen.paragrowth.doodad;
 
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
@@ -40,7 +39,7 @@ public class Doodad {
     final VarFloat initialBranchingFactor = new VarFloat(0);
 
     DoodadInstance instantiate(Random random, float x, float y, float z) {
-        final DoodadInstance instance = new DoodadInstance(initialWidth.get(random), trunkSides.getInt(random));
+        final DoodadInstance instance = new DoodadInstance(this, initialWidth.get(random), trunkSides.getInt(random));
         instance.position.set(x, y, z);
         final float rootLength = this.rootLength.get(random);
         instance.root = firstNode.instantiate(random, instance.position, Vector3.Z, instance.rootWidth, rootLength, initialBranchingFactor.get(random), 0);
@@ -82,15 +81,13 @@ public class Doodad {
 
         private static final int MAX_BRANCHING_DEPTH = 10;
 
-        private static final Vector3 instantiate_bitangent = new Vector3();
-        private static final Matrix3 instantiate_mat = new Matrix3();
         DoodadInstance.TrunkInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection, float previousWidth, float previousLength, float previousBranchingFactor, int depth) {
             final DoodadInstance.TrunkInstance instance = new DoodadInstance.TrunkInstance(widthFactor.getFactored(random, previousWidth));
             final float length = lengthFactor.getFactored(random, previousLength);
             final float skew = this.skew.get(random);
 
             // Make end is correct from origin
-            final Vector3 end = instance.end.set(1f - skew, 0f, skew).nor();
+            final Vector3 end = instance.end.set(skew, 0f, 1f - skew).nor();
             // Rotate randomly
             end.rotateRad(random.nextFloat() * MathUtils.PI2, 0f, 0f, 1f);
             // end now contains normalized direction, save for branches
@@ -98,20 +95,7 @@ public class Doodad {
             // Extend by length
             end.scl(length);
             // Turn to fit on previous direction
-            final Vector3 tangent = VectorUtils.generateTangent(previousDirection);
-            final Vector3 biTangent = instantiate_bitangent.set(previousDirection).crs(tangent);
-            final Matrix3 mat = TrunkNode.instantiate_mat;
-            mat.val[Matrix3.M00] = previousDirection.x;
-            mat.val[Matrix3.M01] = previousDirection.y;
-            mat.val[Matrix3.M02] = previousDirection.z;
-            mat.val[Matrix3.M10] = tangent.x;
-            mat.val[Matrix3.M11] = tangent.y;
-            mat.val[Matrix3.M12] = tangent.z;
-            mat.val[Matrix3.M20] = biTangent.x;
-            mat.val[Matrix3.M21] = biTangent.y;
-            mat.val[Matrix3.M22] = biTangent.z;
-
-            end.mul(mat);//TODO Or traMul???
+            VectorUtils.toNormalSpace(end, previousDirection);
 
             // Translate on previous end
             end.add(previousEnd);

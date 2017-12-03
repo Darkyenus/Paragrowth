@@ -29,6 +29,7 @@ public class DoodadWorld implements RenderableProvider {
 
     private final Camera camera;
     private final Mesh[] patches;
+    private final Array<DoodadInstance>[] doodadInstances;
     private final BoundingBox[] patchBoundingBoxes;
 
     public DoodadWorld(Camera camera, long seed, float[][] noise) {
@@ -39,26 +40,35 @@ public class DoodadWorld implements RenderableProvider {
         final int patchesY = MathUtils.ceil(worldHeight / PATCH_SIZE);
 
         this.patches = new Mesh[patchesX * patchesY];
+        //noinspection unchecked
+        this.doodadInstances = new Array[this.patches.length];
         this.patchBoundingBoxes = new BoundingBox[this.patches.length];
 
         final RandomXS128 random = new RandomXS128(seed);
 
+        Array<DoodadInstance> patchInstances = new Array<>(DoodadInstance.class);
+        int totalDoodads = 0;
         int i = 0;
         for (int x = 0; x < patchesX; x++) {
             for (int y = 0; y < patchesY; y++) {
-                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE);
+                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, patchInstances);
                 this.patches[i] = mesh;
                 if (mesh != null) {
                     final BoundingBox box = new BoundingBox();
                     mesh.calculateBoundingBox(box);
                     this.patchBoundingBoxes[i] = box;
+                    this.doodadInstances[i] = patchInstances;
+                    totalDoodads += patchInstances.size;
+                    patchInstances = new Array<>(DoodadInstance.class);
                 }
                 i++;
             }
         }
+
+        System.out.println("Generated "+totalDoodads+" doodads");
     }
 
-    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY) {
+    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<DoodadInstance> instances) {
         final MeshBuilder builder = MESH_BUILDER;
         boolean begun = false;
 
@@ -77,7 +87,9 @@ public class DoodadWorld implements RenderableProvider {
                 builder.begin(MESH_ATTRIBUTES);
                 begun = true;
             }
-            Doodads.STICK.instantiate(random, x, y, z).build(builder);
+            final DoodadInstance instance = Doodads.STICK.instantiate(random, x, y, z);
+            instances.add(instance);
+            instance.build(builder);
         }
 
         if (!begun) {

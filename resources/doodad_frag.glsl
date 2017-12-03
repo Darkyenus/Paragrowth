@@ -1,6 +1,6 @@
-#version 150
+#version 330
 
-in vec4 v_color;
+flat in vec4 v_color;
 out vec4 fragmentColor;
 
 void main() {

@@ -48,7 +48,8 @@ public class ParagrowthMain extends Game {
     public static void main(String[] args){
         Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
         configuration.setTitle("Lowscape");
-        configuration.useOpenGL3(true, 3, 2);
+        configuration.setBackBufferConfig(8, 8, 8, 8, 24, 0, 0);
+        configuration.useOpenGL3(true, 3, 3);
         configuration.setWindowedMode(800, 600);
 
         new Lwjgl3Application(new ParagrowthMain(),configuration);

@@ -13,12 +13,15 @@ import com.darkyen.paragrowth.util.VectorUtils;
  */
 class DoodadInstance {
 
+    final Doodad template;
+
     final float rootWidth;
     final int sides;
     final Vector3 position = new Vector3();
     TrunkInstance root;
 
-    DoodadInstance(float rootWidth, int sides) {
+    DoodadInstance(Doodad template, float rootWidth, int sides) {
+        this.template = template;
         this.rootWidth = Math.max(rootWidth, 0.1f);
         this.sides = Math.max(sides, 2);
     }
@@ -40,12 +43,21 @@ class DoodadInstance {
         final Vector3 tangent = VectorUtils.generateTangent(normal).scl(radius);
         final Matrix3 rot = createRing_rot.setToRotation(normal, 360f / sides);
 
+        baseVertex.color.r = MathUtils.random();
+        baseVertex.color.g = MathUtils.random();
+        baseVertex.color.b = MathUtils.random();
+
         baseVertex.position.set(position).add(tangent);
         final short resultIndex = builder.vertex(baseVertex);
         for (int i = 1; i < sides; i++) {
             tangent.mul(rot);
+
+            baseVertex.color.r = MathUtils.random();
+            baseVertex.color.g = MathUtils.random();
+            baseVertex.color.b = MathUtils.random();
             baseVertex.position.set(position).add(tangent);
-            builder.vertex(baseVertex);
+            final short v = builder.vertex(baseVertex);
+            assert v == resultIndex + i;
         }
 
         return resultIndex;
@@ -54,8 +66,9 @@ class DoodadInstance {
     private void joinRings(MeshBuilder builder, short first, short second) {
         for (int i = 0; i < sides; i++) {
             // TODO Winding? Probably don't care, but maybe we care about provoking vertex...
-            builder.index((short)(i + first), (short) (i + first + 1), (short) (i + second));
-            builder.index((short)(i + first + 1), (short) (i + second + 1), (short) (i + second));
+            final int i1 = i == sides - 1 ? 0 : i + 1;
+            builder.index((short)(first + i), (short) (first + i1), (short) (second + i));
+            builder.index((short)(first + i1), (short) (second + i1), (short) (second + i));
         }
     }
 
@@ -86,9 +99,6 @@ class DoodadInstance {
 
     public void build(MeshBuilder builder) {
         final MeshPartBuilder.VertexInfo baseVertex = DoodadInstance.build_baseVertex;
-        baseVertex.color.r = MathUtils.random();
-        baseVertex.color.g = MathUtils.random();
-        baseVertex.color.b = MathUtils.random();
 
         //Create bottom cap
         //TODO

@@ -17,8 +17,8 @@ public interface PrioritizedShader {
 
     int LAST = Integer.MAX_VALUE;
     int SKYBOX = -1000;
-    int TERRAIN = -100;
-    int DOODADS = -10;
+    int TERRAIN = 10;
+    int DOODADS = 10;
     int DEFAULT = 0;
     int FIRST = Integer.MIN_VALUE;
 
@@ -30,6 +30,8 @@ public interface PrioritizedShader {
     PrioritizedSorter SORTER = new PrioritizedSorter();
 
     class PrioritizedSorter implements RenderableSorter, Comparator<Renderable> {
+
+        private static final boolean SHUFFLE_MODE = true;
 
         private PrioritizedSorter() {
         }
@@ -45,10 +47,13 @@ public interface PrioritizedShader {
         public int compare(Renderable o1, Renderable o2) {
             final int weight1 = weight(o1.shader);
             final int weight2 = weight(o2.shader);
+
             if (weight1 < weight2) {
                 return -1;
             } else if (weight1 > weight2) {
                 return 1;
+            } else if (SHUFFLE_MODE) {
+                return 0;
             }
 
             final Vector3 pos1 = getTranslation(o1.worldTransform, o1.meshPart.center, tmpV1);
@@ -74,6 +79,9 @@ public interface PrioritizedShader {
         @Override
         public void sort(Camera camera, Array<Renderable> renderables) {
             this.camera = camera;
+            if (SHUFFLE_MODE) {
+                renderables.shuffle();
+            }
             renderables.sort(this);
         }
     }

@@ -21,6 +21,8 @@ import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 import com.darkyen.paragrowth.util.PrioritizedShader;
 import org.lwjgl.opengl.GL32;
 
+import static org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP;
+
 /**
  * @author Darkyen
  */
@@ -63,7 +65,7 @@ public final class WanderState extends ScreenAdapter {
         environment = new Environment();
 
         worldCam.up.set(0,0,1f);
-        worldCam.near = 0.01f;
+        worldCam.near = 0.4f;
         worldCam.far = 700f;
 
         worldCam.position.set(1f, 1f, 10f);
@@ -98,9 +100,11 @@ public final class WanderState extends ScreenAdapter {
     public void render(float delta) {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         GL32.glProvokingVertex(GL32.GL_FIRST_VERTEX_CONVENTION);// Needed for heightmap
+
         updateWorld(delta);
         hudStage.act(delta);
 
+        Gdx.gl.glEnable(GL_DEPTH_CLAMP);
         modelBatch.begin(worldCam);
 
         modelBatch.render(skyboxRenderable);
@@ -108,6 +112,7 @@ public final class WanderState extends ScreenAdapter {
         modelBatch.render(doodads, environment);
 
         modelBatch.end();
+        Gdx.gl.glDisable(GL_DEPTH_CLAMP);
 
         hudStage.draw();
     }

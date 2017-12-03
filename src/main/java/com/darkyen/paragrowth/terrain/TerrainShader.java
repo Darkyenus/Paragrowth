@@ -52,7 +52,7 @@ class TerrainShader extends BaseShader implements PrioritizedShader {
     public void render (Renderable renderable, Attributes combinedAttributes) {
         context.setBlending(false, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         context.setCullFace(GL20.GL_BACK);
-        context.setDepthTest(GL20.GL_LESS, 0f, 1f);
+        context.setDepthTest(GL20.GL_LESS);
         context.setDepthMask(true);
 
         super.render(renderable, combinedAttributes);

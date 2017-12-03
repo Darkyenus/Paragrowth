@@ -16,7 +16,7 @@ public class Doodads {
         trunk.branchingFactor.setRange(0.4f, 0.9f);
         trunk.lengthFactor.set(0.7f, 0.2f);
         trunk.widthFactor.set(0.7f, 0.2f);
-        trunk.skew.setRange(0f, 3f);
+        trunk.skew.set(0.2f, 0.1f);
         STICK.firstNode = trunk;
     }
 }

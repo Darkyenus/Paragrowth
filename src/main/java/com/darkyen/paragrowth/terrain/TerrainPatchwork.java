@@ -129,14 +129,6 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
         return hBaseLeft * a1 + hBaseRight * a2 + hPoint * a3;
     }
 
-    public static int worldXToPatch(float x) {
-        return (int) Math.floor(x / PATCH_WIDTH);
-    }
-
-    public static int worldYToPatch(float y) {
-        return (int) Math.floor(y / PATCH_HEIGHT);
-    }
-
     private final BoundingBox getRenderables_bounds = new BoundingBox();
 
     @Override
