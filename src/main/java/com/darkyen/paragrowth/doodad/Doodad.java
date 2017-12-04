@@ -13,6 +13,8 @@ import java.util.Random;
  */
 public class Doodad {
 
+    public static float MIN_WIDTH = 0.01f;
+
     /**
      * Initial width of the plant
      */
@@ -100,7 +102,7 @@ public class Doodad {
             // Translate on previous end
             end.add(previousEnd);
 
-            if (depth < MAX_BRANCHING_DEPTH) {
+            if (depth < MAX_BRANCHING_DEPTH && instance.endWidth > MIN_WIDTH) {
                 // Generate branches, if any
                 for (int i = 0; i < branchingProbability.size; i++) {
                     final float factor = branchingFactor.getFactored(random, previousBranchingFactor);

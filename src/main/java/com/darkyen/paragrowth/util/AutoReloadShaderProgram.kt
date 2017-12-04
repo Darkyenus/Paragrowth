@@ -1,4 +1,4 @@
-package com.darkyen.util
+package com.darkyen.paragrowth.util
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.files.FileHandle

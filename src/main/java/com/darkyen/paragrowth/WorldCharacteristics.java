@@ -46,7 +46,24 @@ public class WorldCharacteristics {
     }
 
     public static WorldCharacteristics fromText(CharSequence text) {
-        return WorldCharacteristics.random();
+        final WorldCharacteristics c = new WorldCharacteristics();
+        final int length = text.length();
+
+        c.size = (int) Math.round(Math.pow(length, 0.6));
+        final TextAnalyzer textAnalyzer = TextAnalyzer.get();
+        c.mood = textAnalyzer.analyzePositivityAndNegativity(text);
+        c.coherence = textAnalyzer.analyzeCoherence(text);
+
+        // Fill up with random bytes, hopefully
+        long seed = length * length * 31;
+        seed = seed * seed;
+        seed = seed * seed;
+        seed = seed * seed;
+        for (int i = 0; i < length; i++) {
+            seed = 31 * seed + text.charAt(i);
+        }
+        c.seed = seed;
+        return c;
     }
 
     @Override

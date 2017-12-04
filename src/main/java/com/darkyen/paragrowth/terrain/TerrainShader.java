@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.g3d.Shader;
 import com.badlogic.gdx.graphics.g3d.shaders.BaseShader;
 import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
 import com.darkyen.paragrowth.util.PrioritizedShader;
-import com.darkyen.util.AutoReloadShaderProgram;
+import com.darkyen.paragrowth.util.AutoReloadShaderProgram;
 
 /**
  *

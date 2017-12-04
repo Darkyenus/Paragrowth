@@ -104,6 +104,8 @@ public final class WanderState extends ScreenAdapter {
         updateWorld(delta);
         hudStage.act(delta);
 
+        // Used for skybox and for objects too close to camera
+        // (they won't get proper depth-testing, but skybox won't show through)
         Gdx.gl.glEnable(GL_DEPTH_CLAMP);
         modelBatch.begin(worldCam);
 

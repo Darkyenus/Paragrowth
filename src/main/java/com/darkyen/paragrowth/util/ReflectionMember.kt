@@ -1,4 +1,4 @@
-package com.darkyen.util
+package com.darkyen.paragrowth.util
 
 import java.lang.reflect.Field
 import kotlin.reflect.KProperty

@@ -6,6 +6,8 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.darkyen.paragrowth.ParagrowthMain;
@@ -30,6 +32,11 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
     private final SpriteBatch batch = ParagrowthMain.batch();
     private GlyphLayout glyphLayout = FONT_GLYPHS;
     private final StringBuilder text = new StringBuilder();
+    private int caret = 0;
+    private long lastTypeTime = 0;
+    private static final long KEEP_ON_AFTER_TYPING_MS = 700;
+
+    private Drawable caretDrawable;
 
     private void updateGlyphLayout() {
         glyphLayout.setText(text, ColorKt.getWhite(), viewport.getWorldWidth() * 0.8f, Align.left);
@@ -40,15 +47,29 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
         Gdx.gl.glDisable(GL20.GL_DEPTH_TEST);
         Gdx.gl.glDisable(GL20.GL_CULL_FACE);
         Gdx.input.setInputProcessor(this);
+
+        if (caretDrawable == null) {
+            caretDrawable = ParagrowthMain.skin().getDrawable("cursor");
+        }
     }
 
+    private final Rectangle caretRect = new Rectangle();
     @Override
     public void render(float delta) {
         viewport.apply();
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
-        glyphLayout.draw(batch, viewport.getWorldWidth() * 0.1f, Math.max(viewport.getWorldHeight()*0.9f, viewport.getWorldHeight()*0.1f + glyphLayout.height));
+        final float textX = viewport.getWorldWidth() * 0.1f;
+        final float textY = Math.max(viewport.getWorldHeight() * 0.9f, viewport.getWorldHeight() * 0.1f + glyphLayout.height);
+        glyphLayout.draw(batch, textX, textY);
+
+        final long now = System.currentTimeMillis();
+        if (((now - lastTypeTime) % 1000) < 500 || (lastTypeTime + KEEP_ON_AFTER_TYPING_MS) >= now) {
+            glyphLayout.getCaretPosition(caretRect, caret);
+            caretDrawable.draw(batch, textX + caretRect.x, textY + caretRect.y, 3f, caretRect.height);
+        }
+
         batch.end();
     }
 
@@ -60,32 +81,68 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
         updateGlyphLayout();
     }
 
+    private void setCaret(int newCaret) {
+        if (newCaret < 0) {
+            caret = 0;
+        } else if (newCaret > text.length()) {
+            caret = text.length();
+        } else {
+            caret = newCaret;
+        }
+        lastTypeTime = System.currentTimeMillis();
+    }
+
+    private void insert(char c) {
+        text.insert(caret, c);
+        setCaret(caret + 1);
+        updateGlyphLayout();
+    }
+
+    private void backspace() {
+        if (caret > 0) {
+            text.deleteCharAt(caret - 1);
+            setCaret(caret - 1);
+        }
+        updateGlyphLayout();
+    }
+
+    private void delete() {
+        if (caret < text.length()) {
+            text.deleteCharAt(caret);
+            setCaret(caret);
+        }
+        updateGlyphLayout();
+    }
+
     @Override
     public boolean keyTyped(char character) {
         if (character == 8) {
-            text.setLength(Math.max(0, text.length() - 1));
+            backspace();
         } else {
-            text.append(character);
+            insert(character);
         }
-        updateGlyphLayout();
         return true;
     }
 
     @Override
-    public boolean keyUp(int keycode) {
-        if (keycode == Input.Keys.DEL && (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT))) {
-            text.setLength(0);
-            updateGlyphLayout();
+    public boolean keyDown(int keycode) {
+        if (keycode == Input.Keys.LEFT) {
+            setCaret(caret - 1);
+            return true;
+        } else if (keycode == Input.Keys.RIGHT) {
+            setCaret(caret + 1);
             return true;
         } else if (keycode == Input.Keys.ESCAPE) {
             ParagrowthMain.INSTANCE.setScreen(new WanderState(WorldCharacteristics.fromText(text)));
             return true;
+        } else if (keycode == Input.Keys.F3) {
+            System.out.println(WorldCharacteristics.fromText(text));
         }
         return false;
     }
 
     @Override
-    public boolean keyDown(int keycode) {
+    public boolean keyUp(int keycode) {
         return false;
     }
 

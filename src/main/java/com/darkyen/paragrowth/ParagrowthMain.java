@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.darkyen.paragrowth.game.WanderState;
-import com.darkyen.util.AutoReloadShaderProgram;
+import com.darkyen.paragrowth.util.AutoReloadShaderProgram;
 
 /**
  * @author Darkyen

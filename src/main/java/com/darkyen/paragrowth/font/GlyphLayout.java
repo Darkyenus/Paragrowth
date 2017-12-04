@@ -333,6 +333,40 @@ public final class GlyphLayout {
 		return font.ascent + -font.descent;
 	}
 
+	public void getCaretPosition(Rectangle out, int index) {
+		if (index < 0) {
+			index = 0;
+		}
+
+		GlyphRun run = null;
+		final Array<GlyphRun> runs = this.runs;
+		for (int i = 0; i < runs.size; i++) {
+			final GlyphRun runI = runs.get(i);
+			final int runCodepoints = runI.codepoints.size;
+			if (index <= runCodepoints) {
+				run = runI;
+				break;
+			}
+			index -= runCodepoints;
+		}
+		if (run == null && runs.size != 0) {
+			run = runs.get(runs.size-1);
+			index = run.codepoints.size;
+		}
+
+		float indexX = 0f;
+		int runLineIndex = 0;
+		if (run != null) {
+			indexX = run.x + run.glyphXPos.get(index);
+			runLineIndex = run.lineIndex;
+		}
+
+		out.x = indexX;
+		out.y = -font.ascent - runLineIndex * font.lineHeight;
+		out.width = 0f;
+		out.height = font.lineHeight;
+	}
+
 	/**
 	 * @deprecated Untested */
 	@Deprecated
