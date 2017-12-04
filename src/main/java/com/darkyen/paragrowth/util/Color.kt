@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.MathUtils.clamp
 import com.badlogic.gdx.math.MathUtils.lerp
 import com.badlogic.gdx.utils.NumberUtils
+import java.util.*
 
 val White = Color.WHITE.toFloatBits()
 
@@ -108,6 +109,15 @@ fun lerpHSB(from:Float, to:Float, progress:Float) =
                 lerp(from.brightness, to.brightness, progress),
                 lerp(from.alpha, to.alpha, progress))
 
+fun lerpHSB(from:FloatArray, progress:Float):Float {
+    val fullProgress = progress * (from.size - 1)
+    val firstIndex = fullProgress.toInt()
+    if (firstIndex == from.lastIndex) {
+        return from.last()
+    }
+    return lerpHSB(from[firstIndex], from[firstIndex + 1], fullProgress % 1f)
+}
+
 val Float.hue:Float
     get() {
         val r:Float = this.red
@@ -167,3 +177,14 @@ val Float.brightness:Float
 
         return maxOf(r,g, b)
     }
+
+private fun smoothClamp(value:Float): Float {
+    return Math.tanh((value + value).toDouble()).toFloat()
+}
+
+fun Float.fudge(random: Random, coherence:Float, amount:Float = 1f):Float {
+    val h = this.hue + (1.1f - coherence) * (1.1f - coherence) * (random.nextFloat() - 0.5f) * amount * 0.2f
+    val s = smoothClamp(this.saturation + (1f - coherence) * (1f - coherence) * (random.nextFloat() - 0.5f) * amount)
+    val b = smoothClamp(this.brightness + (1f - coherence) * (1f - coherence) * (random.nextFloat() - 0.5f) * amount)
+    return hsb(h,s,b)
+}

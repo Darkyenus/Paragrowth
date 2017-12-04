@@ -3,6 +3,7 @@ package com.darkyen.paragrowth;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+import com.darkyen.paragrowth.util.ColorKt;
 
 import java.util.Random;
 
@@ -48,6 +49,23 @@ public class WorldCharacteristics {
             return null;
         }
         return colors.get(random.nextInt(colors.size));
+    }
+
+    public float getRandomFudgedColor(Random random, Color[][] template) {
+        Color baseColor = null;
+
+        if (colors.size != 0) {
+            final double customColorChance = Math.pow(1f - size / (colors.size + size), 0.25);
+            if (random.nextFloat() >= customColorChance) {
+                baseColor = getRandomColor(random);
+            }
+        }
+
+        if (baseColor == null) {
+            baseColor = WorldColors.pick(template, random, mood);
+        }
+
+        return ColorKt.fudge(baseColor.toFloatBits(), random, coherence, 1f);
     }
 
     /**

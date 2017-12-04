@@ -1,15 +1,17 @@
 package com.darkyen.paragrowth;
 
 import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.NumberUtils;
 import com.darkyen.paragrowth.doodad.DoodadWorld;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 import com.darkyen.paragrowth.terrain.generator.Noise;
+import com.darkyen.paragrowth.terrain.generator.OpenSimplexNoise;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
+import com.darkyen.paragrowth.util.ColorKt;
+
+import static com.darkyen.paragrowth.WorldColors.pick;
 
 /**
  * @author Darkyen
@@ -21,8 +23,35 @@ public class WorldGenerator implements TerrainProvider {
     public final TerrainPatchwork terrainPatchwork;
     private final float[][] noise;
 
+    private final OpenSimplexNoise colorNoise = new OpenSimplexNoise();
+    private static final float COLOR_NOISE_SCALE_BEACH = 0.2f;
+    private static final float COLOR_NOISE_SCALE_TERRAIN = 0.02f;
+
+    private final float waterColor;
+    private final RandomXS128 randomForColors;
+    private final float[] beachColor;
+    private final float[] terrainColor;
+
     public WorldGenerator(Camera camera, WorldCharacteristics characteristics) {
         this.characteristics = characteristics;
+        colorNoise.initialize(characteristics.seed);
+
+        {
+            final RandomXS128 random = new RandomXS128(characteristics.seed);
+            this.randomForColors = random;
+            waterColor = ColorKt.fudge(pick(WorldColors.WATER, random, characteristics.mood).toFloatBits(), random, characteristics.coherence, 1f);
+            beachColor = new float[]{
+                    characteristics.getRandomFudgedColor(random, WorldColors.BEACH),
+                    characteristics.getRandomFudgedColor(random, WorldColors.BEACH)
+            };
+
+            terrainColor = new float[]{
+                    characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN),
+                    characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN),
+                    characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN),
+                    characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN)
+            };
+        }
 
         final int worldSize = (int)(MathUtils.clamp((float)Math.sqrt(characteristics.size), 1f, 30f) * 100f);
 
@@ -73,11 +102,11 @@ public class WorldGenerator implements TerrainProvider {
     public float getColor(float x, float y) {
         final float height = Noise.getHeight(noise, x, y);
         if (height <= 0f) {
-            return Color.BLUE.toFloatBits();
+            return waterColor;
         } else if (height < 1f) {
-            return Color.YELLOW.toFloatBits();
+            return ColorKt.fudge(ColorKt.lerpHSB(beachColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_BEACH, y * COLOR_NOISE_SCALE_BEACH)), randomForColors, characteristics.coherence, 0.6f);
+        } else {
+            return ColorKt.fudge(ColorKt.lerpHSB(terrainColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_TERRAIN, y * COLOR_NOISE_SCALE_TERRAIN)), randomForColors, characteristics.coherence, 0.6f);
         }
-        //noinspection NumericOverflow
-        return NumberUtils.intToFloatColor((255 << 24) | (MathUtils.random.nextInt(256) << 16) | (MathUtils.random.nextInt(256) << 8) | MathUtils.random.nextInt(256));
     }
 }

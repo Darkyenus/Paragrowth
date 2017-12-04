@@ -33,6 +33,10 @@ public final class OpenSimplexNoise {
         }
     }
 
+    public final float evaluatePositive(final float x, final float y) {
+        return (evaluate(x, y) + 1f) * 0.5f;
+    }
+
     public final float evaluate(final float x, final float y) {
         final float stretchOffset = (x + y) * Contribution2.STRETCH_2D;
         final float xs = x + stretchOffset;
