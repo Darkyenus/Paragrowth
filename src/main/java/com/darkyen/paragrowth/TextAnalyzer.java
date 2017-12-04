@@ -2,12 +2,13 @@ package com.darkyen.paragrowth;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntArray;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -22,6 +23,7 @@ public final class TextAnalyzer {
 
     private final Set<String> positiveWords = loadWordSet("positive.txt");
     private final Set<String> negativeWords = loadWordSet("negative.txt");
+    private final ColorNode colors = loadColorMap("colors.txt");
 
     private Set<String> loadWordSet(String fileName) {
         Set<String> result = new HashSet<>();
@@ -40,6 +42,147 @@ public final class TextAnalyzer {
             Gdx.app.error(LOG, "Failed to load word set "+fileName, e);
         }
         return result;
+    }
+
+    private float hexAt(CharSequence text, int index) {
+        final int hi = Character.digit(text.charAt(index), 16);
+        final int lo = Character.digit(text.charAt(index+1), 16);
+        return ((hi << 4) | lo) / 255f;
+    }
+
+    private ColorNode loadColorMap(@SuppressWarnings("SameParameterValue") String fileName) {
+        final ColorNode root = new ColorNode(null);
+
+        try (BufferedReader reader = wordsFolder.child(fileName).reader(4096, "UTF-8")) {
+            int colorCount = 0;
+            while (true) {
+                final String line = reader.readLine();
+                if (line == null) {
+                    break;
+                }
+                final int sep = line.indexOf('\t');
+                if (sep != 6) {
+                    Gdx.app.error(LOG, "Invalid line '"+line+"' in "+fileName);
+                    continue;
+                }
+                final String[] words = WORD_SPLIT.split(line.substring(sep + 1));
+                ColorNode node = root;
+                for (String word : words) {
+                    node = node.getNode(word);
+                }
+
+                node.color = new Color(hexAt(line, 0), hexAt(line, 2), hexAt(line, 4), 1f);
+                colorCount++;
+            }
+            Gdx.app.log(LOG, "Loaded "+colorCount+" colors from "+fileName);
+        } catch (IOException e) {
+            Gdx.app.error(LOG, "Failed to load color set "+fileName, e);
+        }
+
+        return root;
+    }
+
+    public static class Words {
+        private final String[] words;
+        private int next = 0;
+
+        public Words(CharSequence text) {
+            final String[] words = WORD_SPLIT.split(text);
+            for (int i = 0; i < words.length; i++) {
+                words[i] = words[i].toLowerCase();
+            }
+            this.words = words;
+        }
+
+        public int mark() {
+            return next;
+        }
+
+        public void rollback(int mark) {
+            this.next = mark;
+        }
+
+        public String next() {
+            if (next < words.length) {
+                return words[next++];
+            }
+            return null;
+        }
+
+        public int size() {
+            return words.length;
+        }
+    }
+
+    public static class ColorNode {
+        final String name;
+        Color color = null;
+        private TreeMap<String, ColorNode> children = null;
+
+        private ColorNode(String name) {
+            this.name = name;
+        }
+
+        ColorNode getNode(String word) {
+            if (children == null) {
+                children = new TreeMap<>();
+            }
+            ColorNode node = children.get(word);
+            if (node == null) {
+                node = new ColorNode(word);
+                children.put(word, node);
+            }
+            return node;
+        }
+
+        Color getColor(Words words, int alreadyMatched) {
+            final int mark = words.mark();
+
+            final String word = words.next();
+            if (word == null) {
+                return color;
+            }
+
+            // We have consumed the word. Does it bring us any closer?
+            Color colorWithWord = null;
+            if (children != null) {
+                final ColorNode node = children.get(word);
+                if (node != null) {
+                    colorWithWord = node.getColor(words, alreadyMatched + 1);
+                }
+            }
+
+            if (colorWithWord != null) {
+                // Ok, use it
+                return colorWithWord;
+            }
+            // Word does not bring us any advantage, toss it
+            words.rollback(mark);
+
+            return color;
+            /*if (alreadyMatched == 0) {
+                return null;
+            }
+
+            // Can we use random color of our descendants?
+            return selfOrRandomColor(mark);*/
+        }
+
+        private Color selfOrRandomColor(int seed) {
+            if (color != null || children == null || children.size() == 0) {
+                return color;
+            }
+            int key = seed % children.size();
+            String keyWord = children.firstKey();
+            while (key != 0) {
+                keyWord = children.higherKey(keyWord);
+            }
+            return children.get(keyWord).selfOrRandomColor(seed);
+        }
+    }
+
+    public Color getColor(Words words) {
+        return colors.getColor(words, 0);
     }
 
     private static final Pattern WORD_SPLIT = Pattern.compile("[\\W]+");
@@ -179,6 +322,19 @@ public final class TextAnalyzer {
                 + otherDiff * otherDiff;
 
         return 20f / (variance + 20f);
+    }
+
+    public void analyzeColors(Array<Color> out, CharSequence text) {
+        final Words words = new Words(text);
+
+        out.ensureCapacity(words.size());
+        while (true) {
+            final Color color = getColor(words);
+            out.add(color);
+            if (color == null && words.next() == null) {
+                break;
+            }
+        }
     }
 
     private static TextAnalyzer INSTANCE;

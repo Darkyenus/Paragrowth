@@ -1,6 +1,10 @@
 package com.darkyen.paragrowth;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Array;
+
+import java.util.Random;
 
 /**
  * Parameters of the world, derived from whatever.
@@ -32,6 +36,21 @@ public class WorldCharacteristics {
     public float coherence;
 
     /**
+     * Colors to be used in the world. Contains nulls to use random/natural color.
+     */
+    public final Array<Color> colors = new Array<>(Color.class);
+
+    /**
+     * @return random color or null, directly from {@link #colors}
+     */
+    public Color getRandomColor(Random random) {
+        if (colors.size == 0) {
+            return null;
+        }
+        return colors.get(random.nextInt(colors.size));
+    }
+
+    /**
      * Random seed of the world.
      */
     public long seed;
@@ -41,6 +60,15 @@ public class WorldCharacteristics {
         c.size = MathUtils.random(1f, 100f);
         c.mood = MathUtils.random(-1f, 1f);
         c.coherence = MathUtils.random(0f, 1f);
+        final int colors = MathUtils.random(100);
+        c.colors.ensureCapacity(colors);
+        for (int i = 0; i < colors; i++) {
+            if (MathUtils.randomBoolean(0.3f)) {
+                c.colors.add(new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 1f));
+            } else {
+                c.colors.add(null);
+            }
+        }
         c.seed = MathUtils.random.nextLong();
         return c;
     }
@@ -53,6 +81,7 @@ public class WorldCharacteristics {
         final TextAnalyzer textAnalyzer = TextAnalyzer.get();
         c.mood = textAnalyzer.analyzePositivityAndNegativity(text);
         c.coherence = textAnalyzer.analyzeCoherence(text);
+        textAnalyzer.analyzeColors(c.colors, text);
 
         // Fill up with random bytes, hopefully
         long seed = length * length * 31;

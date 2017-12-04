@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
@@ -11,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.darkyen.paragrowth.ParagrowthMain;
+import com.darkyen.paragrowth.TextAnalyzer;
 import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.font.Font;
 import com.darkyen.paragrowth.font.FontLoader;
@@ -137,6 +139,36 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
             return true;
         } else if (keycode == Input.Keys.F3) {
             System.out.println(WorldCharacteristics.fromText(text));
+        } else if (keycode == Input.Keys.F4) {
+            final StringBuilder newText = new StringBuilder();
+            final TextAnalyzer.Words words = new TextAnalyzer.Words(text);
+            final TextAnalyzer analyzer = TextAnalyzer.get();
+
+            while (true) {
+                final int mark = words.mark();
+                final Color color = analyzer.getColor(words);
+                final int postColor = words.mark();
+                if (color == null) {
+                    assert mark == postColor;
+                    final String next = words.next();
+                    if (next == null) {
+                        break;
+                    }
+                    newText.append(next).append(' ');
+                } else {
+                    newText.append('{').append('#').append(color.toString()).append('}');
+                    words.rollback(mark);
+                    while (words.mark() < postColor) {
+                        newText.append(words.next()).append(' ');
+                    }
+                    newText.append("{}");
+                }
+            }
+
+            text.setLength(0);
+            text.append(newText);
+            updateGlyphLayout();
+            setCaret(text.length());
         }
         return false;
     }
