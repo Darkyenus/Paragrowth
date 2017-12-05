@@ -79,6 +79,22 @@ public class WorldColors {
             }
     };
 
+    public static final Color[][] TREE_TRUNK_COLORS = {
+            // Evil
+            {
+                    c("382a13"), // Dead tree
+            },
+            // Normal
+            {
+                    c("704f16"), // Healthy bark
+            },
+            // Good
+            {
+                    c("825a16"), // Bright bark
+                    c("9e917c"), // White bark
+            }
+    };
+
     public static <T> T pick(T[][] template, Random r, float mood) {
         int category = (int)Math.floor((1f + mood + r.nextFloat() * 0.1f - 0.05f) * template.length);
         if (category < 0) {

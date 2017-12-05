@@ -87,7 +87,7 @@ public class Doodad {
         final Array<TrunkNode> branches = new Array<>(TrunkNode.class);
 
 
-        private static final int MAX_BRANCHING_DEPTH = 10;
+        private static final int MAX_BRANCHING_DEPTH = 4;
 
         DoodadInstance.TrunkInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection,
                                                  float previousWidth, float previousLength, float previousBranchingFactor,
@@ -126,6 +126,22 @@ public class Doodad {
             }
 
             return instance;
+        }
+
+        public TrunkNode copySelfBranchOnly() {
+            final TrunkNode node = new TrunkNode();
+            node.lengthFactor.set(lengthFactor);
+            node.widthFactor.set(widthFactor);
+            node.skew.set(skew);
+            node.branchingFactor.set(branchingFactor);
+            for (int i = 0; i < branches.size; i++) {
+                if (branches.get(i) == this) {
+                    node.branchingProbability.add(branchingProbability.get(i));
+                    node.branches.add(node);
+                }
+            }
+
+            return node;
         }
     }
 
@@ -183,6 +199,11 @@ public class Doodad {
         void set(float value, float deviation) {
             this.value = value;
             this.deviation = deviation;
+        }
+
+        void set(VarFloat varFloat) {
+            this.value = varFloat.value;
+            this.deviation = varFloat.deviation;
         }
 
         float get(Random random) {

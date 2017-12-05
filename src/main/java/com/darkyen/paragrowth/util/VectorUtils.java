@@ -10,6 +10,7 @@ public class VectorUtils {
 
     private static final Vector3 generateTangent_c1 = new Vector3();
     private static final Vector3 generateTangent_c2 = new Vector3();
+
     public static Vector3 generateTangent(Vector3 normal) {
         // https://stackoverflow.com/questions/5255806/how-to-calculate-tangent-and-binormal
         final Vector3 c1 = generateTangent_c1.set(0f, 1f, 0f).crs(normal);
@@ -41,4 +42,11 @@ public class VectorUtils {
         vector.mul(mat);
     }
 
+
+    /**
+     * Returns a re-mapped float value from inRange to outRange.
+     */
+    static public float map(float value, float inRangeStart, float inRangeEnd, float outRangeStart, float outRangeEnd) {
+        return outRangeStart + (outRangeEnd - outRangeStart) * ((value - inRangeStart) / (inRangeEnd - inRangeStart));
+    }
 }

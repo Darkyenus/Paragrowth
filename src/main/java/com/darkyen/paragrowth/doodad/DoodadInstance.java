@@ -48,14 +48,14 @@ class DoodadInstance {
         final Vector3 tangent = VectorUtils.generateTangent(normal).scl(radius);
         final Matrix3 rot = createRing_rot.setToRotation(normal, 360f / sides);
 
-        ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.6f);
+        ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.3f);
 
         baseVertex.position.set(position).add(tangent);
         final short resultIndex = builder.vertex(baseVertex);
         for (int i = 1; i < sides; i++) {
             tangent.mul(rot);
 
-            ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.6f);
+            ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.3f);
             baseVertex.position.set(position).add(tangent);
             final short v = builder.vertex(baseVertex);
             assert v == resultIndex + i;
@@ -65,7 +65,7 @@ class DoodadInstance {
     }
 
     private short createCap(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, Vector3 position, Vector3 normal, float radius, Random random, float color, float coherence) {
-        ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.6f);
+        ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.3f);
         baseVertex.position.set(position).mulAdd(normal, radius);
 
         return builder.vertex(baseVertex);

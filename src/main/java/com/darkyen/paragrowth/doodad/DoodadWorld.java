@@ -47,12 +47,13 @@ public class DoodadWorld implements RenderableProvider {
 
         final RandomXS128 random = new RandomXS128(seed);
 
+        final Array<Doodad> doodadSet = Doodads.createDoodadSet(random, characteristics);
         Array<DoodadInstance> patchInstances = new Array<>(DoodadInstance.class);
         int totalDoodads = 0;
         int i = 0;
         for (int x = 0; x < patchesX; x++) {
             for (int y = 0; y < patchesY; y++) {
-                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, patchInstances, characteristics);
+                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, characteristics);
                 this.patches[i] = mesh;
                 if (mesh != null) {
                     final BoundingBox box = new BoundingBox();
@@ -69,17 +70,16 @@ public class DoodadWorld implements RenderableProvider {
         System.out.println("Generated "+totalDoodads+" doodads");
     }
 
-    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
+    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
         final MeshBuilder builder = MESH_BUILDER;
         boolean begun = false;
 
         for (int i = 0; i < DOODADS_PER_PATCH; i++) {
             final float x = baseX + random.nextFloat() * PATCH_SIZE;
             final float y = baseY + random.nextFloat() * PATCH_SIZE;
-            //TODO Cull if too close to other doodads
 
             final float z = Noise.getHeight(noise, x, y);
-            // Cull doodads in water or too close
+            // Cull doodads in water or (TODO:) too close
             if (z <= 0.1f) {
                 continue;
             }
@@ -88,7 +88,8 @@ public class DoodadWorld implements RenderableProvider {
                 builder.begin(MESH_ATTRIBUTES);
                 begun = true;
             }
-            final DoodadInstance instance = Doodads.STICK.instantiate(random, x, y, z);
+
+            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z);
             instances.add(instance);
             instance.build(builder, random, characteristics);
         }
