@@ -10,6 +10,7 @@ import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
+import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.terrain.generator.Noise;
 
 import java.util.Random;
@@ -32,7 +33,7 @@ public class DoodadWorld implements RenderableProvider {
     private final Array<DoodadInstance>[] doodadInstances;
     private final BoundingBox[] patchBoundingBoxes;
 
-    public DoodadWorld(Camera camera, long seed, float[][] noise) {
+    public DoodadWorld(Camera camera, long seed, float[][] noise, WorldCharacteristics characteristics) {
         this.camera = camera;
         final int worldWidth = noise.length;
         final int worldHeight = noise[0].length;
@@ -51,7 +52,7 @@ public class DoodadWorld implements RenderableProvider {
         int i = 0;
         for (int x = 0; x < patchesX; x++) {
             for (int y = 0; y < patchesY; y++) {
-                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, patchInstances);
+                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, patchInstances, characteristics);
                 this.patches[i] = mesh;
                 if (mesh != null) {
                     final BoundingBox box = new BoundingBox();
@@ -68,7 +69,7 @@ public class DoodadWorld implements RenderableProvider {
         System.out.println("Generated "+totalDoodads+" doodads");
     }
 
-    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<DoodadInstance> instances) {
+    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
         final MeshBuilder builder = MESH_BUILDER;
         boolean begun = false;
 
@@ -89,7 +90,7 @@ public class DoodadWorld implements RenderableProvider {
             }
             final DoodadInstance instance = Doodads.STICK.instantiate(random, x, y, z);
             instances.add(instance);
-            instance.build(builder);
+            instance.build(builder, random, characteristics);
         }
 
         if (!begun) {

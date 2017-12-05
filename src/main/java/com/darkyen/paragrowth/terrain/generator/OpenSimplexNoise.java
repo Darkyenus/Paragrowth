@@ -27,7 +27,7 @@ public final class OpenSimplexNoise {
             }
             perm[i] = source[r];
             perm2D[i] = (byte) (perm[i] & 0x0E);
-            perm3D[i] = (byte) ((perm[i] % 24) * 3);
+            perm3D[i] = (byte) (((perm[i] & 0xFF) % 24) * 3);
             perm4D[i] = (byte) (perm[i] & 0xFC);
             source[r] = source[i];
         }
@@ -71,7 +71,7 @@ public final class OpenSimplexNoise {
                 final int px = xsb + c.xsb;
                 final int py = ysb + c.ysb;
 
-                final byte i = perm2D[(perm[px & 0xFF] + py) & 0xFF];
+                final int i = perm2D[(perm[px & 0xFF] + py) & 0xFF] & 0xFF;
                 final float valuePart = Contribution2.gradients2D[i] * dx + Contribution2.gradients2D[i + 1] * dy;
 
                 attn *= attn;
@@ -80,6 +80,10 @@ public final class OpenSimplexNoise {
             c = c.Next;
         }
         return value * Contribution2.NORM_2D;
+    }
+
+    public final float evaluatePositive(final float x, final float y, final float z) {
+        return (evaluate(x, y, z) + 1f) * 0.5f;
     }
 
     public final float evaluate(final float x, final float y, final float z) {
@@ -125,7 +129,7 @@ public final class OpenSimplexNoise {
                 final int py = ysb + c.ysb;
                 final int pz = zsb + c.zsb;
 
-                final byte i = perm3D[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF];
+                final int i = perm3D[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF] & 0xFF;
                 final float valuePart = Contribution3.gradients3D[i] * dx + Contribution3.gradients3D[i + 1] * dy + Contribution3.gradients3D[i + 2] * dz;
 
                 attn *= attn;
@@ -190,7 +194,7 @@ public final class OpenSimplexNoise {
                 final int pz = zsb + c.zsb;
                 final int pw = wsb + c.wsb;
 
-                final byte i = perm4D[(perm[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF] + pw) & 0xFF];
+                final int i = perm4D[(perm[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF] + pw) & 0xFF] & 0xFF;
                 final float valuePart = Contribution4.gradients4D[i] * dx + Contribution4.gradients4D[i + 1] * dy + Contribution4.gradients4D[i + 2] * dz + Contribution4.gradients4D[i + 3] * dw;
 
                 attn *= attn;

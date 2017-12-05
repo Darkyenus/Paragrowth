@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
+import com.darkyen.paragrowth.util.ColorKt;
 import com.darkyen.paragrowth.util.VectorUtils;
 
 import java.util.Random;
@@ -40,8 +41,13 @@ public class Doodad {
 
     final VarFloat initialBranchingFactor = new VarFloat(0);
 
+    final VarFloat trunkColorHue = new VarFloat(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+    final VarFloat trunkColorSaturation = new VarFloat(0f, 1f);
+    final VarFloat trunkColorBrightness = new VarFloat(0f, 1f);
+
     DoodadInstance instantiate(Random random, float x, float y, float z) {
-        final DoodadInstance instance = new DoodadInstance(this, initialWidth.get(random), trunkSides.getInt(random));
+        final float trunkColor = ColorKt.hsb(trunkColorHue.get(random), trunkColorSaturation.get(random), trunkColorBrightness.get(random), 1f);
+        final DoodadInstance instance = new DoodadInstance(this, initialWidth.get(random), trunkSides.getInt(random), trunkColor);
         instance.position.set(x, y, z);
         final float rootLength = this.rootLength.get(random);
         instance.root = firstNode.instantiate(random, instance.position, Vector3.Z, instance.rootWidth, rootLength, initialBranchingFactor.get(random), 0);
@@ -83,7 +89,9 @@ public class Doodad {
 
         private static final int MAX_BRANCHING_DEPTH = 10;
 
-        DoodadInstance.TrunkInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection, float previousWidth, float previousLength, float previousBranchingFactor, int depth) {
+        DoodadInstance.TrunkInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection,
+                                                 float previousWidth, float previousLength, float previousBranchingFactor,
+                                                 int depth) {
             final DoodadInstance.TrunkInstance instance = new DoodadInstance.TrunkInstance(widthFactor.getFactored(random, previousWidth));
             final float length = lengthFactor.getFactored(random, previousLength);
             final float skew = this.skew.get(random);
@@ -111,7 +119,7 @@ public class Doodad {
                         // Generate the branch
 
                         final DoodadInstance.TrunkInstance branch = branches.items[i].instantiate(random, end,
-                                instance.direction, instance.endWidth, length, factor, depth + 1);
+                                instance.direction, instance.endWidth, length, factor,depth + 1);
                         instance.children.add(branch);
                     }
                 }

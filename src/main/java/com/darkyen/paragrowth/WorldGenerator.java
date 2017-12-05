@@ -59,7 +59,7 @@ public class WorldGenerator implements TerrainProvider {
                 characteristics.seed, 1f,
                 1f/200f, 2f, 5, 40f, 0.5f), -1f), -1f);
 
-        doodadWorld = new DoodadWorld(camera, characteristics.seed, noise);
+        doodadWorld = new DoodadWorld(camera, characteristics.seed, noise, characteristics);
         terrainPatchwork = new TerrainPatchwork(camera, this);
     }
 
@@ -104,9 +104,9 @@ public class WorldGenerator implements TerrainProvider {
         if (height <= 0f) {
             return waterColor;
         } else if (height < 1f) {
-            return ColorKt.fudge(ColorKt.lerpHSB(beachColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_BEACH, y * COLOR_NOISE_SCALE_BEACH)), randomForColors, characteristics.coherence, 0.6f);
+            return ColorKt.fudge(ColorKt.lerpHSB(beachColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_BEACH, y * COLOR_NOISE_SCALE_BEACH, height * COLOR_NOISE_SCALE_BEACH)), randomForColors, characteristics.coherence, 0.6f);
         } else {
-            return ColorKt.fudge(ColorKt.lerpHSB(terrainColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_TERRAIN, y * COLOR_NOISE_SCALE_TERRAIN)), randomForColors, characteristics.coherence, 0.6f);
+            return ColorKt.fudge(ColorKt.lerpHSB(terrainColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_TERRAIN, y * COLOR_NOISE_SCALE_TERRAIN, height * COLOR_NOISE_SCALE_TERRAIN)), randomForColors, characteristics.coherence, 0.6f);
         }
     }
 }

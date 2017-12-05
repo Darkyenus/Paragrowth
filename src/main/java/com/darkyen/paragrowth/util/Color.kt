@@ -79,6 +79,63 @@ fun hsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f): Flo
     return Color.toFloatBits(r, g, b, clamp(alpha, 0f, 1f))
 }
 
+fun Color.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f) {
+    val satu = clamp(saturation, 0f, 1f)
+    val brig = clamp(brightness, 0f, 1f)
+
+    var r = 0f
+    var g = 0f
+    var b = 0f
+    if (satu == 0f) {
+        b = brig
+        g = brig
+        r = brig
+    } else {
+        val h = (hue - Math.floor(hue.toDouble()).toFloat()) * 6.0f
+        val f = h - Math.floor(h.toDouble()).toFloat()
+        val p = brig * (1.0f - satu)
+        val q = brig * (1.0f - satu * f)
+        val t = brig * (1.0f - satu * (1.0f - f))
+        when (h.toInt()) {
+            0 -> {
+                r = brig
+                g = t
+                b = p
+            }
+            1 -> {
+                r = q
+                g = brig
+                b = p
+            }
+            2 -> {
+                r = p
+                g = brig
+                b = t
+            }
+            3 -> {
+                r = p
+                g = q
+                b = brig
+            }
+            4 -> {
+                r = t
+                g = p
+                b = brig
+            }
+            5 -> {
+                r = brig
+                g = p
+                b = q
+            }
+        }
+    }
+
+    this.r = r
+    this.g = g
+    this.b = b
+    this.a = clamp(alpha, 0f, 1f)
+}
+
 fun randomColor(): Float {
     return java.lang.Float.intBitsToFloat(MathUtils.random.nextInt() or -0x2000000)
 }
@@ -178,13 +235,84 @@ val Float.brightness:Float
         return maxOf(r,g, b)
     }
 
+val Color.hue:Float
+    get() {
+        val cMax = maxOf(r,g, b)
+        val cMin = minOf(r, g, b)
+
+        var hue: Float
+        val saturation: Float = if (cMax != 0f) {
+            (cMax - cMin) / cMax
+        } else {
+            0f
+        }
+
+        if (saturation == 0f)
+            hue = 0f
+        else {
+            val redC = (cMax - r) / (cMax - cMin)
+            val greenC = (cMax - g) / (cMax - cMin)
+            val blueC = (cMax - b) / (cMax - cMin)
+            hue = when {
+                r == cMax -> blueC - greenC
+                g == cMax -> 2.0f + redC - blueC
+                else -> 4.0f + greenC - redC
+            }
+            hue /= 6.0f
+            if (hue < 0)
+                hue += 1.0f
+        }
+
+        return hue
+    }
+
+val Color.saturation:Float
+    get() {
+        val cMax = maxOf(r,g, b)
+        val cMin = minOf(r, g, b)
+
+        return if (cMax != 0f) {
+            (cMax - cMin) / cMax
+        } else {
+            0f
+        }
+    }
+
+val Color.brightness:Float
+    get() {
+        return maxOf(r,g, b)
+    }
+
 private fun smoothClamp(value:Float): Float {
     return Math.tanh((value + value).toDouble()).toFloat()
 }
 
+fun Color.set(color:Float):Color {
+    this.r = color.red
+    this.g = color.green
+    this.b = color.blue
+    this.a = color.alpha
+    return this
+}
+
+private fun Random.fudgeAmount(coherence: Float, amount:Float):Float {
+    val variance = 1f - coherence
+    val base = variance * variance * (nextFloat() - 0.5f)
+    val offsetBase = Math.copySign(Math.sqrt(Math.abs(base).toDouble()).toFloat(), base)
+    return offsetBase * amount
+}
+
 fun Float.fudge(random: Random, coherence:Float, amount:Float = 1f):Float {
-    val h = this.hue + (1.1f - coherence) * (1.1f - coherence) * (random.nextFloat() - 0.5f) * amount * 0.2f
-    val s = smoothClamp(this.saturation + (1f - coherence) * (1f - coherence) * (random.nextFloat() - 0.5f) * amount)
-    val b = smoothClamp(this.brightness + (1f - coherence) * (1f - coherence) * (random.nextFloat() - 0.5f) * amount)
+    val h = this.hue + random.fudgeAmount(coherence, amount * 0.2f)
+    val s = smoothClamp(this.saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    val b = smoothClamp(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     return hsb(h,s,b)
+}
+
+fun Color.fudge(random: Random, coherence:Float, amount:Float = 1f):Color {
+    val h = this.hue + random.fudgeAmount(coherence, amount * 0.2f)
+    val s = smoothClamp(this.saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    val b = smoothClamp(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
+    this.fromHsb(h,s,b)
+    return this
 }

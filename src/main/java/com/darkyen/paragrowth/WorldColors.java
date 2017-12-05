@@ -58,24 +58,24 @@ public class WorldColors {
     public static final Color[][] TERRAIN = {
             // Evil
             {
-                    c("638c66"), // Sick green
-                    c("a59e8c"), // Dead soil
+                    c("4c6b4e"), // Sick green
+                    c("756f62"), // Dead soil
                     c("2b1919") // Volcanic black
             },
             // Normal
             {
+                    c("227516"), // Grass
+                    c("227516"), // Grass
                     c("298c1a"), // Grass
-                    c("298c1a"), // Grass
-                    c("298c1a"), // Grass
-                    c("3c6b35"), // Dark grass
-                    c("717271"), // Stone
-                    c("EDC9AF") // Desert sand
+                    c("31592a"), // Dark grass
+                    c("5f605f"), // Stone
+                    c("c9aa95") // Desert sand
             },
             // Good
             {
-                    c("4be560"), // Bright green
-                    c("4be58b"), // Bright green-azure
-                    c("6cea35") // Bright green-yellow
+                    c("44c455"), // Bright green
+                    c("41c679"), // Bright green-azure
+                    c("62c637") // Bright green-yellow
             }
     };
 

@@ -1,5 +1,7 @@
 package com.darkyen.paragrowth.doodad;
 
+import com.darkyen.paragrowth.util.ColorKt;
+
 /**
  *
  */
@@ -9,6 +11,9 @@ public class Doodads {
         STICK.initialWidth.setRange(0.5f, 5f);
         STICK.rootLength.setRange(5f, 10f);
         STICK.initialBranchingFactor.setRange(1f, 1.3f);
+        STICK.trunkColorHue.set(ColorKt.getHueOrange(), 0.1f);
+        STICK.trunkColorBrightness.set(0.2f, 0.15f);
+        STICK.trunkColorSaturation.set(0.2f, 0.15f);
 
         final Doodad.TrunkNode trunk = new Doodad.TrunkNode();
         trunk.branches.add(trunk);
