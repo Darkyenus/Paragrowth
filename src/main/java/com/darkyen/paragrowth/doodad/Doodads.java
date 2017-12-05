@@ -84,7 +84,7 @@ public class Doodads {
 
         final Doodad tree = new Doodad();
         tree.initialWidth.setRange(0.3f, 1f);
-        tree.rootLength.setRange(0.4f, 2f);
+        tree.rootLength.setRange(1f, 2f);
         tree.initialBranchingFactor.setRange(0f, 0f);
         tree.trunkColorHue.set(ColorKt.getHue(trunkBaseColor), 0.1f);
         tree.trunkColorSaturation.set(ColorKt.getSaturation(trunkBaseColor), 0.15f);
@@ -94,14 +94,14 @@ public class Doodads {
         trunk.branchingFactor.set(1f, 0f);
         trunk.lengthFactor.set(1f, 0.2f);
         trunk.widthFactor.set(0.7f, 0.2f);
-        trunk.skew.set(0f, 0f);
+        trunk.skew.set(0f, 0.05f);
         tree.firstNode = trunk;
 
         final Doodad.TrunkNode innerTrunk = new Doodad.TrunkNode();
         innerTrunk.branchingFactor.setRange(0.4f, 0.9f);
         innerTrunk.lengthFactor.set(1f, 0.2f);
         innerTrunk.widthFactor.set(0.7f, 0.2f);
-        innerTrunk.skew.set(0f, 0f);
+        innerTrunk.skew.set(0f, 0.05f);
         trunk.addBranch(Float.POSITIVE_INFINITY, innerTrunk);
         innerTrunk.addBranch(1f, innerTrunk);
 

@@ -56,7 +56,7 @@ public class WorldCharacteristics {
 
         if (colors.size != 0) {
             final double customColorChance = Math.pow(1f - size / (colors.size + size), 0.25);
-            if (random.nextFloat() >= customColorChance) {
+            if (random.nextFloat() < customColorChance) {
                 baseColor = getRandomColor(random);
             }
         }
