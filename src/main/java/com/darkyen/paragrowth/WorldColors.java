@@ -39,13 +39,11 @@ public class WorldColors {
             {
                     c("3c442e"), // Very dark green
                     c("261e1e"), // Reddish black
-                    c("93aa75") // Sick green
             },
             // Normal
             {
                     c("d6d48d"), // Sandy yellow
                     c("aaaa92"), // Rocky gray
-                    c("6dc15b") // Healthy green
             },
             // Good
             {

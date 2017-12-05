@@ -299,7 +299,7 @@ private fun Random.fudgeAmount(coherence: Float, amount:Float):Float {
     val variance = 1f - coherence
     val base = variance * variance * (nextFloat() - 0.5f)
     val offsetBase = Math.copySign(Math.sqrt(Math.abs(base).toDouble()).toFloat(), base)
-    return offsetBase * amount
+    return (offsetBase + (nextFloat() - 0.5f) * 0.2f) * amount
 }
 
 fun Float.fudge(random: Random, coherence:Float, amount:Float = 1f):Float {

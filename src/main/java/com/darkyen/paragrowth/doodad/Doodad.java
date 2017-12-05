@@ -12,9 +12,9 @@ import java.util.Random;
 /**
  * @author Darkyen
  */
-public class Doodad {
+class Doodad {
 
-    public static float MIN_WIDTH = 0.01f;
+    static float MIN_WIDTH = 0.01f;
 
     /**
      * Initial width of the plant
@@ -86,6 +86,19 @@ public class Doodad {
         final FloatArray branchingProbability = new FloatArray();
         final Array<TrunkNode> branches = new Array<>(TrunkNode.class);
 
+        void addBranch(float probability, TrunkNode branch) {
+            branchingProbability.add(probability);
+            branches.add(branch);
+        }
+
+        final FloatArray leafProbability = new FloatArray();
+        final Array<Leaf> leaves = new Array<>(Leaf.class);
+
+        void addLeaf(float probability, Leaf leaf) {
+            leafProbability.add(probability);
+            leaves.add(leaf);
+        }
+
 
         private static final int MAX_BRANCHING_DEPTH = 4;
 
@@ -120,8 +133,19 @@ public class Doodad {
 
                         final DoodadInstance.TrunkInstance branch = branches.items[i].instantiate(random, end,
                                 instance.direction, instance.endWidth, length, factor,depth + 1);
-                        instance.children.add(branch);
+                        instance.trunkChildren.add(branch);
                     }
+                }
+            }
+
+            for (int i = 0; i < leafProbability.size; i++) {
+                final float factor = branchingFactor.getFactored(random, previousBranchingFactor);
+                final float roll = random.nextFloat() * factor;
+                if (roll < leafProbability.items[i]) {
+                    // Generate the leaf
+
+                    final DoodadInstance.LeafInstance leaf = leaves.items[i].instantiate(random, previousEnd, previousDirection);
+                    instance.leafChildren.add(leaf);
                 }
             }
 
@@ -145,14 +169,52 @@ public class Doodad {
         }
     }
 
-    /**
-     * Multiple times extruded N-gon, closed with extrusion to zero
-     */
-    static class HullLeaf {
+    interface Leaf {
+        DoodadInstance.LeafInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection);
+    }
 
-        final VarFloat sides = new VarFloat(1, 6);
+    /**
+     * Multiple times extruded N-gon, closed with caps
+     */
+    static class HullLeaf implements Leaf {
+
+        final VarFloat sides = new VarFloat(3, 6);
+        {
+            sides.setRange(3.5f, 5.5f);
+        }
 
         final VarFloat length = new VarFloat();
+
+        final VarFloat roundness = new VarFloat(0f, 1f);
+
+        final VarFloat widest = new VarFloat(0f, 1f);
+
+        final VarFloat width = new VarFloat();
+
+        final VarFloat hue = new VarFloat(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+        final VarFloat saturation = new VarFloat(0f, 1f);
+        final VarFloat brightness = new VarFloat(0f, 1f);
+
+        @Override
+        public DoodadInstance.HullLeafInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection) {
+            final float length = this.length.get(random);
+            final float widest = this.widest.get(random);
+            final float roundness = this.roundness.get(random);
+            final int ringsPre = Math.round(widest * length * roundness);
+            final int ringsPost = Math.round((1f - widest) * length * roundness);
+
+            final DoodadInstance.HullLeafInstance instance = new DoodadInstance.HullLeafInstance(
+                    Math.round(sides.get(random)), ringsPre, ringsPost, widest, width.get(random), ColorKt.hsb(hue.get(random), saturation.get(random), brightness.get(random), 1f));
+
+            // Make end is correct from origin
+            final Vector3 end = instance.end.set(0f, 0f, length);
+            // Turn to fit on previous direction
+            VectorUtils.toNormalSpace(end, previousDirection);
+            // Translate on previous end
+            end.add(previousEnd);
+
+            return instance;
+        }
     }
 
     /**

@@ -27,6 +27,7 @@ public final class HeightmapPersonController {
                 Gdx.input.setCursorCatched(pressed);
                 return true;
             });
+    public final GameInput.BoundFunction GENERAL_DEBUG = GameInput.toggleFunction("General Debug", GameInput.Binding.bindKeyboard(Input.Keys.F3));
     private final GameInput.BoundFunction MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", GameInput.Binding.bindKeyboard(Input.Keys.F4));
 
     private final GameInput.BoundFunction TO_WRITE_MODE = GameInput.function("To Write Mode", GameInput.Binding.bindKeyboard(Keys.ENTER))
@@ -49,6 +50,7 @@ public final class HeightmapPersonController {
             SPRINT,
 
             TRACE_CAMERA,
+            GENERAL_DEBUG,
             MOVEMENT_DEBUG,
             TO_WRITE_MODE
     };

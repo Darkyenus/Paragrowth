@@ -2,6 +2,7 @@ package com.darkyen.paragrowth.doodad;
 
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder;
+import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
@@ -36,15 +37,82 @@ class DoodadInstance {
         final Vector3 end = new Vector3();
         final Vector3 direction = new Vector3();
         final float endWidth;
-        final Array<TrunkInstance> children = new Array<>(false, 8, TrunkInstance.class);
+        final Array<TrunkInstance> trunkChildren = new Array<>(false, 8, TrunkInstance.class);
+        final Array<LeafInstance> leafChildren = new Array<>(false, 8, LeafInstance.class);
 
         TrunkInstance(float endWidth) {
             this.endWidth = endWidth;
         }
     }
 
+    interface LeafInstance {
+        void build(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, TrunkInstance trunk, Random random, WorldCharacteristics characteristics);
+    }
+
+    static class HullLeafInstance implements LeafInstance {
+        final int sides;
+        final int ringsPre;
+        final int ringsPost;
+        final Vector3 end = new Vector3();
+        final float widest;
+        final float width;
+        final float color;
+
+        HullLeafInstance(int sides, int ringsPre, int ringsPost, float widest, float width, float color) {
+            this.sides = sides;
+            this.ringsPre = ringsPre;
+            this.ringsPost = ringsPost;
+            this.widest = widest;
+            this.width = width;
+            this.color = color;
+        }
+
+        private float widthAt(float progress) {
+            if (progress <= widest) {
+                return Interpolation.circleOut.apply(progress / widest) * width;
+            } else {
+                return Interpolation.circleOut.apply(1f - (progress - widest) / (1f - widest)) * width;
+            }
+        }
+
+        private static final Vector3 build_step = new Vector3();
+        private static final Vector3 build_ringPos = new Vector3();
+
+        @Override
+        public void build(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, TrunkInstance trunk, Random random, WorldCharacteristics characteristics) {
+            final float stepPercentPre = widest / (ringsPre+1);
+            final float stepPercentPost = (1f - widest) / (ringsPre+1);
+            final Vector3 step = build_step.set(trunk.direction).nor().scl(stepPercentPre * trunk.end.dst(end));
+
+            final short startCap = createCap(builder, baseVertex, trunk.end, trunk.direction, 0f, random, color, characteristics.coherence);
+            final Vector3 pos = build_ringPos.set(trunk.end).add(step);
+            float progress = stepPercentPre;
+            short ring = createRing(builder, baseVertex, sides, pos, trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+            joinRingCap(builder, ring, startCap, sides);
+            for (int i = 1; i <= ringsPre; i++) {
+                progress += stepPercentPre;
+                pos.add(step);
+                final short newRing = createRing(builder, baseVertex, sides, pos, trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+                joinRings(builder, ring, ring, newRing);
+                ring = newRing;
+            }
+
+            step.set(trunk.direction).nor().scl(stepPercentPost * trunk.end.dst(end));
+            for (int i = 0; i < ringsPost; i++) {
+                progress += stepPercentPost;
+                pos.add(step);
+                final short newRing = createRing(builder, baseVertex, sides, pos, trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+                joinRings(builder, ring, ring, newRing);
+                ring = newRing;
+            }
+
+            final short endCap = createCap(builder, baseVertex, end, trunk.direction, 0f, random, color, characteristics.coherence);
+            joinRingCap(builder, ring, endCap, sides);
+        }
+    }
+
     private static final Matrix3 createRing_rot = new Matrix3();
-    private short createRing(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, Vector3 position, Vector3 normal, float radius, Random random, float color, float coherence) {
+    private static short createRing(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, int sides, Vector3 position, Vector3 normal, float radius, Random random, float color, float coherence) {
         final Vector3 tangent = VectorUtils.generateTangent(normal).scl(radius);
         final Matrix3 rot = createRing_rot.setToRotation(normal, 360f / sides);
 
@@ -64,14 +132,14 @@ class DoodadInstance {
         return resultIndex;
     }
 
-    private short createCap(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, Vector3 position, Vector3 normal, float radius, Random random, float color, float coherence) {
+    private static short createCap(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, Vector3 position, Vector3 normal, float radius, Random random, float color, float coherence) {
         ColorKt.fudge(ColorKt.set(baseVertex.color, color), random, coherence, 0.3f);
         baseVertex.position.set(position).mulAdd(normal, radius);
 
         return builder.vertex(baseVertex);
     }
 
-    private void joinRings(MeshBuilder builder, short first, short second) {
+    private static void joinRings(MeshBuilder builder, short first, short second, int sides) {
         for (int i = 0; i < sides; i++) {
             // TODO Winding? Probably don't care, but maybe we care about provoking vertex...
             final int i1 = i == sides - 1 ? 0 : i + 1;
@@ -80,7 +148,7 @@ class DoodadInstance {
         }
     }
 
-    private void joinRingCap(MeshBuilder builder, short ring, short cap) {
+    private static void joinRingCap(MeshBuilder builder, short ring, short cap, int sides) {
         for (int i = 0; i < sides; i++) {
             // TODO Winding? Probably don't care, but maybe we care about provoking vertex...
             final int i1 = i == sides - 1 ? 0 : i + 1;
@@ -99,26 +167,29 @@ class DoodadInstance {
     }
 
     private void build(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, TrunkInstance trunk, float trunkColor, short baseRing, Random random, WorldCharacteristics characteristics) {
-        if (trunk.children.size == 0) {
+        if (trunk.trunkChildren.size == 0) {
             short capBaseRing = baseRing;
             if (trunk.endWidth > Doodad.MIN_WIDTH) {
                 // Too wide, lets end with standard ring and cap
-                final short endRing = createRing(builder, baseVertex, trunk.end, trunk.direction, trunk.endWidth, random, trunkColor, characteristics.coherence);
-                joinRings(builder, baseRing, endRing);
+                final short endRing = createRing(builder, baseVertex, sides, trunk.end, trunk.direction, trunk.endWidth, random, trunkColor, characteristics.coherence);
+                joinRings(builder, baseRing, endRing, sides);
                 capBaseRing = endRing;
             }
             // Create top cap
             final short cap = createCap(builder, baseVertex, trunk.end, trunk.direction, trunk.endWidth, random, trunkColor, characteristics.coherence);
-            joinRingCap(builder, capBaseRing, cap);
+            joinRingCap(builder, capBaseRing, cap, sides);
         } else {
-            final short endRing = createRing(builder, baseVertex, trunk.end, trunk.direction, trunk.endWidth, random, trunkColor, characteristics.coherence);
-            joinRings(builder, baseRing, endRing);
+            final short endRing = createRing(builder, baseVertex, sides, trunk.end, trunk.direction, trunk.endWidth, random, trunkColor, characteristics.coherence);
+            joinRings(builder, baseRing, endRing, sides);
 
-            for (TrunkInstance child : trunk.children) {
+            for (TrunkInstance child : trunk.trunkChildren) {
                 build(builder, baseVertex, child, trunkColor, endRing, random, characteristics);
             }
         }
 
+        for (LeafInstance leaf : trunk.leafChildren) {
+            leaf.build(builder, baseVertex, trunk, random, characteristics);
+        }
     }
 
     public void build(MeshBuilder builder, Random random, WorldCharacteristics characteristics) {
@@ -127,8 +198,8 @@ class DoodadInstance {
         // Create bottom cap
         final short baseCap = createCap(builder, baseVertex, position, root.direction, -rootWidth, random, trunkColor, characteristics.coherence);
         // Create bottom ring
-        final short baseRing = createRing(builder, baseVertex, position, root.direction, rootWidth, random, trunkColor, characteristics.coherence);
-        joinRingCap(builder, baseRing, baseCap);
+        final short baseRing = createRing(builder, baseVertex, sides, position, root.direction, rootWidth, random, trunkColor, characteristics.coherence);
+        joinRingCap(builder, baseRing, baseCap, sides);
 
         build(builder, baseVertex, root, trunkColor, baseRing, random, characteristics);
     }

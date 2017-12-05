@@ -116,7 +116,9 @@ public final class WanderState extends ScreenAdapter {
         modelBatch.end();
         Gdx.gl.glDisable(GL_DEPTH_CLAMP);
 
-        hudStage.draw();
+        if (cameraController.GENERAL_DEBUG.isPressed()) {
+            hudStage.draw();
+        }
     }
 
     @Override
@@ -130,13 +132,14 @@ public final class WanderState extends ScreenAdapter {
     private void updateWorld(float delta) {
         cameraController.update(delta);
 
-        statsLabel.setText("FPS: "+Gdx.graphics.getFramesPerSecond()
-                +"\nX: "+worldCam.position.x
-                +"\nY: "+worldCam.position.y
-                +"\nZ: "+worldCam.position.z
-                +"\n"+extraStats);
-
         extraStats.setLength(0);
+        extraStats.append("FPS: ").append(Gdx.graphics.getFramesPerSecond())
+                .append("\nX: ").append(worldCam.position.x)
+                .append("\nY: ").append(worldCam.position.y)
+                .append("\nZ: ").append(worldCam.position.z)
+                .append("\n");
+
+        statsLabel.setText(extraStats);
     }
 
     @Override

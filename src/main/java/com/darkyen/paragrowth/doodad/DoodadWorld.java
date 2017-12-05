@@ -37,8 +37,8 @@ public class DoodadWorld implements RenderableProvider {
         this.camera = camera;
         final int worldWidth = noise.length;
         final int worldHeight = noise[0].length;
-        final int patchesX = MathUtils.ceil(worldWidth / PATCH_SIZE);
-        final int patchesY = MathUtils.ceil(worldHeight / PATCH_SIZE);
+        final int patchesX = MathUtils.ceil((float)worldWidth / PATCH_SIZE);
+        final int patchesY = MathUtils.ceil((float)worldHeight / PATCH_SIZE);
 
         this.patches = new Mesh[patchesX * patchesY];
         //noinspection unchecked
