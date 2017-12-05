@@ -61,6 +61,7 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
         viewport.apply();
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
         final float textX = viewport.getWorldWidth() * 0.1f;
         final float textY = Math.max(viewport.getWorldHeight() * 0.9f, viewport.getWorldHeight() * 0.1f + glyphLayout.height);
@@ -77,6 +78,7 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
 
     @Override
     public void resize(int width, int height) {
+        Gdx.app.log("WriteState", "resize("+width+", "+height+")");
         viewport.update(width, height, true);
         glyphLayout = Gdx.graphics.getBackBufferWidth() > Gdx.graphics.getWidth() ? FONT2_GLYPHS : FONT_GLYPHS;
 
