@@ -105,8 +105,8 @@ class Doodad {
         DoodadInstance.TrunkInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection,
                                                  float previousWidth, float previousLength, float previousBranchingFactor,
                                                  int depth) {
-            final DoodadInstance.TrunkInstance instance = new DoodadInstance.TrunkInstance(widthFactor.getFactored(random, previousWidth));
             final float length = lengthFactor.getFactored(random, previousLength);
+            final DoodadInstance.TrunkInstance instance = new DoodadInstance.TrunkInstance(length, widthFactor.getFactored(random, previousWidth));
             final float skew = this.skew.get(random);
 
             // Make end is correct from origin
@@ -144,7 +144,7 @@ class Doodad {
                 if (roll < leafProbability.items[i]) {
                     // Generate the leaf
 
-                    final DoodadInstance.LeafInstance leaf = leaves.items[i].instantiate(random, previousEnd, previousDirection);
+                    final DoodadInstance.LeafInstance leaf = leaves.items[i].instantiate(random, instance);
                     instance.leafChildren.add(leaf);
                 }
             }
@@ -170,7 +170,7 @@ class Doodad {
     }
 
     interface Leaf {
-        DoodadInstance.LeafInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection);
+        DoodadInstance.LeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk);
     }
 
     /**
@@ -183,7 +183,12 @@ class Doodad {
             sides.setRange(3.5f, 5.5f);
         }
 
-        final VarFloat length = new VarFloat();
+        final VarFloat length = new VarFloat(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+
+        final VarFloat extraLengthFromTrunkFactor = new VarFloat(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+        {
+            extraLengthFromTrunkFactor.set(0f, 0f);
+        }
 
         final VarFloat roundness = new VarFloat(0f, 1f);
 
@@ -196,8 +201,8 @@ class Doodad {
         final VarFloat brightness = new VarFloat(0f, 1f);
 
         @Override
-        public DoodadInstance.HullLeafInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection) {
-            final float length = this.length.get(random);
+        public DoodadInstance.HullLeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk) {
+            final float length = this.length.get(random) + extraLengthFromTrunkFactor.getFactored(random, ofTrunk.length);
             final float widest = this.widest.get(random);
             final float roundness = this.roundness.get(random);
             final int ringsPre = Math.round(widest * length * roundness);
@@ -209,9 +214,9 @@ class Doodad {
             // Make end is correct from origin
             final Vector3 end = instance.end.set(0f, 0f, length);
             // Turn to fit on previous direction
-            VectorUtils.toNormalSpace(end, previousDirection);
+            VectorUtils.toNormalSpace(end, ofTrunk.direction);
             // Translate on previous end
-            end.add(previousEnd);
+            end.add(ofTrunk.end);
 
             return instance;
         }

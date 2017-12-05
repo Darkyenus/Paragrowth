@@ -34,13 +34,15 @@ class DoodadInstance {
 
     static class TrunkInstance {
 
+        final float length;
         final Vector3 end = new Vector3();
         final Vector3 direction = new Vector3();
         final float endWidth;
         final Array<TrunkInstance> trunkChildren = new Array<>(false, 8, TrunkInstance.class);
         final Array<LeafInstance> leafChildren = new Array<>(false, 8, LeafInstance.class);
 
-        TrunkInstance(float endWidth) {
+        TrunkInstance(float length, float endWidth) {
+            this.length = length;
             this.endWidth = endWidth;
         }
     }
