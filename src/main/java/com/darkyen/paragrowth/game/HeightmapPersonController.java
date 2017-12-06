@@ -22,9 +22,9 @@ public final class HeightmapPersonController {
     private final GameInput.BoundFunction STRAFE_RIGHT = GameInput.function("Right", GameInput.Binding.bindKeyboard(Keys.D));
     private final GameInput.BoundFunction SPRINT = GameInput.function("Sprint", GameInput.Binding.bindKeyboard(Keys.SHIFT_LEFT));
 
-    private final GameInput.BoundFunction TRACE_CAMERA = GameInput.toggleFunction("Trace Camera", GameInput.Binding.bindMouseButton(Input.Buttons.RIGHT))
+    private final GameInput.BoundFunction FREE_MOUSE = GameInput.toggleFunction("Free Mouse", GameInput.Binding.bindMouseButton(Input.Buttons.RIGHT))
             .listen((times, pressed) -> {
-                Gdx.input.setCursorCatched(pressed);
+                Gdx.input.setCursorCatched(!pressed);
                 return true;
             });
     public final GameInput.BoundFunction GENERAL_DEBUG = GameInput.toggleFunction("General Debug", GameInput.Binding.bindKeyboard(Input.Keys.F3));
@@ -49,7 +49,7 @@ public final class HeightmapPersonController {
             STRAFE_RIGHT,
             SPRINT,
 
-            TRACE_CAMERA,
+            FREE_MOUSE,
             GENERAL_DEBUG,
             MOVEMENT_DEBUG,
             TO_WRITE_MODE
@@ -77,7 +77,7 @@ public final class HeightmapPersonController {
     private float pitch = 0f;
 
     public void update(float deltaTime){
-        if (TRACE_CAMERA.isPressed()) {
+        if (!FREE_MOUSE.isPressed()) {
             pitch -= Gdx.input.getDeltaX() * degreesPerPixel;
             yaw -= Gdx.input.getDeltaY() * degreesPerPixel;
 

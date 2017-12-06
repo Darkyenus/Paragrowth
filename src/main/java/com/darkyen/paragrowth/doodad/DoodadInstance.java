@@ -34,6 +34,7 @@ class DoodadInstance {
 
     static class TrunkInstance {
 
+        final String tag;
         final float length;
         final Vector3 end = new Vector3();
         final Vector3 direction = new Vector3();
@@ -41,7 +42,8 @@ class DoodadInstance {
         final Array<TrunkInstance> trunkChildren = new Array<>(false, 8, TrunkInstance.class);
         final Array<LeafInstance> leafChildren = new Array<>(false, 8, LeafInstance.class);
 
-        TrunkInstance(float length, float endWidth) {
+        TrunkInstance(String tag, float length, float endWidth) {
+            this.tag = tag;
             this.length = length;
             this.endWidth = endWidth;
         }
@@ -52,6 +54,7 @@ class DoodadInstance {
     }
 
     static class HullLeafInstance implements LeafInstance {
+        final String tag;
         final int sides;
         final int ringsPre;
         final int ringsPost;
@@ -60,7 +63,8 @@ class DoodadInstance {
         final float width;
         final float color;
 
-        HullLeafInstance(int sides, int ringsPre, int ringsPost, float widest, float width, float color) {
+        HullLeafInstance(String tag, int sides, int ringsPre, int ringsPost, float widest, float width, float color) {
+            this.tag = tag;
             this.sides = sides;
             this.ringsPre = ringsPre;
             this.ringsPost = ringsPost;
@@ -77,34 +81,29 @@ class DoodadInstance {
             }
         }
 
-        private static final Vector3 build_step = new Vector3();
-        private static final Vector3 build_ringPos = new Vector3();
+        private static final Vector3 build_pos = new Vector3();
 
         @Override
         public void build(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, TrunkInstance trunk, Random random, WorldCharacteristics characteristics) {
+            final Vector3 pos = HullLeafInstance.build_pos;
             final float stepPercentPre = widest / (ringsPre+1);
             final float stepPercentPost = (1f - widest) / (ringsPre+1);
-            final Vector3 step = build_step.set(trunk.direction).nor().scl(stepPercentPre * trunk.end.dst(end));
 
             final short startCap = createCap(builder, baseVertex, trunk.end, trunk.direction, 0f, random, color, characteristics.coherence);
-            final Vector3 pos = build_ringPos.set(trunk.end).add(step);
             float progress = stepPercentPre;
-            short ring = createRing(builder, baseVertex, sides, pos, trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+            short ring = createRing(builder, baseVertex, sides, pos.set(trunk.end).lerp(end, progress), trunk.direction, widthAt(progress), random, color, characteristics.coherence);
             joinRingCap(builder, ring, startCap, sides);
             for (int i = 1; i <= ringsPre; i++) {
                 progress += stepPercentPre;
-                pos.add(step);
-                final short newRing = createRing(builder, baseVertex, sides, pos, trunk.direction, widthAt(progress), random, color, characteristics.coherence);
-                joinRings(builder, ring, ring, newRing);
+                final short newRing = createRing(builder, baseVertex, sides, pos.set(trunk.end).lerp(end, progress), trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+                joinRings(builder, ring, newRing, sides);
                 ring = newRing;
             }
 
-            step.set(trunk.direction).nor().scl(stepPercentPost * trunk.end.dst(end));
             for (int i = 0; i < ringsPost; i++) {
                 progress += stepPercentPost;
-                pos.add(step);
-                final short newRing = createRing(builder, baseVertex, sides, pos, trunk.direction, widthAt(progress), random, color, characteristics.coherence);
-                joinRings(builder, ring, ring, newRing);
+                final short newRing = createRing(builder, baseVertex, sides, pos.set(trunk.end).lerp(end, progress), trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+                joinRings(builder, ring, newRing, sides);
                 ring = newRing;
             }
 

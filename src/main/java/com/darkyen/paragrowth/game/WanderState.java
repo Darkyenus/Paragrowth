@@ -93,7 +93,13 @@ public final class WanderState extends ScreenAdapter {
     @Override
     public void show() {
         Gdx.input.setInputProcessor(gameInput);
+        Gdx.input.setCursorCatched(true);
         worldCam.update();
+    }
+
+    @Override
+    public void hide() {
+        Gdx.input.setCursorCatched(true);
     }
 
     @Override

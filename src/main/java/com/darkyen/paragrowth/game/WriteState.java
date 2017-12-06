@@ -59,6 +59,7 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
     @Override
     public void render(float delta) {
         viewport.apply();
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -78,7 +79,6 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
 
     @Override
     public void resize(int width, int height) {
-        Gdx.app.log("WriteState", "resize("+width+", "+height+")");
         viewport.update(width, height, true);
         glyphLayout = Gdx.graphics.getBackBufferWidth() > Gdx.graphics.getWidth() ? FONT2_GLYPHS : FONT_GLYPHS;
 
@@ -137,7 +137,8 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
             setCaret(caret + 1);
             return true;
         } else if (keycode == Input.Keys.ESCAPE) {
-            ParagrowthMain.INSTANCE.setScreen(new WanderState(WorldCharacteristics.fromText(text)));
+            final WorldCharacteristics c = text.length() == 0 ? WorldCharacteristics.random() : WorldCharacteristics.fromText(text);
+            ParagrowthMain.INSTANCE.setScreen(new WanderState(c));
             return true;
         } else if (keycode == Input.Keys.F3) {
             System.out.println(WorldCharacteristics.fromText(text));

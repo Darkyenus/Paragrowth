@@ -129,6 +129,7 @@ public class WorldCharacteristics {
                 "size=" + size +
                 ", mood=" + mood +
                 ", coherence=" + coherence +
+                ", colors=" + colors +
                 ", seed=" + seed +
                 '}';
     }
