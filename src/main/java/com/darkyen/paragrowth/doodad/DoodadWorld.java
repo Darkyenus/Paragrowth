@@ -89,7 +89,7 @@ public class DoodadWorld implements RenderableProvider {
                 begun = true;
             }
 
-            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z);
+            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z, characteristics);
             instances.add(instance);
             instance.build(builder, random, characteristics);
         }

@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
+import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.util.ColorKt;
 import com.darkyen.paragrowth.util.VectorUtils;
 
@@ -45,12 +46,12 @@ class Doodad {
     final VarFloat trunkColorSaturation = new VarFloat(0f, 1f);
     final VarFloat trunkColorBrightness = new VarFloat(0f, 1f);
 
-    DoodadInstance instantiate(Random random, float x, float y, float z) {
-        final float trunkColor = ColorKt.hsb(trunkColorHue.get(random), trunkColorSaturation.get(random), trunkColorBrightness.get(random), 1f);
+    DoodadInstance instantiate(Random random, float x, float y, float z, WorldCharacteristics characteristics) {
+        final float trunkColor = characteristics.possiblyReplaceColor(random, ColorKt.hsb(trunkColorHue.get(random), trunkColorSaturation.get(random), trunkColorBrightness.get(random), 1f));
         final DoodadInstance instance = new DoodadInstance(this, initialWidth.get(random), trunkSides.getInt(random), trunkColor);
         instance.position.set(x, y, z);
         final float rootLength = this.rootLength.get(random);
-        instance.root = firstNode.instantiate(random, instance.position, Vector3.Z, instance.rootWidth, rootLength, initialBranchingFactor.get(random), 0);
+        instance.root = firstNode.instantiate(random, instance.position, Vector3.Z, instance.rootWidth, rootLength, initialBranchingFactor.get(random), 0, characteristics);
         return instance;
     }
 
@@ -104,7 +105,7 @@ class Doodad {
 
         DoodadInstance.TrunkInstance instantiate(Random random, Vector3 previousEnd, Vector3 previousDirection,
                                                  float previousWidth, float previousLength, float previousBranchingFactor,
-                                                 int depth) {
+                                                 int depth, WorldCharacteristics characteristics) {
             final float length = lengthFactor.getFactored(random, previousLength);
             final DoodadInstance.TrunkInstance instance = new DoodadInstance.TrunkInstance(length, widthFactor.getFactored(random, previousWidth));
             final float skew = this.skew.get(random);
@@ -132,7 +133,7 @@ class Doodad {
                         // Generate the branch
 
                         final DoodadInstance.TrunkInstance branch = branches.items[i].instantiate(random, end,
-                                instance.direction, instance.endWidth, length, factor,depth + 1);
+                                instance.direction, instance.endWidth, length, factor,depth + 1, characteristics);
                         instance.trunkChildren.add(branch);
                     }
                 }
@@ -144,7 +145,7 @@ class Doodad {
                 if (roll < leafProbability.items[i]) {
                     // Generate the leaf
 
-                    final DoodadInstance.LeafInstance leaf = leaves.items[i].instantiate(random, instance);
+                    final DoodadInstance.LeafInstance leaf = leaves.items[i].instantiate(random, instance, characteristics);
                     instance.leafChildren.add(leaf);
                 }
             }
@@ -170,7 +171,7 @@ class Doodad {
     }
 
     interface Leaf {
-        DoodadInstance.LeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk);
+        DoodadInstance.LeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk, WorldCharacteristics characteristics);
     }
 
     /**
@@ -201,7 +202,7 @@ class Doodad {
         final VarFloat brightness = new VarFloat(0f, 1f);
 
         @Override
-        public DoodadInstance.HullLeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk) {
+        public DoodadInstance.HullLeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk, WorldCharacteristics characteristics) {
             final float length = this.length.get(random) + extraLengthFromTrunkFactor.getFactored(random, ofTrunk.length);
             final float widest = this.widest.get(random);
             final float roundness = this.roundness.get(random);
@@ -209,7 +210,7 @@ class Doodad {
             final int ringsPost = Math.round((1f - widest) * length * roundness);
 
             final DoodadInstance.HullLeafInstance instance = new DoodadInstance.HullLeafInstance(
-                    Math.round(sides.get(random)), ringsPre, ringsPost, widest, width.get(random), ColorKt.hsb(hue.get(random), saturation.get(random), brightness.get(random), 1f));
+                    Math.round(sides.get(random)), ringsPre, ringsPost, widest, width.get(random), characteristics.possiblyReplaceColor(random, ColorKt.hsb(hue.get(random), saturation.get(random), brightness.get(random), 1f)));
 
             // Make end is correct from origin
             final Vector3 end = instance.end.set(0f, 0f, length);

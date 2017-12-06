@@ -330,7 +330,9 @@ public final class TextAnalyzer {
         out.ensureCapacity(words.size());
         while (true) {
             final Color color = getColor(words);
-            out.add(color);
+            if (color != null) {
+                out.add(color);
+            }
             if (color == null && words.next() == null) {
                 break;
             }

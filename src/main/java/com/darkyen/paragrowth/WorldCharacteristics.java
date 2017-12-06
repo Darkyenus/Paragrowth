@@ -51,14 +51,28 @@ public class WorldCharacteristics {
         return colors.get(random.nextInt(colors.size));
     }
 
-    public float getRandomFudgedColor(Random random, Color[][] template) {
-        Color baseColor = null;
-
+    private boolean shouldUseCustomColor(Random random) {
         if (colors.size != 0) {
             final double customColorChance = Math.pow(1f - size / (colors.size + size), 0.25);
             if (random.nextFloat() < customColorChance) {
-                baseColor = getRandomColor(random);
+                return true;
             }
+        }
+        return false;
+    }
+
+    public float possiblyReplaceColor(Random random, float color) {
+        if (shouldUseCustomColor(random)) {
+            return ColorKt.fudge(getRandomColor(random).toFloatBits(), random, coherence, 1f);
+        }
+        return color;
+    }
+
+    public float getRandomFudgedColor(Random random, Color[][] template) {
+        Color baseColor = null;
+
+        if (shouldUseCustomColor(random)) {
+            baseColor = getRandomColor(random);
         }
 
         if (baseColor == null) {
@@ -78,14 +92,10 @@ public class WorldCharacteristics {
         c.size = MathUtils.random(1f, 100f);
         c.mood = MathUtils.random(-1f, 1f);
         c.coherence = MathUtils.random(0f, 1f);
-        final int colors = MathUtils.random(100);
+        final int colors = MathUtils.random((int)c.size);
         c.colors.ensureCapacity(colors);
         for (int i = 0; i < colors; i++) {
-            if (MathUtils.randomBoolean(0.3f)) {
-                c.colors.add(new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 1f));
-            } else {
-                c.colors.add(null);
-            }
+            c.colors.add(new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 1f));
         }
         c.seed = MathUtils.random.nextLong();
         return c;

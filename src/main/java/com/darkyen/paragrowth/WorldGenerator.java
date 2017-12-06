@@ -39,7 +39,7 @@ public class WorldGenerator implements TerrainProvider {
         {
             final RandomXS128 random = new RandomXS128(characteristics.seed);
             this.randomForColors = random;
-            waterColor = ColorKt.fudge(pick(WorldColors.WATER, random, characteristics.mood).toFloatBits(), random, characteristics.coherence, 1f);
+            waterColor = characteristics.getRandomFudgedColor(random, WorldColors.WATER); //ColorKt.fudge(pick(WorldColors.WATER, random, characteristics.mood).toFloatBits(), random, characteristics.coherence, 1f);
             beachColor = new float[]{
                     characteristics.getRandomFudgedColor(random, WorldColors.BEACH),
                     characteristics.getRandomFudgedColor(random, WorldColors.BEACH)
