@@ -3,15 +3,9 @@ package com.darkyen.paragrowth.input;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.utils.GdxRuntimeException;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.ObjectMap;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Objects;
 
 /**
  * Input processor that offers advanced rebindable keys, system of triggers and saving of the bindings
@@ -49,76 +43,12 @@ public final class GameInput implements InputProcessor {
         somethingChanged = true;
     }
 
-    public void setBinding(BoundFunction function, Binding binding) {
-        if (Objects.equals(binding, function.realBinding)) return;
-        function.realBinding = binding;
+    public void addBinding(BoundFunction function, Binding binding) {
+        if (function.realBinding.contains(binding, false)) {
+            return;
+        }
+        function.realBinding.add(binding);
         somethingChanged = true;
-    }
-
-    public void load(FileHandle from) {
-        /*
-        Savefile syntax:
-
-        key type value [toggle [repeatTimeout]]
-
-        key - String
-        type - String (valueof of BindingType)
-        value - int
-        toggle - boolean ("true"/"false")
-        timeout - int
-         */
-        if (from.exists() && !from.isDirectory()) {
-            try (BufferedReader r = from.reader(4096, "utf-8")) {
-                String line = r.readLine();
-                while (line != null) {
-                    if (line.isEmpty()) continue;
-                    final String[] split = line.split(" ");
-                    try {
-                        final BoundFunction function = functions.get(split[0]);
-                        if (function == null) continue;
-                        BindingType type = BindingType.valueOf(split[1]);
-                        int value = Integer.parseInt(split[2]);
-                        function.realBinding = new Binding(type, value);
-
-                        if (split.length >= 4) {
-                            function.toggle = "true".equals(split[3]);
-                            if (split.length >= 5) {
-                                function.repeatTimeout = Integer.parseInt(split[4]);
-                            }
-                        }
-                    } catch (Exception ex) {
-                        Gdx.app.error("GameInput", "Could not parse line \"" + line + "\"", ex);
-                    }
-                }
-                somethingChanged = false;
-            } catch (GdxRuntimeException | IOException exception) {
-                Gdx.app.error("GameInput", "Could not load file " + from + ".", exception);
-            }
-        }
-    }
-
-    public void save(FileHandle to) {
-        if (!somethingChanged) return;
-        final StringBuilder s = new StringBuilder();
-        try (Writer writer = to.writer(false, "utf-8")) {
-            for (BoundFunction function : functions.values()) {
-                boolean writeKey = !Objects.equals(function.defaultBinding, function.realBinding);
-                //noinspection PointlessBooleanExpression
-                boolean writeSettings = function.repeatTimeout != BoundFunction.DEFAULT_REPEAT_TIMEOUT || function.toggle != BoundFunction.DEFAULT_TOGGLE;
-                if(writeKey || writeSettings){
-                    s.append(function.key).append(' ').append(function.realBinding.type.name()).append(' ').append(function.realBinding.value);
-                    if(writeSettings){
-                        s.append(function.toggle).append(' ').append(function.repeatTimeout);
-                    }
-                    s.append('\n');
-                    writer.write(s.toString());
-                    s.setLength(0);
-                }
-            }
-            somethingChanged = false;
-        } catch (GdxRuntimeException | IOException exception) {
-            Gdx.app.error("GameInput", "Could not save file " + to + ".", exception);
-        }
     }
 
     /**
@@ -130,20 +60,22 @@ public final class GameInput implements InputProcessor {
         positiveScrollBound = null;
         negativeScrollBound = null;
         for (BoundFunction function : functions.values()) {
-            if (function.realBinding == null) function.realBinding = function.defaultBinding;
-            if (function.realBinding != null) {
-                final int value = function.realBinding.value;
-                switch (function.realBinding.type) {
+            if (function.realBinding.size == 0) {
+                function.realBinding.addAll(function.defaultBinding);
+            }
+            for (Binding binding : function.realBinding) {
+                final int value = binding.value;
+                switch (binding.type) {
                     case KEYBOARD:
                         if (keyBound.containsKey(value)) {
-                            function.realBinding = null;
+                            Gdx.app.log("GameInput", "Duplicate binding for key "+value);
                         } else {
                             keyBound.put(value, function);
                         }
                         break;
                     case MOUSE_BUTTON:
                         if (buttonBound.containsKey(value)) {
-                            function.realBinding = null;
+                            Gdx.app.log("GameInput", "Duplicate binding for button "+value);
                         } else {
                             buttonBound.put(value, function);
                         }
@@ -153,13 +85,13 @@ public final class GameInput implements InputProcessor {
                             if (positiveScrollBound == null) {
                                 positiveScrollBound = function;
                             } else {
-                                function.realBinding = null;
+                                Gdx.app.log("GameInput", "Duplicate binding for positive scroll");
                             }
                         } else {
                             if (negativeScrollBound == null) {
                                 negativeScrollBound = function;
                             } else {
-                                function.realBinding = null;
+                                Gdx.app.log("GameInput", "Duplicate binding for negative scroll");
                             }
                         }
                         break;
@@ -349,21 +281,21 @@ public final class GameInput implements InputProcessor {
         return sb.toString();
     }
 
-    public static BoundFunction function(String key, String label, Binding defaultBinding) {
+    public static BoundFunction function(String key, String label, Binding...defaultBinding) {
         return new BoundFunction(key, label, defaultBinding);
     }
 
-    public static BoundFunction function(String label, Binding defaultBinding) {
+    public static BoundFunction function(String label, Binding...defaultBinding) {
         return new BoundFunction(generateKey(label), label, defaultBinding);
     }
 
-    public static BoundFunction toggleFunction(String key, String label, Binding defaultBinding) {
+    public static BoundFunction toggleFunction(String key, String label, Binding...defaultBinding) {
         final BoundFunction boundFunction = new BoundFunction(key, label, defaultBinding);
         boundFunction.toggle = true;
         return boundFunction;
     }
 
-    public static BoundFunction toggleFunction(String label, Binding defaultBinding) {
+    public static BoundFunction toggleFunction(String label, Binding...defaultBinding) {
         final BoundFunction boundFunction = new BoundFunction(generateKey(label), label, defaultBinding);
         boundFunction.toggle = true;
         return boundFunction;
@@ -373,8 +305,8 @@ public final class GameInput implements InputProcessor {
         //region Technical
         private final String key;
         private final String humanReadableName;
-        private final Binding defaultBinding;
-        private Binding realBinding;
+        private final Binding[] defaultBinding;
+        private final Array<Binding> realBinding = new Array<>(true, 4, Binding.class);
         //endregion
 
         //region Settings
@@ -415,7 +347,7 @@ public final class GameInput implements InputProcessor {
         private int times = 1;
         //endregion
 
-        protected BoundFunction(String key, String humanReadableName, Binding defaultBinding) {
+        protected BoundFunction(String key, String humanReadableName, Binding[] defaultBinding) {
             this.key = key;
             this.humanReadableName = humanReadableName;
             this.defaultBinding = defaultBinding;
@@ -431,14 +363,14 @@ public final class GameInput implements InputProcessor {
          *
          * @return binding to which the function is currently bound to, null if unbound
          */
-        public Binding getBinding() {
+        public Array<Binding> getBinding() {
             return realBinding;
         }
 
         /**
          * @return binding to which the function is bound to by default, null if unbound
          */
-        public Binding getDefaultBinding() {
+        public Binding[] getDefaultBinding() {
             return defaultBinding;
         }
 

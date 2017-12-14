@@ -10,27 +10,29 @@ import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 
 import static com.badlogic.gdx.Input.Keys;
+import static com.darkyen.paragrowth.input.GameInput.Binding.bindKeyboard;
+import static com.darkyen.paragrowth.input.GameInput.Binding.bindMouseButton;
 
 /**
  * @author Darkyen
  */
 public final class HeightmapPersonController {
 
-    private final GameInput.BoundFunction FORWARD = GameInput.function("Forward", GameInput.Binding.bindKeyboard(Keys.W));
-    private final GameInput.BoundFunction BACKWARD = GameInput.function("Backward", GameInput.Binding.bindKeyboard(Keys.S));
-    private final GameInput.BoundFunction STRAFE_LEFT = GameInput.function("Left", GameInput.Binding.bindKeyboard(Keys.A));
-    private final GameInput.BoundFunction STRAFE_RIGHT = GameInput.function("Right", GameInput.Binding.bindKeyboard(Keys.D));
-    private final GameInput.BoundFunction SPRINT = GameInput.function("Sprint", GameInput.Binding.bindKeyboard(Keys.SHIFT_LEFT));
+    private final GameInput.BoundFunction FORWARD = GameInput.function("Forward", bindKeyboard(Keys.W), bindKeyboard(Keys.UP));
+    private final GameInput.BoundFunction BACKWARD = GameInput.function("Backward", bindKeyboard(Keys.S), bindKeyboard(Keys.DOWN));
+    private final GameInput.BoundFunction STRAFE_LEFT = GameInput.function("Left", bindKeyboard(Keys.A), bindKeyboard(Keys.LEFT));
+    private final GameInput.BoundFunction STRAFE_RIGHT = GameInput.function("Right", bindKeyboard(Keys.D), bindKeyboard(Keys.RIGHT));
+    private final GameInput.BoundFunction SPRINT = GameInput.function("Sprint", bindKeyboard(Keys.SHIFT_LEFT));
 
-    private final GameInput.BoundFunction FREE_MOUSE = GameInput.toggleFunction("Free Mouse", GameInput.Binding.bindMouseButton(Input.Buttons.RIGHT))
+    private final GameInput.BoundFunction FREE_MOUSE = GameInput.toggleFunction("Free Mouse", bindMouseButton(Input.Buttons.RIGHT))
             .listen((times, pressed) -> {
                 Gdx.input.setCursorCatched(!pressed);
                 return true;
             });
-    public final GameInput.BoundFunction GENERAL_DEBUG = GameInput.toggleFunction("General Debug", GameInput.Binding.bindKeyboard(Input.Keys.F3));
-    private final GameInput.BoundFunction MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", GameInput.Binding.bindKeyboard(Input.Keys.F4));
+    public final GameInput.BoundFunction GENERAL_DEBUG = GameInput.toggleFunction("General Debug", bindKeyboard(Input.Keys.F3));
+    private final GameInput.BoundFunction MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", bindKeyboard(Input.Keys.F4));
 
-    private final GameInput.BoundFunction TO_WRITE_MODE = GameInput.function("To Write Mode", GameInput.Binding.bindKeyboard(Keys.ENTER))
+    private final GameInput.BoundFunction TO_WRITE_MODE = GameInput.function("To Write Mode", bindKeyboard(Keys.ESCAPE))
             .listen((times, pressed) -> {
                 if (pressed) {
                     final Screen oldScreen = ParagrowthMain.INSTANCE.getScreen();
@@ -109,7 +111,7 @@ public final class HeightmapPersonController {
             }
         } else {
             height = this.height;
-            if (SPRINT.isPressed()) {
+            if (!SPRINT.isPressed()) {
                 velocity = this.velocity * 2f;
             } else {
                 velocity = this.velocity;
