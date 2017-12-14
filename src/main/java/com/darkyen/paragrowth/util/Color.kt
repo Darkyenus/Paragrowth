@@ -303,15 +303,27 @@ private fun Random.fudgeAmount(coherence: Float, amount:Float):Float {
 }
 
 fun Float.fudge(random: Random, coherence:Float, amount:Float = 1f):Float {
-    val h = this.hue + random.fudgeAmount(coherence, amount * 0.2f)
-    val s = smoothClamp(this.saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    var hue = this.hue
+    val saturation = this.saturation
+    if (saturation < 0.001f) {
+        hue = random.nextFloat()
+    }
+
+    val h = hue + random.fudgeAmount(coherence, amount * 0.2f)
+    val s = smoothClamp(saturation + random.fudgeAmount(coherence, amount * 0.5f))
     val b = smoothClamp(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     return hsb(h,s,b)
 }
 
 fun Color.fudge(random: Random, coherence:Float, amount:Float = 1f):Color {
-    val h = this.hue + random.fudgeAmount(coherence, amount * 0.2f)
-    val s = smoothClamp(this.saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    var hue = this.hue
+    val saturation = this.saturation
+    if (saturation < 0.001f) {
+        hue = random.nextFloat()
+    }
+
+    val h = hue + random.fudgeAmount(coherence, amount * 0.2f)
+    val s = smoothClamp(saturation + random.fudgeAmount(coherence, amount * 0.5f))
     val b = smoothClamp(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     this.fromHsb(h,s,b)
     return this

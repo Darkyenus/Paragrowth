@@ -175,9 +175,9 @@ public final class Noise {
         final int height = noise[0].length;
 
         for (int x = 0; x < width; x++) {
-            final float xFactor = (float) Math.cos((((float)x / width) - 0.5f) * Math.PI);
+            final float xFactor = (float) Math.cos((((float)x / (width-1f)) - 0.5f) * Math.PI);
             for (int y = 0; y < height; y++) {
-                final float yFactor = (float) Math.cos((((float)y / height) - 0.5f) * Math.PI);
+                final float yFactor = (float) Math.cos((((float)y / (height-1f)) - 0.5f) * Math.PI);
 
                 final float factor = xFactor * yFactor;
 
@@ -193,9 +193,9 @@ public final class Noise {
         final int height = noise[0].length;
 
         for (int x = 0; x < width; x++) {
-            final float xFactor = (float) Math.cos((((float)x / width) - 0.5f) * Math.PI);
+            final float xFactor = (float) Math.cos((((float)x / (width-1f)) - 0.5f) * Math.PI);
             for (int y = 0; y < height; y++) {
-                final float yFactor = (float) Math.cos((((float)y / height) - 0.5f) * Math.PI);
+                final float yFactor = (float) Math.cos((((float)y / (height-1f)) - 0.5f) * Math.PI);
 
                 final float factor = xFactor * yFactor;
 
