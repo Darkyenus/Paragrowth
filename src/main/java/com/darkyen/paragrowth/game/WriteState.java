@@ -19,6 +19,8 @@ import com.darkyen.paragrowth.font.FontLoader;
 import com.darkyen.paragrowth.font.GlyphLayout;
 import com.darkyen.paragrowth.util.ColorKt;
 
+import java.util.Random;
+
 /**
  *
  */
@@ -149,7 +151,7 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
 
             while (true) {
                 final int mark = words.mark();
-                final Color color = analyzer.getColor(words);
+                final Color color = analyzer.getColor(words, new Random());
                 final int postColor = words.mark();
                 if (color == null) {
                     assert mark == postColor;

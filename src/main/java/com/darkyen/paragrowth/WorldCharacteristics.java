@@ -105,12 +105,6 @@ public class WorldCharacteristics {
         final WorldCharacteristics c = new WorldCharacteristics();
         final int length = text.length();
 
-        c.size = (int) Math.round(Math.pow(length, 0.6));
-        final TextAnalyzer textAnalyzer = TextAnalyzer.get();
-        c.mood = textAnalyzer.analyzePositivityAndNegativity(text);
-        c.coherence = textAnalyzer.analyzeCoherence(text);
-        textAnalyzer.analyzeColors(c.colors, text);
-
         // Fill up with random bytes, hopefully
         long seed = length * length * 31;
         seed = seed * seed;
@@ -120,6 +114,12 @@ public class WorldCharacteristics {
             seed = 31 * seed + text.charAt(i);
         }
         c.seed = seed;
+
+        c.size = (int) Math.round(Math.pow(length, 0.6)) + 2;
+        final TextAnalyzer textAnalyzer = TextAnalyzer.get();
+        c.mood = textAnalyzer.analyzePositivityAndNegativity(text);
+        c.coherence = textAnalyzer.analyzeCoherence(text);
+        textAnalyzer.analyzeColors(c.colors, text, new Random(c.seed));
         return c;
     }
 

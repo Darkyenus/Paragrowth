@@ -71,7 +71,7 @@ public final class TextAnalyzer {
                     node = node.getNode(word);
                 }
 
-                node.color = new Color(hexAt(line, 0), hexAt(line, 2), hexAt(line, 4), 1f);
+                node.color.add(new Color(hexAt(line, 0), hexAt(line, 2), hexAt(line, 4), 1f));
                 colorCount++;
             }
             Gdx.app.log(LOG, "Loaded "+colorCount+" colors from "+fileName);
@@ -116,7 +116,7 @@ public final class TextAnalyzer {
 
     public static class ColorNode {
         final String name;
-        Color color = null;
+        final Array<Color> color = new Array<>(false, 1, Color.class);
         private TreeMap<String, ColorNode> children = null;
 
         private ColorNode(String name) {
@@ -135,12 +135,22 @@ public final class TextAnalyzer {
             return node;
         }
 
-        Color getColor(Words words, int alreadyMatched) {
+        private Color ownColor(Random random) {
+            if (color.size == 0) {
+                return null;
+            }
+            if (color.size == 1) {
+                return color.first();
+            }
+            return color.get(random.nextInt(color.size));
+        }
+
+        Color getColor(Words words, int alreadyMatched, Random random) {
             final int mark = words.mark();
 
             final String word = words.next();
             if (word == null) {
-                return color;
+                return ownColor(random);
             }
 
             // We have consumed the word. Does it bring us any closer?
@@ -148,7 +158,7 @@ public final class TextAnalyzer {
             if (children != null) {
                 final ColorNode node = children.get(word);
                 if (node != null) {
-                    colorWithWord = node.getColor(words, alreadyMatched + 1);
+                    colorWithWord = node.getColor(words, alreadyMatched + 1, random);
                 }
             }
 
@@ -159,30 +169,12 @@ public final class TextAnalyzer {
             // Word does not bring us any advantage, toss it
             words.rollback(mark);
 
-            return color;
-            /*if (alreadyMatched == 0) {
-                return null;
-            }
-
-            // Can we use random color of our descendants?
-            return selfOrRandomColor(mark);*/
-        }
-
-        private Color selfOrRandomColor(int seed) {
-            if (color != null || children == null || children.size() == 0) {
-                return color;
-            }
-            int key = seed % children.size();
-            String keyWord = children.firstKey();
-            while (key != 0) {
-                keyWord = children.higherKey(keyWord);
-            }
-            return children.get(keyWord).selfOrRandomColor(seed);
+            return ownColor(random);
         }
     }
 
-    public Color getColor(Words words) {
-        return colors.getColor(words, 0);
+    public Color getColor(Words words, Random random) {
+        return colors.getColor(words, 0, random);
     }
 
     private static final Pattern WORD_SPLIT = Pattern.compile("[\\W]+");
@@ -324,12 +316,12 @@ public final class TextAnalyzer {
         return 20f / (variance + 20f);
     }
 
-    public void analyzeColors(Array<Color> out, CharSequence text) {
+    public void analyzeColors(Array<Color> out, CharSequence text, Random random) {
         final Words words = new Words(text);
 
         out.ensureCapacity(words.size());
         while (true) {
-            final Color color = getColor(words);
+            final Color color = getColor(words, random);
             if (color != null) {
                 out.add(color);
             }

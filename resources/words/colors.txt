@@ -4,8 +4,8 @@ b0bf1a	acid green
 7cb9e8	aero
 c9ffe5	aero blue
 b284be	african violet
-5d8aa8	air force blue (raf)
-00308f	air force blue (usaf)
+5d8aa8	air force blue
+00308f	air force blue
 72a0c1	air superiority blue
 af002a	alabama crimson
 f2f0e6	alabaster
@@ -22,7 +22,7 @@ d3212d	amaranth red
 3b7a57	amazon
 00c4b0	amazonite
 ffbf00	amber
-ff7e00	amber (sae/ece)
+ff7e00	amber
 3b3b6d	american blue
 391802	american bronze
 804040	american brown
@@ -44,7 +44,7 @@ cd9575	antique brass
 915c83	antique fuchsia
 841b2d	antique ruby
 faebd7	antique white
-008000	ao (english)
+008000	ao
 66b447	apple
 8db600	apple green
 fbceb1	apricot
@@ -67,7 +67,7 @@ ff2052	awesome
 63775b	axolotl
 c39953	aztec gold
 007fff	azure
-f0ffff	azure (web color)
+f0ffff	azure
 f0ffff	azure mist
 dbe9f4	azureish white
 89cff0	baby blue
@@ -116,15 +116,15 @@ faf0be	blond
 8a0303	blood
 d1001c	blood orange
 660000	blood red
-a41313	blood (animal)
-630f0f	blood (organ)
+a41313	blood
+630f0f	blood
 0000ff	blue
-1f75fe	blue (crayola)
-0093af	blue (munsell)
-0087bd	blue (ncs)
-0018a8	blue (pantone)
-333399	blue (pigment)
-0247fe	blue (ryb)
+1f75fe	blue
+0093af	blue
+0087bd	blue
+0018a8	blue
+333399	blue
+0247fe	blue
 a2a2d0	blue bell
 00b9fb	blue bolt
 0088dc	blue cola
@@ -135,8 +135,8 @@ ace5ee	blue lagoon
 553592	blue-magenta violet
 126180	blue sapphire
 8a2be2	blue-violet
-7366bd	blue-violet (crayola)
-4d1a7f	blue-violet (color wheel)
+7366bd	blue-violet
+4d1a7f	blue-violet
 5072a7	blue yonder
 4f86f7	blueberry
 1c1cf0	bluebonnet
@@ -162,7 +162,7 @@ c32148	bright maroon
 ff007f	bright pink
 08e8de	bright turquoise
 d19fe8	bright ube
-ffaa1d	bright yellow (crayola)
+ffaa1d	bright yellow
 3399ff	brilliant azure
 f4bbff	brilliant lavender
 ff55a3	brilliant rose
@@ -170,12 +170,12 @@ fb607f	brink pink
 004225	british racing green
 88540b	bronze
 cd7f32	bronze
-b08d57	bronze (metallic)
+b08d57	bronze
 737000	bronze yellow
 993300	brown
-af593e	brown (crayola)
-964b00	brown (traditional)
-a52a2a	brown (web)
+af593e	brown
+964b00	brown
+a52a2a	brown
 6b4423	brown-nose
 af6e4d	brown sugar
 5f1933	brown chocolate
@@ -198,7 +198,7 @@ bd33a4	byzantine
 702963	byzantium
 536872	cadet
 5f9ea0	cadet blue
-a9b2c3	cadet blue (crayola)
+a9b2c3	cadet blue
 91a3b0	cadet grey
 0a1195	cadmium blue
 006b3c	cadmium green
@@ -225,7 +225,7 @@ ffd59a	caramel
 c41e3a	cardinal
 00cc99	caribbean green
 960018	carmine
-d70040	carmine (m&p)
+d70040	carmine
 eb4c42	carmine pink
 ff0038	carmine red
 ffa6c9	carnation pink
@@ -249,7 +249,7 @@ ec3b83	cerise pink
 2a52be	cerulean blue
 001440	cetacean blue
 6d9bc3	cerulean frost
-1dacd6	cerulean (crayola)
+1dacd6	cerulean
 007aa5	cg blue
 e03c31	cg red
 a0785a	chamoisee
@@ -259,8 +259,8 @@ f1ddcf	champagne pink
 232b2b	charleston green
 d0748b	charm
 e68fac	charm pink
-dfff00	chartreuse (traditional)
-7fff00	chartreuse (web)
+dfff00	chartreuse
+7fff00	chartreuse
 ffa600	cheese
 de3163	cherry
 ffb7c5	cherry blossom pink
@@ -286,8 +286,8 @@ ffb200	chinese yellow
 3f000f	chocolate brown
 58111a	chocolate cosmos
 3c1421	chocolate kisses
-7b3f00	chocolate (traditional)
-d2691e	chocolate (web)
+7b3f00	chocolate
+d2691e	chocolate
 2a8fbd	christmas blue
 365194	christmas blue
 5d2b2c	christmas brown
@@ -328,7 +328,7 @@ f88379	congo pink
 8c92ac	cool grey
 eee0b1	cookies and cream
 b87333	copper
-da8a67	copper (crayola)
+da8a67	copper
 ad6f69	copper penny
 cb6d51	copper red
 996666	copper rose
@@ -357,17 +357,17 @@ f5f5f5	cultured
 4682bf	cyan-blue azure
 28589c	cyan cobalt blue
 188bc2	cyan cornflower blue
-00b7eb	cyan (process)
+00b7eb	cyan
 58427c	cyber grape
 ffd300	cyber yellow
 f56fa1	cyclamen
 ffff31	daffodil
 f0e130	dandelion
-fddb6d	dandelion (crayola)
+fddb6d	dandelion
 00008b	dark blue
 666699	dark blue-gray
 804a00	dark bronze
-514100	dark bronze (coin)
+514100	dark bronze
 654321	dark brown
 88654e	dark brown-tangelo
 5d3954	dark byzantium
@@ -376,16 +376,16 @@ a40000	dark candy apple red
 333333	dark charcoal
 986960	dark chestnut
 490206	dark chocolate
-3c1321	dark chocolate (hershey's)
+3c1321	dark chocolate
 26428b	dark cornflower blue
 cd5b45	dark coral
 008b8b	dark cyan
 536878	dark electric blue
 aa6c39	dark gold
 b8860b	dark goldenrod
-a9a9a9	dark gray (x11)
+a9a9a9	dark gray
 013220	dark green
-006400	dark green (x11)
+006400	dark green
 1f262a	dark gunmetal
 00416a	dark imperial blue
 00147e	dark imperial blue
@@ -395,7 +395,7 @@ bdb76b	dark khaki
 734f96	dark lavender
 8bbe1b	dark lemon lime
 534b4f	dark liver
-543d37	dark liver (horses)
+543d37	dark liver
 8b008b	dark magenta
 a9a9a9	dark medium gray
 003366	dark midnight blue
@@ -548,9 +548,9 @@ ffbf00	fluorescent orange
 ff1493	fluorescent pink
 ccff00	fluorescent yellow
 ff004f	folly
-5fa777	forest green (crayola)
-014421	forest green (traditional)
-228b22	forest green (web)
+5fa777	forest green
+014421	forest green
+228b22	forest green
 a67b5b	french beige
 856d4d	french bistre
 0072bb	french blue
@@ -569,7 +569,7 @@ ac1e44	french wine
 a6e7ff	fresh air
 e936a7	frostbite
 ff00ff	fuchsia
-c154c1	fuchsia (crayola)
+c154c1	fuchsia
 ff77ff	fuchsia pink
 cc397b	fuchsia purple
 c74375	fuchsia rose
@@ -577,7 +577,7 @@ e48400	fulvous
 cc6666	fuzzy wuzzy
 dcdcdc	gainsboro
 e49b0f	gamboge
-996600	gamboge orange (brown)
+996600	gamboge orange
 733635	garnet
 ffdf46	gargoyle gas
 007f66	generic viridian
@@ -589,9 +589,9 @@ d8e4bc	gin
 ab92b3	glossy grape
 00ab66	go green
 a57c00	gold
-d4af37	gold (metallic)
-ffd700	gold (web) (golden)
-e6be8a	gold (crayola)
+d4af37	gold
+ffd700	gold
+e6be8a	gold
 85754e	gold fusion
 bd9b16	gold foil
 996515	golden brown
@@ -601,27 +601,27 @@ daa520	goldenrod
 676767	granite gray
 a8e4a0	granny smith apple
 6f2da8	grape
-808080	gray (html/css gray)
-bebebe	gray (x11 gray)
+808080	gray
+bebebe	gray
 465945	gray-asparagus
 8c92ac	gray-blue
 008001	green
-00ff00	green (color wheel) (x11 green)
-1cac78	green (crayola)
-008000	green (html/css color)
-00a877	green (munsell)
-009f6b	green (ncs)
-00ad43	green (pantone)
-00a550	green (pigment)
-66b032	green (ryb)
+00ff00	green
+1cac78	green
+008000	green
+00a877	green
+009f6b	green
+00ad43	green
+00a550	green
+66b032	green
 1164b4	green-blue
-2887c8	green-blue (crayola)
+2887c8	green-blue
 4c721d	green cola
 009966	green-cyan
 a7f432	green lizard
 6eaea1	green sheen
 adff2f	green-yellow
-f0e891	green-yellow (crayola)
+f0e891	green-yellow
 a99a86	grullo
 00ff7f	guppie green
 2a3439	gunmetal
@@ -664,15 +664,15 @@ cd5c5c	indian red
 e3a857	indian yellow
 4b0082	indigo
 091f92	indigo dye
-4f69c6	indigo (crayola)
-233067	indigo (rainbow)
-4b0082	indigo (web)
+4f69c6	indigo
+233067	indigo
+4b0082	indigo
 ff496c	infra red
 360ccc	interdimensional blue
 002fa7	international klein blue
-ff4f00	international orange (aerospace)
-ba160c	international orange (engineering)
-c0362c	international orange (golden gate bridge)
+ff4f00	international orange
+ba160c	international orange
+c0362c	international orange
 5a4fcf	iris
 b3446c	irresistible
 f4f0ec	isabelline
@@ -702,8 +702,8 @@ bdda57	june bud
 7c1c05	kenyan copper
 3ab09e	keppel
 e8f48c	key lime
-c3b091	khaki (html/css) (khaki)
-f0e68c	khaki (x11) (light khaki)
+c3b091	khaki
+f0e68c	khaki
 8ee53f	kiwi
 882d17	kobe
 e79fc4	kobi
@@ -718,8 +718,8 @@ e0bc5b	lanzones
 ffff66	laser lemon
 a9ba9d	laurel green
 cf1020	lava
-b57edc	lavender (floral)
-e6e6fa	lavender (web)
+b57edc	lavender
+e6e6fa	lavender
 ccccff	lavender blue
 fff0f5	lavender blush
 c4c3d0	lavender gray
@@ -739,7 +739,7 @@ e3ff00	lemon lime
 5cff67	lemon lime
 f6eabe	lemon meringue
 fff44f	lemon yellow
-ffff9f	lemon yellow (crayola)
+ffff9f	lemon yellow
 ba93d8	lenurple
 545aa7	liberty
 1a1110	licorice
@@ -784,8 +784,8 @@ e68fac	light thulian pink
 ffffe0	light yellow
 c8a2c8	lilac
 ae98aa	lilac luster
-bfff00	lime (color wheel)
-00ff00	lime (web) (x11 green)
+bfff00	lime
+00ff00	lime
 32cd32	lime green
 9dc209	limerick
 195905	lincoln green
@@ -795,8 +795,8 @@ de6fa1	liseran purple
 6ca0dc	little boy blue
 f8b9d4	little girl pink
 674c47	liver
-b86d29	liver (dogs)
-6c2e1f	liver (organ)
+b86d29	liver
+6c2e1f	liver
 987456	liver chestnut
 6699cc	livid
 fefdfa	lotion
@@ -808,19 +808,19 @@ e62020	lust
 ffbd88	macaroni and cheese
 cc3336	madder lake
 ff00ff	magenta
-ff55a3	magenta (crayola)
-ca1f7b	magenta (dye)
-d0417e	magenta (pantone)
-ff0090	magenta (process)
+ff55a3	magenta
+ca1f7b	magenta
+d0417e	magenta
+ff0090	magenta
 9f4576	magenta haze
 cc338b	magenta-pink
 aaf0d1	magic mint
 ff4466	magic potion
 f8f4ff	magnolia
 c04000	mahogany
-ca3435	mahogany (crayola)
+ca3435	mahogany
 fbec5d	maize
-f2c649	maize (crayola)
+f2c649	maize
 6050dc	majorelle blue
 0bda51	malachite
 979aaa	manatee
@@ -831,9 +831,9 @@ ff8243	mango tango
 74c365	mantis
 880085	mardi gras
 eaa221	marigold
-c32148	maroon (crayola)
-800000	maroon (html/css)
-b03060	maroon (x11)
+c32148	maroon
+800000	maroon
+b03060	maroon
 e0b0ff	mauve
 915f6d	mauve taupe
 ef98aa	mauvelous
@@ -885,7 +885,7 @@ ffe302	medium yellow
 f8b878	mellow apricot
 f8de7e	mellow yellow
 fdbcb4	melon
-febaad	melon (crayola)
+febaad	melon
 c1f9a2	menthol
 32527b	metallic blue
 a97142	metallic bronze
@@ -915,7 +915,7 @@ ecb176	middle yellow red
 702670	midnight
 191970	midnight blue
 00468c	midnight blue
-004953	midnight green (eagle green)
+004953	midnight green
 ffc40c	mikado yellow
 fdfff5	milk
 84563c	milk chocolate
@@ -942,7 +942,7 @@ ae0c00	mordant red 19
 70543e	mud
 306030	mughal green
 c54b8c	mulberry
-c8509b	mulberry (crayola)
+c8509b	mulberry
 828e84	mummy's tomb
 ffdb58	mustard
 cd7a00	mustard brown
@@ -958,7 +958,7 @@ fada5e	naples yellow
 ffdead	navajo white
 000080	navy
 000080	navy blue
-1974d2	navy blue (crayola)
+1974d2	navy blue
 9457eb	navy purple
 1b03a3	neon blue
 c3732a	neon brown
@@ -999,7 +999,7 @@ fdf5e6	old lace
 c08081	old rose
 848482	old silver
 808000	olive
-6b8e23	olive drab (#3)
+6b8e23	olive drab
 3c341f	olive drab #7
 b5b35c	olive green
 9ab973	olivine
@@ -1007,26 +1007,26 @@ b5b35c	olive green
 a8c3bc	opal
 b784a7	opera mauve
 ff6600	orange
-ff7f00	orange (color wheel)
-ff7538	orange (crayola)
-ff5800	orange (pantone)
-fb9902	orange (ryb)
-ffa500	orange (web)
+ff7f00	orange
+ff7538	orange
+ff5800	orange
+fb9902	orange
+ffa500	orange
 ff6700	orange iced tea
 ff9f00	orange peel
 ff681f	orange-red
-ff5349	orange-red (crayola)
+ff5349	orange-red
 e74e14	orange soda
 fa5b3d	orange soda
 f5bd1f	orange-yellow
-f8d568	orange-yellow (crayola)
+f8d568	orange-yellow
 da70d6	orchid
 f2bdcd	orchid pink
-e29cd2	orchid (crayola)
+e29cd2	orchid
 fb4f14	orioles orange
 654321	otter brown
 414a4c	outer space
-2d383a	outer space (crayola)
+2d383a	outer space
 ff6e4a	outrageous orange
 800020	oxblood
 002147	oxford blue
@@ -1092,7 +1092,7 @@ eae0c8	pearl
 b768a2	pearly purple
 e6e200	peridot
 ccccff	periwinkle
-c3cde6	periwinkle (crayola)
+c3cde6	periwinkle
 e12c2c	permanent geranium lake
 1c39bb	persian blue
 00a693	persian green
@@ -1130,7 +1130,7 @@ fddde6	piggy pink
 2a2f23	pine tree
 563c0d	pineapple
 ffc0cb	pink
-d74894	pink (pantone)
+d74894	pink
 fc74fd	pink flamingo
 ffddf4	pink lace
 d8b2d1	pink lavender
@@ -1142,7 +1142,7 @@ f78fa7	pink sherbet
 391285	pixie powder
 e5e4e2	platinum
 8e4585	plum
-dda0dd	plum (web)
+dda0dd	plum
 5946b2	plump purple
 374f6b	police blue
 5da493	polished pine
@@ -1157,12 +1157,12 @@ f58025	princeton orange
 df00ff	psychedelic purple
 cc8899	puce
 722f37	puce red
-644117	pullman brown (ups brown)
+644117	pullman brown
 3b331c	pullman green
 ff7518	pumpkin
-800080	purple (html)
-9f00c5	purple (munsell)
-a020f0	purple (x11)
+800080	purple
+9f00c5	purple
+a020f0	purple
 69359c	purple heart
 9678b6	purple mountain majesty
 4e5180	purple navy
@@ -1191,33 +1191,33 @@ e3256b	razzmatazz
 8d4e85	razzmic berry
 663399	rebecca purple
 ff0000	red
-ee204d	red (crayola)
-f2003c	red (munsell)
-c40233	red (ncs)
-ed2939	red (pantone)
-ed1c24	red (pigment)
-fe2712	red (ryb)
+ee204d	red
+f2003c	red
+c40233	red
+ed2939	red
+ed1c24	red
+fe2712	red
 a52a2a	red-brown
 df0118	red cola
 860111	red devil
 ff5349	red-orange
-ff681f	red-orange (crayola)
-ff4500	red-orange (color wheel)
+ff681f	red-orange
+ff4500	red-orange
 e40078	red-purple
 973a4a	red rum
 fd3a4a	red salsa
 ec0304	red strawberry
 c71585	red-violet
-c0448f	red-violet (crayola)
-922b3e	red-violet (color wheel)
+c0448f	red-violet
+922b3e	red-violet
 a45a52	redwood
 522d80	regalia
 000000	registration black
 002387	resolution blue
 777696	rhythm
 004040	rich black
-010b13	rich black (fogra29)
-010203	rich black (fogra39)
+010b13	rich black
+010203	rich black
 f1a7fe	rich brilliant lavender
 d70040	rich carmine
 0892d0	rich electric blue
@@ -1276,7 +1276,7 @@ da2c43	rusty red
 043927	sacramento state green|
 8b4513	saddle brown
 ff7800	safety orange
-ff6700	safety orange (blaze orange)
+ff6700	safety orange
 eed202	safety yellow
 f4c430	saffron
 bcb88a	sage
@@ -1304,7 +1304,7 @@ ffd800	school bus yellow
 006994	sea blue
 9fe2bf	sea foam green
 2e8b57	sea green
-00ffcd	sea green (crayola)
+00ffcd	sea green
 4bc7cf	sea serpent
 59260b	seal brown
 fff5ee	seashell
@@ -1319,11 +1319,11 @@ ffe670	shandy
 d98695	shimmering blush
 5fa778	shiny shamrock
 fc0fc0	shocking pink
-ff6fff	shocking pink (crayola)
+ff6fff	shocking pink
 882d17	sienna
 c0c0c0	silver
-c9c0bb	silver (crayola)
-aaa9ad	silver (metallic)
+c9c0bb	silver
+aaa9ad	silver
 acacac	silver chalice
 afb1ae	silver foil
 5d89ba	silver lake blue
@@ -1334,12 +1334,12 @@ ff3855	sizzling red
 ffdb00	sizzling sunrise
 007474	skobeloff
 87ceeb	sky blue
-76d7ea	sky blue (crayola)
+76d7ea	sky blue
 cf71af	sky magenta
 6a5acd	slate blue
 708090	slate gray
 299617	slimy green
-003399	smalt (dark powder blue)
+003399	smalt
 ff6d3a	smashed pumpkin
 c84186	smitten
 738276	smoke
@@ -1372,7 +1372,7 @@ f6b511	spanish yellow
 a7fc00	spring bud
 87ff2a	spring frost
 00ff7f	spring green
-ecebbd	spring green (crayola)
+ecebbd	spring green
 007bb8	star command blue
 4682b4	steel blue
 cc33cc	steel pink
@@ -1395,7 +1395,7 @@ fd5e53	sunset orange
 cf6ba9	super pink
 a83731	sweet brown
 d2b48c	tan
-d99a6c	tan (crayola)
+d99a6c	tan
 f94d00	tangelo
 f28500	tangerine
 ffcc00	tangerine yellow
@@ -1412,10 +1412,10 @@ f4c2c2	tea rose
 00827f	teal green
 cf3476	telemagenta
 3c2126	temptress
-cd5700	tenné (tawny)
+cd5700	tenné
 e2725b	terra cotta
 d8bfd8	thistle
-ebb0d7	thistle (crayola)
+ebb0d7	thistle
 de6fa1	thulian pink
 fc89ac	tickle me pink
 0abab5	tiffany blue
@@ -1457,7 +1457,7 @@ ba0001	ue red
 3cd070	ufo green
 3f00ff	ultramarine
 4166f5	ultramarine blue
-2111ef	ultramarine blue (caran d'ache)
+2111ef	ultramarine blue
 ff6fff	ultra pink
 fc6c85	ultra red
 635147	umber
@@ -1492,13 +1492,13 @@ ffb077	very light tangelo
 ffdfbf	very pale orange
 ffffbf	very pale yellow
 8f00ff	violet
-6e00c0	violet (caran d'ache)
-7f00ff	violet (color wheel)
-963d7f	violet (crayola)
-8601af	violet (ryb)
-ee82ee	violet (web)
+6e00c0	violet
+7f00ff	violet
+963d7f	violet
+8601af	violet
+ee82ee	violet
 324ab2	violet-blue
-766ec8	violet-blue (crayola)
+766ec8	violet-blue
 f75394	violet-red
 891446	violet-red
 674403	violin brown
@@ -1560,16 +1560,16 @@ c19a6b	wood brown
 0f4d92	yale blue
 1c2841	yankees blue
 ffff00	yellow
-fce883	yellow (crayola)
-efcc00	yellow (munsell)
-ffd300	yellow (ncs)
-fedf00	yellow (pantone)
-ffef00	yellow (process)
-fefe33	yellow (ryb)
+fce883	yellow
+efcc00	yellow
+ffd300	yellow
+fedf00	yellow
+ffef00	yellow
+fefe33	yellow
 9acd32	yellow-green
-c5e384	yellow-green (crayola)
+c5e384	yellow-green
 ffae42	yellow orange
-ff9505	yellow orange (color wheel)
+ff9505	yellow orange
 fff000	yellow rose
 fff700	yellow sunshine
 2e5090	yinmn blue
