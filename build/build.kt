@@ -1,20 +1,19 @@
 @file:Suppress("unused")
+@file:BuildDependency("com.github.Darkyenus:ResourcePacker:2.4")
+@file:BuildDependencyRepository("jitpack", "https://jitpack.io")
 
 import com.darkyen.resourcepacker.PackingOperation
 import com.darkyen.resourcepacker.PreferSymlinks
 import wemi.Keys.runDirectory
 import wemi.Keys.runOptions
-import wemi.dependency.Repository
 import wemi.util.div
-
-///repository jitpack at https://jitpack.io
-///dependency com.github.Darkyenus:ResourcePacker:2.4
+import wemi.*
 
 val packResources by key<Unit>("Packs resources")
 
 val terrainTest by configuration("Terrain testing") {
     mainClass set { "com.darkyen.paragrowth.terrain.generator.TerrainTest" }
-    runOptions remove {"-XstartOnFirstThread"}
+    runOptions modify { it - "-XstartOnFirstThread"}
 }
 
 val paragrowth by project {
@@ -26,17 +25,17 @@ val paragrowth by project {
 
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx:$gdxVersion") }
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion") }
-    libraryDependencies add { dependency("com.badlogicgames.gdx:gdx-platform:$gdxVersion", attributes = Repository.M2.M2ClassifierAttribute to "natives-desktop") }
+    libraryDependencies add { dependency("com.badlogicgames.gdx:gdx-platform:$gdxVersion", classifier = "natives-desktop") }
     libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3") }
-    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", attributes = Repository.M2.M2ClassifierAttribute to "natives-linux") }
-    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", attributes = Repository.M2.M2ClassifierAttribute to "natives-macos") }
-    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", attributes = Repository.M2.M2ClassifierAttribute to "natives-windows") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-linux") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-macos") }
+    libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-windows") }
 
     packResources set {
-        resourcePack(PackingOperation(projectRoot / "resources", projectRoot / "assets", listOf(PreferSymlinks to true)))
+        resourcePack(PackingOperation((projectRoot.get() / "resources").toFile(), (projectRoot.get() / "assets").toFile(), listOf(PreferSymlinks to true)))
     }
 
     mainClass set { "com.darkyen.paragrowth.ParagrowthMain" }
     runOptions add {"-XstartOnFirstThread"}
-    runDirectory set { projectRoot / "assets" }
+    runDirectory set { projectRoot.get() / "assets" }
 }
