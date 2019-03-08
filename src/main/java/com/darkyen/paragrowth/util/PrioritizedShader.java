@@ -16,10 +16,10 @@ import java.util.Comparator;
 public interface PrioritizedShader {
 
     int LAST = Integer.MAX_VALUE;
-    int SKYBOX = -1000;
+    int DOODADS = 11;
     int TERRAIN = 10;
-    int DOODADS = 10;
     int DEFAULT = 0;
+    int SKYBOX = -1000;
     int FIRST = Integer.MIN_VALUE;
 
     /**

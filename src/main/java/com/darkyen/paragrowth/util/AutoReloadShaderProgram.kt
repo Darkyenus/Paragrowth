@@ -16,7 +16,7 @@ class AutoReloadShaderProgram(val vertexShader:FileHandle, val fragmentShader:Fi
     private var keepReloading = true
     init {
         if (!isCompiled) {
-            throw IllegalArgumentException("Error compiling shader: " + log)
+            throw IllegalArgumentException("Error compiling shader: $log")
         }
 
         Thread({

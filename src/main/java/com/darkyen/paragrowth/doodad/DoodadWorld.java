@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.RandomXS128;
@@ -12,6 +13,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.terrain.generator.Noise;
+import com.darkyen.paragrowth.util.DebugRenderKt;
 
 import java.util.Random;
 
@@ -119,6 +121,28 @@ public class DoodadWorld implements RenderableProvider {
                 renderable.shader = DoodadShader.get(renderable);
                 renderables.add(renderable);
             }
+        }
+    }
+
+    public void renderDebug(ImmediateModeRenderer renderer) {
+        final Mesh[] patches = this.patches;
+        final Frustum frustum = camera.frustum;
+
+        for (int i = 0; i < patches.length; i++) {
+            final BoundingBox box = this.patchBoundingBoxes[i];
+            if (box == null)
+                continue;
+
+            final boolean shown = frustum.boundsInFrustum(box);
+
+            DebugRenderKt.forEdges(box, (x1, y1, z1, x2, y2, z2) -> {
+                renderer.color(shown ? Color.GREEN : Color.RED);
+                renderer.vertex(x1, y1, z1);
+                renderer.color(shown ? Color.GREEN : Color.RED);
+                renderer.vertex(x2, y2, z2);
+
+                return null;
+            });
         }
     }
 }

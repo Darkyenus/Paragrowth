@@ -31,6 +31,7 @@ public final class HeightmapPersonController {
             });
     public final GameInput.BoundFunction GENERAL_DEBUG = GameInput.toggleFunction("General Debug", bindKeyboard(Input.Keys.F3));
     private final GameInput.BoundFunction MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", bindKeyboard(Input.Keys.F4));
+    public final GameInput.BoundFunction PATCHWORK_DEBUG = GameInput.toggleFunction("Patchwork Debug", bindKeyboard(Input.Keys.F5));
 
     private final GameInput.BoundFunction TO_WRITE_MODE = GameInput.function("To Write Mode", bindKeyboard(Keys.ESCAPE))
             .listen((times, pressed) -> {
@@ -54,6 +55,7 @@ public final class HeightmapPersonController {
             FREE_MOUSE,
             GENERAL_DEBUG,
             MOVEMENT_DEBUG,
+            PATCHWORK_DEBUG,
             TO_WRITE_MODE
     };
 

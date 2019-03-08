@@ -1,0 +1,10 @@
+- Fix frustum culling bug
+- Sun/lighting source
+- Separate world and water render
+	- Water should be slightly transparent at edges
+	- Noise textures for water waves
+	- Specular shading for water
+- World shading for better depth perception
+- Skybox!
+- Multiple way world blending and generation, probably on off thread?
+	- Blend-map should probably be polygonional, not raster

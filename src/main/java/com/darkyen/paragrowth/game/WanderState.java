@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -18,9 +20,11 @@ import com.darkyen.paragrowth.doodad.DoodadWorld;
 import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.skybox.SkyboxRenderable;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
+import com.darkyen.paragrowth.util.DebugRenderKt;
 import com.darkyen.paragrowth.util.PrioritizedShader;
 import org.lwjgl.opengl.GL32;
 
+import static com.badlogic.gdx.graphics.GL20.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP;
 
 /**
@@ -40,6 +44,8 @@ public final class WanderState extends ScreenAdapter {
     private final PerspectiveCamera worldCam;
     private final ScreenViewport worldView;
     private final Environment environment;
+
+    private final ImmediateModeRenderer debugRenderer;
 
     //3D Objects
     private final SkyboxRenderable skyboxRenderable;
@@ -63,6 +69,8 @@ public final class WanderState extends ScreenAdapter {
         skyboxRenderable = new SkyboxRenderable();
 
         environment = new Environment();
+
+        debugRenderer = new ImmediateModeRenderer20(5000, false, true, 0, DebugRenderKt.getDebugShader());
 
         worldCam.up.set(0,0,1f);
         worldCam.near = 0.4f;
@@ -122,6 +130,17 @@ public final class WanderState extends ScreenAdapter {
         modelBatch.end();
         Gdx.gl.glDisable(GL_DEPTH_CLAMP);
 
+        if (cameraController.PATCHWORK_DEBUG.isPressed()) {
+            Gdx.gl.glDisable(GL_DEPTH_TEST);
+            debugRenderer.begin(worldCam.combined, GL20.GL_LINES);
+
+            doodads.renderDebug(debugRenderer);
+
+            debugRenderer.end();
+            Gdx.gl.glEnable(GL_DEPTH_TEST);
+        }
+
+
         if (cameraController.GENERAL_DEBUG.isPressed()) {
             hudStage.draw();
         }
@@ -133,7 +152,7 @@ public final class WanderState extends ScreenAdapter {
         hudView.update(width,height,true);
     }
 
-    public static final StringBuilder extraStats = new StringBuilder();
+    private static final StringBuilder extraStats = new StringBuilder();
 
     private void updateWorld(float delta) {
         cameraController.update(delta);
