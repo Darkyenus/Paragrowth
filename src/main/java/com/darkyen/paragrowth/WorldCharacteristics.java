@@ -1,7 +1,6 @@
 package com.darkyen.paragrowth;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.darkyen.paragrowth.util.ColorKt;
 
@@ -87,17 +86,27 @@ public class WorldCharacteristics {
      */
     public long seed;
 
-    public static WorldCharacteristics random() {
+    public static WorldCharacteristics random(long seed) {
+        if (seed == 0) {
+            try {
+                seed = Long.parseLong(System.getenv("PARAGROWTH_SEED"));
+            } catch (Exception nope) {
+                seed = System.currentTimeMillis();
+            }
+        }
+        System.out.println("random("+seed+")");
+        final Random random = new Random(seed);
+
         final WorldCharacteristics c = new WorldCharacteristics();
-        c.size = MathUtils.random(1f, 100f);
-        c.mood = MathUtils.random(-1f, 1f);
-        c.coherence = MathUtils.random(0f, 1f);
-        final int colors = MathUtils.random((int)c.size);
+        c.size = 1f + random.nextFloat() * 99f;
+        c.mood = -1f + random.nextFloat() * 2f;
+        c.coherence = random.nextFloat();
+        final int colors = random.nextInt((int)c.size);
         c.colors.ensureCapacity(colors);
         for (int i = 0; i < colors; i++) {
-            c.colors.add(new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 1f));
+            c.colors.add(new Color(random.nextFloat(), random.nextFloat(), random.nextFloat(), 1f));
         }
-        c.seed = MathUtils.random.nextLong();
+        c.seed = random.nextLong();
         return c;
     }
 

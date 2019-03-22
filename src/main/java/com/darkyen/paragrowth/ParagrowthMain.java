@@ -42,7 +42,7 @@ public class ParagrowthMain extends Game {
 
         ParagrowthMain.skin = assetManager.get("UISkin.json");
 
-        setScreen(new WanderState(WorldCharacteristics.random()));
+        setScreen(new WanderState(WorldCharacteristics.random(0)));
     }
 
     public static void main(String[] args){

@@ -1,12 +1,16 @@
 package com.darkyen.paragrowth.doodad;
 
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Mesh;
+import com.badlogic.gdx.graphics.VertexAttribute;
+import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.math.Frustum;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
@@ -31,6 +35,8 @@ public class DoodadWorld implements RenderableProvider {
     );
 
     private final Camera camera;
+
+    private final int patchCount;
     private final Mesh[] patches;
     private final Array<DoodadInstance>[] doodadInstances;
     private final BoundingBox[] patchBoundingBoxes;
@@ -39,8 +45,8 @@ public class DoodadWorld implements RenderableProvider {
         this.camera = camera;
         final int worldWidth = noise.length;
         final int worldHeight = noise[0].length;
-        final int patchesX = MathUtils.ceil((float)worldWidth / PATCH_SIZE);
-        final int patchesY = MathUtils.ceil((float)worldHeight / PATCH_SIZE);
+        final int patchesX = (worldWidth + PATCH_SIZE - 1) / PATCH_SIZE;
+        final int patchesY = (worldHeight + PATCH_SIZE - 1) / PATCH_SIZE;
 
         this.patches = new Mesh[patchesX * patchesY];
         //noinspection unchecked
@@ -56,18 +62,19 @@ public class DoodadWorld implements RenderableProvider {
         for (int x = 0; x < patchesX; x++) {
             for (int y = 0; y < patchesY; y++) {
                 final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, characteristics);
+                if (mesh == null)
+                    continue;
+
                 this.patches[i] = mesh;
-                if (mesh != null) {
-                    final BoundingBox box = new BoundingBox();
-                    mesh.calculateBoundingBox(box);
-                    this.patchBoundingBoxes[i] = box;
-                    this.doodadInstances[i] = patchInstances;
-                    totalDoodads += patchInstances.size;
-                    patchInstances = new Array<>(DoodadInstance.class);
-                }
+                this.patchBoundingBoxes[i] = mesh.calculateBoundingBox();
+                this.doodadInstances[i] = patchInstances;
+
+                totalDoodads += patchInstances.size;
+                patchInstances = new Array<>(DoodadInstance.class);
                 i++;
             }
         }
+        patchCount = i;
 
         System.out.println("Generated "+totalDoodads+" doodads");
     }
@@ -107,32 +114,30 @@ public class DoodadWorld implements RenderableProvider {
         final Mesh[] patches = this.patches;
         final Frustum frustum = camera.frustum;
 
-        for (int i = 0; i < patches.length; i++) {
+        for (int i = 0; i < patchCount; i++) {
             final BoundingBox box = this.patchBoundingBoxes[i];
-            if (box != null && frustum.boundsInFrustum(box)) {
-                final Mesh patch = patches[i];
-
-                final Renderable renderable = pool.obtain();
-                renderable.meshPart.set(null, patch, 0, patch.getNumIndices(), GL20.GL_TRIANGLES);
-                renderable.worldTransform.idt();
-                box.getCenter(renderable.meshPart.center);
-                renderable.meshPart.radius = PATCH_SIZE;
-
-                renderable.shader = DoodadShader.get(renderable);
-                renderables.add(renderable);
+            if (!frustum.boundsInFrustum(box)) {
+                continue;
             }
+
+            final Mesh patch = patches[i];
+
+            final Renderable renderable = pool.obtain();
+            renderable.meshPart.set(null, patch, 0, patch.getNumIndices(), GL20.GL_TRIANGLES);
+            renderable.worldTransform.idt();
+            box.getCenter(renderable.meshPart.center);
+            renderable.meshPart.radius = PATCH_SIZE;
+
+            renderable.shader = DoodadShader.get(renderable);
+            renderables.add(renderable);
         }
     }
 
     public void renderDebug(ImmediateModeRenderer renderer) {
-        final Mesh[] patches = this.patches;
         final Frustum frustum = camera.frustum;
 
-        for (int i = 0; i < patches.length; i++) {
+        for (int i = 0; i < patchCount; i++) {
             final BoundingBox box = this.patchBoundingBoxes[i];
-            if (box == null)
-                continue;
-
             final boolean shown = frustum.boundsInFrustum(box);
 
             DebugRenderKt.forEdges(box, (x1, y1, z1, x2, y2, z2) -> {

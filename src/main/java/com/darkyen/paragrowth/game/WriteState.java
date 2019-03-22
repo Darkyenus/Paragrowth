@@ -139,7 +139,7 @@ public final class WriteState extends ScreenAdapter implements InputProcessor {
             setCaret(caret + 1);
             return true;
         } else if (keycode == Input.Keys.ESCAPE) {
-            final WorldCharacteristics c = text.length() == 0 ? WorldCharacteristics.random() : WorldCharacteristics.fromText(text);
+            final WorldCharacteristics c = text.length() == 0 ? WorldCharacteristics.random(0) : WorldCharacteristics.fromText(text);
             ParagrowthMain.INSTANCE.setScreen(new WanderState(c));
             return true;
         } else if (keycode == Input.Keys.F3) {

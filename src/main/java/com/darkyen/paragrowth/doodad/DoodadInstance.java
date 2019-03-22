@@ -74,7 +74,10 @@ class DoodadInstance {
         }
 
         private float widthAt(float progress) {
-            if (progress <= widest) {
+            if (progress <= 0f || progress >= 1f) {
+                return progress * width;
+            }
+            if (progress < widest) {
                 return Interpolation.circleOut.apply(progress / widest) * width;
             } else {
                 return Interpolation.circleOut.apply(1f - (progress - widest) / (1f - widest)) * width;
@@ -85,20 +88,40 @@ class DoodadInstance {
 
         @Override
         public void build(MeshBuilder builder, MeshPartBuilder.VertexInfo baseVertex, TrunkInstance trunk, Random random, WorldCharacteristics characteristics) {
+            // 0 - start cap
+            // ringsPre * start rings
+            // widest - mid ring
+            // ringsPost * end rings
+            // 1 - end cap
+
             final Vector3 pos = HullLeafInstance.build_pos;
             final float stepPercentPre = widest / (ringsPre+1);
-            final float stepPercentPost = (1f - widest) / (ringsPre+1);
+            final float stepPercentPost = (1f - widest) / (ringsPost+1);
 
             final short startCap = createCap(builder, baseVertex, trunk.end, trunk.direction, 0f, random, color, characteristics.coherence);
-            float progress = stepPercentPre;
-            short ring = createRing(builder, baseVertex, sides, pos.set(trunk.end).lerp(end, progress), trunk.direction, widthAt(progress), random, color, characteristics.coherence);
-            joinRingCap(builder, ring, startCap, sides);
-            for (int i = 1; i <= ringsPre; i++) {
+            short ring = -1;
+
+            float progress = 0f;
+            for (int i = 0; i < ringsPre; i++) {
                 progress += stepPercentPre;
                 final short newRing = createRing(builder, baseVertex, sides, pos.set(trunk.end).lerp(end, progress), trunk.direction, widthAt(progress), random, color, characteristics.coherence);
-                joinRings(builder, ring, newRing, sides);
+                if (i == 0) {
+                    joinRingCap(builder, newRing, startCap, sides);
+                } else {
+                    joinRings(builder, ring, newRing, sides);
+                }
                 ring = newRing;
             }
+
+            // Mid ring
+            progress = widest; // It is assumed that it already approximately is there
+            final short midRing = createRing(builder, baseVertex, sides, pos.set(trunk.end).lerp(end, progress), trunk.direction, widthAt(progress), random, color, characteristics.coherence);
+            if (ringsPre == 0) {
+                joinRingCap(builder, midRing, startCap, sides);
+            } else {
+                joinRings(builder, ring, midRing, sides);
+            }
+            ring = midRing;
 
             for (int i = 0; i < ringsPost; i++) {
                 progress += stepPercentPost;
