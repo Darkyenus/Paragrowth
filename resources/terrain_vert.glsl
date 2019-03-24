@@ -2,6 +2,7 @@
 
 in vec3 a_position;
 in vec4 a_color;
+in vec3 a_normal;
 
 flat out vec4 v_color;
 
@@ -9,8 +10,11 @@ uniform mat4 u_projViewTrans;
 uniform mat4 u_worldTrans;
 uniform float u_time;
 
+const vec3 lightDirection = vec3(0.2, 0.0, 0.9797958975);
+
 void main() {
-	v_color = a_color;
+	float diffuse = dot(a_normal, lightDirection);
+	v_color = vec4(a_color.rgb * diffuse, 1.0);
 
 	vec4 pos = u_worldTrans * vec4(a_position, 1.0);
 

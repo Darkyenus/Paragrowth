@@ -22,7 +22,14 @@ val POSITION3_COLOR1_ATTRIBUTES = VertexAttributes(
 )
 
 @JvmField
-val TERRAIN_PATCH_ATTRIBUTES = POSITION3_COLOR1_ATTRIBUTES
+val POSITION3_COLOR1_NORMAL3_ATTRIBUTES = VertexAttributes(
+        VertexAttribute.Position(), //3
+        VertexAttribute.ColorPacked(),//1
+        VertexAttribute.Normal()//3
+)
+
+@JvmField
+val TERRAIN_PATCH_ATTRIBUTES = POSITION3_COLOR1_NORMAL3_ATTRIBUTES
 
 @JvmField
 val POSITION3_ATTRIBUTES = VertexAttributes(

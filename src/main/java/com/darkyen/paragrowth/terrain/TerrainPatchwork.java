@@ -27,8 +27,8 @@ public class TerrainPatchwork implements RenderableProvider, Disposable {
 
     public TerrainPatchwork(Camera camera, TerrainProvider terrainProvider) {
         this.camera = camera;
-        patchAmountX = MathUtils.ceilPositive(terrainProvider.getWidth() / PATCH_WIDTH);
-        patchAmountY = MathUtils.ceilPositive(terrainProvider.getHeight() / PATCH_HEIGHT);
+        patchAmountX = MathUtils.ceilPositive(terrainProvider.getSizeX() / PATCH_WIDTH);
+        patchAmountY = MathUtils.ceilPositive(terrainProvider.getSizeY() / PATCH_HEIGHT);
         this.patches = new TerrainPatch[patchAmountX * patchAmountY];
 
         int i = 0;

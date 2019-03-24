@@ -80,6 +80,8 @@ class TerrainPatch implements Disposable {
         final float[] vertices = new float[VERTEX_COUNT * VERTEX_SIZE_FLOATS];
         mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, TERRAIN_PATCH_ATTRIBUTES);
 
+        final Vector3 normal = new Vector3();
+
         //Generate vertices
         {
             final float X_HALF_STEP = X_STEP * 0.5f;
@@ -102,6 +104,10 @@ class TerrainPatch implements Disposable {
                     vertices[v++] = yPos;
                     vertices[v++] = height;
                     vertices[v++] = generator.getColor(xPos + X_HALF_STEP, yPos + Y_HALF_STEP);
+                    generator.getNormal(normal, xPos + X_HALF_STEP, yPos + Y_HALF_STEP);
+                    vertices[v++] = normal.x;
+                    vertices[v++] = normal.y;
+                    vertices[v++] = normal.z;
 
                     xPos += X_STEP;
                     height = heightMap[h++] = generator.getHeight(xPos, yPos);
@@ -111,6 +117,10 @@ class TerrainPatch implements Disposable {
                     vertices[v++] = yPos;
                     vertices[v++] = height;
                     vertices[v++] = generator.getColor(xPos, yPos + Y_HALF_STEP);
+                    generator.getNormal(normal, xPos, yPos + Y_HALF_STEP);
+                    vertices[v++] = normal.x;
+                    vertices[v++] = normal.y;
+                    vertices[v++] = normal.z;
                 }
 
                 yPos += Y_STEP;
@@ -124,6 +134,10 @@ class TerrainPatch implements Disposable {
                     vertices[v++] = yPos;
                     vertices[v++] = height;
                     vertices[v++] = generator.getColor(xPos, yPos + Y_HALF_STEP);
+                    generator.getNormal(normal, xPos, yPos + Y_HALF_STEP);
+                    vertices[v++] = normal.x;
+                    vertices[v++] = normal.y;
+                    vertices[v++] = normal.z;
 
                     xPos += X_STEP;
                     height = heightMap[h++] = generator.getHeight(xPos, yPos);
@@ -133,6 +147,10 @@ class TerrainPatch implements Disposable {
                     vertices[v++] = yPos;
                     vertices[v++] = height;
                     vertices[v++] = generator.getColor(xPos - X_HALF_STEP, yPos + Y_HALF_STEP);
+                    generator.getNormal(normal, xPos - X_HALF_STEP, yPos + Y_HALF_STEP);
+                    vertices[v++] = normal.x;
+                    vertices[v++] = normal.y;
+                    vertices[v++] = normal.z;
                 }
 
                 yPos += Y_STEP;
@@ -148,6 +166,9 @@ class TerrainPatch implements Disposable {
                 vertices[v++] = yPos;
                 vertices[v++] = height;
                 vertices[v++] = NO_COLOR;
+                vertices[v++] = 0f;
+                vertices[v++] = 0f;
+                vertices[v++] = 1f;
 
                 xPos += X_STEP;
                 height = heightMap[h++] = generator.getHeight(xPos, yPos);
@@ -157,6 +178,9 @@ class TerrainPatch implements Disposable {
                 vertices[v++] = yPos;
                 vertices[v++] = height;
                 vertices[v++] = NO_COLOR;
+                vertices[v++] = 0f;
+                vertices[v++] = 0f;
+                vertices[v++] = 1f;
             }
 
             mesh.setVertices(vertices);

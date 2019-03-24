@@ -11,8 +11,6 @@ import com.darkyen.paragrowth.terrain.generator.OpenSimplexNoise;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
 import com.darkyen.paragrowth.util.ColorKt;
 
-import static com.darkyen.paragrowth.WorldColors.pick;
-
 /**
  * @author Darkyen
  */
@@ -64,12 +62,12 @@ public class WorldGenerator implements TerrainProvider {
     }
 
     @Override
-    public float getWidth() {
+    public float getSizeX() {
         return noise.length;
     }
 
     @Override
-    public float getHeight() {
+    public float getSizeY() {
         return noise.length;
     }
 
@@ -87,8 +85,8 @@ public class WorldGenerator implements TerrainProvider {
         float y = 0f;
         float z = 0f;
         for (int i = 0; i < 100; i++) {
-            x = RNG.nextFloat() * getWidth();
-            y = RNG.nextFloat() * getHeight();
+            x = RNG.nextFloat() * getSizeX();
+            y = RNG.nextFloat() * getSizeY();
             z = getHeight(x, y);
             if (z > 0.1f) {
                 break;

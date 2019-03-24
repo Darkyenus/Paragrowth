@@ -50,7 +50,7 @@ public class TerrainTest {
     }
 
     private static BufferedImage toImage(TerrainProvider terrain, float scale){
-        final BufferedImage result = new BufferedImage(MathUtils.ceil(terrain.getWidth() * scale), MathUtils.ceil(terrain.getHeight() * scale), BufferedImage.TYPE_4BYTE_ABGR);
+        final BufferedImage result = new BufferedImage(MathUtils.ceil(terrain.getSizeX() * scale), MathUtils.ceil(terrain.getSizeY() * scale), BufferedImage.TYPE_4BYTE_ABGR);
         for (int y = 0; y < result.getHeight(); y++) {
             for (int x = 0; x < result.getWidth(); x++) {
                 final float qX = x / scale;
@@ -78,12 +78,12 @@ public class TerrainTest {
             }
 
             @Override
-            public float getWidth() {
+            public float getSizeX() {
                 return 100;
             }
 
             @Override
-            public float getHeight() {
+            public float getSizeY() {
                 return 100;
             }
 
@@ -109,12 +109,12 @@ public class TerrainTest {
                     1f/80f, 2f, 5, 40f, 0.5f), -0.1f);
 
             @Override
-            public float getWidth() {
+            public float getSizeX() {
                 return width;
             }
 
             @Override
-            public float getHeight() {
+            public float getSizeY() {
                 return height;
             }
 
@@ -136,12 +136,12 @@ public class TerrainTest {
             final float[][] noise = DiamondSquare.generate(8, System.currentTimeMillis(), 1f, 10f);
 
             @Override
-            public float getWidth() {
+            public float getSizeX() {
                 return noise.length;
             }
 
             @Override
-            public float getHeight() {
+            public float getSizeY() {
                 return noise.length;
             }
 
@@ -163,12 +163,12 @@ public class TerrainTest {
             final float[][] noise = Noise.generateHydraulicNoise(100, System.currentTimeMillis(), 500, 0.005f);
 
             @Override
-            public float getWidth() {
+            public float getSizeX() {
                 return noise.length;
             }
 
             @Override
-            public float getHeight() {
+            public float getSizeY() {
                 return noise.length;
             }
 
@@ -190,12 +190,12 @@ public class TerrainTest {
             final float[][] noise = Noise.islandize(Noise.generatePerlinNoise(Noise.generateHydraulicNoise(100, 55, 500, 0.005f), 3, 0.5f), 1f, 0f);
 
             @Override
-            public float getWidth() {
+            public float getSizeX() {
                 return noise.length;
             }
 
             @Override
-            public float getHeight() {
+            public float getSizeY() {
                 return noise.length;
             }
 
