@@ -1,4 +1,3 @@
-- Fix frustum culling bug
 - Sun/lighting source
 - Separate world and water render
 	- Water should be slightly transparent at edges

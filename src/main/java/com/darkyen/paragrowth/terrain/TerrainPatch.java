@@ -7,7 +7,10 @@ import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Disposable;
+import com.darkyen.paragrowth.render.Shaders;
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider;
+
+import static com.darkyen.paragrowth.render.MeshBuilding.TERRAIN_PATCH_ATTRIBUTES;
 
 /**
  * Piece of terrain made from equilateral triangles, each with own flat color.
@@ -44,11 +47,7 @@ class TerrainPatch implements Disposable {
     private static final int INDEX_COUNT = TRIANGLE_COUNT * 3;
     private static final int VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE;
 
-    private static final VertexAttributes MESH_ATTRIBUTES = new VertexAttributes(
-            VertexAttribute.Position(),//3
-            VertexAttribute.ColorPacked()//1
-    );
-    private static final int VERTEX_SIZE_FLOATS = MESH_ATTRIBUTES.vertexSize / Float.BYTES;
+    private static final int VERTEX_SIZE_FLOATS = TERRAIN_PATCH_ATTRIBUTES.vertexSize / Float.BYTES;
 
     /*
     Arrangement:
@@ -79,7 +78,7 @@ class TerrainPatch implements Disposable {
     TerrainPatch(float xOffset, float yOffset, TerrainProvider generator) {
         this.center.set(xOffset + PATCH_WIDTH*0.5f, yOffset + PATCH_HEIGHT*0.5f, MAX_MAP_HEIGHT*0.5f);
         final float[] vertices = new float[VERTEX_COUNT * VERTEX_SIZE_FLOATS];
-        mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, MESH_ATTRIBUTES);
+        mesh = new Mesh(true, true, VERTEX_COUNT, INDEX_COUNT, TERRAIN_PATCH_ATTRIBUTES);
 
         //Generate vertices
         {
@@ -219,7 +218,7 @@ class TerrainPatch implements Disposable {
         renderable.meshPart.radius = PATCH_RADIUS;
         renderable.userData = this;
 
-        renderable.shader = TerrainShader.get(renderable);
+        renderable.shader = Shaders.TERRAIN_SHADER;
     }
 
     public void dispose() {

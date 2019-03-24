@@ -1,23 +1,148 @@
 package com.darkyen.paragrowth.util
 
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.MathUtils.clamp
 import com.badlogic.gdx.math.MathUtils.lerp
 import com.badlogic.gdx.utils.NumberUtils
 import java.util.*
 
-val White = Color.WHITE.toFloatBits()
+typealias GdxColor = com.badlogic.gdx.graphics.Color
 
-/**
- * Create RGB Color
- */
-fun rgb(red:Float, green:Float = red, blue:Float = green, alpha:Float = 1f):Float =
-        Color.toFloatBits(
-                clamp(red, 0f, 1f),
-                clamp(green, 0f, 1f),
-                clamp(blue, 0f, 1f),
-                clamp(alpha, 0f, 1f))
+/*inline class Color(val float:Float) {
+    constructor(gdx:GdxColor) : this(gdx.toFloatBits())
+}*/
+
+// Inline classes crash the build, this is a temporary workaround
+typealias Color = Float
+
+val Color.float:Float
+    get() = this
+
+fun Color(float:Float):Color = float
+fun Color(gdx:GdxColor):Color = gdx.toFloatBits()
+// End of workaround
+
+val Color.red:Float
+    get() = ((NumberUtils.floatToIntColor(float) ushr (8*0)) and 0xFF) / 0xFF.toFloat()
+
+val Color.green:Float
+    get() = ((NumberUtils.floatToIntColor(float) ushr (8*1)) and 0xFF) / 0xFF.toFloat()
+
+val Color.blue:Float
+    get() = ((NumberUtils.floatToIntColor(float) ushr (8*2)) and 0xFF) / 0xFF.toFloat()
+
+val Color.alpha:Float
+    get() = ((NumberUtils.floatToIntColor(float) ushr (8*3)) and 0xFF) / 0xFF.toFloat()
+
+val Color.hue:Float
+    get() {
+        val r:Float = this.red
+        val g:Float = this.green
+        val b:Float = this.blue
+
+        val cMax = maxOf(r,g, b)
+        val cMin = minOf(r, g, b)
+
+        var hue: Float
+        val saturation: Float = if (cMax != 0f) {
+            (cMax - cMin) / cMax
+        } else {
+            0f
+        }
+
+        if (saturation == 0f)
+            hue = 0f
+        else {
+            val redC = (cMax - r) / (cMax - cMin)
+            val greenC = (cMax - g) / (cMax - cMin)
+            val blueC = (cMax - b) / (cMax - cMin)
+            hue = when {
+                r == cMax -> blueC - greenC
+                g == cMax -> 2.0f + redC - blueC
+                else -> 4.0f + greenC - redC
+            }
+            hue /= 6.0f
+            if (hue < 0)
+                hue += 1.0f
+        }
+
+        return hue
+    }
+
+val Color.saturation:Float
+    get() {
+        val r:Float = this.red
+        val g:Float = this.green
+        val b:Float = this.blue
+
+        val cMax = maxOf(r,g, b)
+        val cMin = minOf(r, g, b)
+
+        return if (cMax != 0f) {
+            (cMax - cMin) / cMax
+        } else {
+            0f
+        }
+    }
+
+val Color.brightness:Float
+    get() {
+        val r:Float = this.red
+        val g:Float = this.green
+        val b:Float = this.blue
+
+        return maxOf(r,g, b)
+    }
+
+val GdxColor.hue:Float
+    get() {
+        val cMax = maxOf(r,g, b)
+        val cMin = minOf(r, g, b)
+
+        var hue: Float
+        val saturation: Float = if (cMax != 0f) {
+            (cMax - cMin) / cMax
+        } else {
+            0f
+        }
+
+        if (saturation == 0f)
+            hue = 0f
+        else {
+            val redC = (cMax - r) / (cMax - cMin)
+            val greenC = (cMax - g) / (cMax - cMin)
+            val blueC = (cMax - b) / (cMax - cMin)
+            hue = when {
+                r == cMax -> blueC - greenC
+                g == cMax -> 2.0f + redC - blueC
+                else -> 4.0f + greenC - redC
+            }
+            hue /= 6.0f
+            if (hue < 0)
+                hue += 1.0f
+        }
+
+        return hue
+    }
+
+val GdxColor.saturation:Float
+    get() {
+        val cMax = maxOf(r,g, b)
+        val cMin = minOf(r, g, b)
+
+        return if (cMax != 0f) {
+            (cMax - cMin) / cMax
+        } else {
+            0f
+        }
+    }
+
+val GdxColor.brightness:Float
+    get() {
+        return maxOf(r,g, b)
+    }
+
+val White = Color(GdxColor.WHITE)
 
 val HueRed = 0/6f
 val HueOrange = 1/6f
@@ -26,7 +151,17 @@ val HueGreen = 3/6f
 val HueBlue = 4/6f
 val HuePurple = 5/6f
 
-fun hsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f): Float {
+/**
+ * Create RGB Color
+ */
+fun rgb(red:Float, green:Float = red, blue:Float = green, alpha:Float = 1f):Color =
+        Color(GdxColor.toFloatBits(
+                clamp(red, 0f, 1f),
+                clamp(green, 0f, 1f),
+                clamp(blue, 0f, 1f),
+                clamp(alpha, 0f, 1f)))
+
+fun hsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f): Color {
     val satu = clamp(saturation, 0f, 1f)
     val brig = clamp(brightness, 0f, 1f)
 
@@ -76,10 +211,10 @@ fun hsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f): Flo
             }
         }
     }
-    return Color.toFloatBits(r, g, b, clamp(alpha, 0f, 1f))
+    return Color(GdxColor.toFloatBits(r, g, b, clamp(alpha, 0f, 1f)))
 }
 
-fun Color.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f) {
+fun GdxColor.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f) {
     val satu = clamp(saturation, 0f, 1f)
     val brig = clamp(brightness, 0f, 1f)
 
@@ -136,158 +271,38 @@ fun Color.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Float 
     this.a = clamp(alpha, 0f, 1f)
 }
 
-fun randomColor(): Float {
-    return java.lang.Float.intBitsToFloat(MathUtils.random.nextInt() or -0x2000000)
+fun randomColor(): Color {
+    return Color(java.lang.Float.intBitsToFloat(MathUtils.random.nextInt() or -0x2000000))
 }
 
-val Float.red:Float
-    get() = ((NumberUtils.floatToIntColor(this) ushr (8*0)) and 0xFF) / 0xFF.toFloat()
-
-val Float.green:Float
-    get() = ((NumberUtils.floatToIntColor(this) ushr (8*1)) and 0xFF) / 0xFF.toFloat()
-
-val Float.blue:Float
-    get() = ((NumberUtils.floatToIntColor(this) ushr (8*2)) and 0xFF) / 0xFF.toFloat()
-
-val Float.alpha:Float
-    get() = ((NumberUtils.floatToIntColor(this) ushr (8*3)) and 0xFF) / 0xFF.toFloat()
-
-fun lerpRGB(from:Float, to:Float, progress:Float) =
+fun lerpRGB(from:Color, to:Color, progress:Float) =
         rgb(
                 lerp(from.red, to.red, progress),
                 lerp(from.green, to.green, progress),
                 lerp(from.blue, to.blue, progress),
                 lerp(from.alpha, to.alpha, progress))
 
-fun lerpHSB(from:Float, to:Float, progress:Float) =
+fun lerpHSB(from:Color, to:Color, progress:Float) =
         hsb(
                 MathUtils.lerpAngleDeg(from.hue * 360f, to.hue * 360f, progress) / 360f,
                 lerp(from.saturation, to.saturation, progress),
                 lerp(from.brightness, to.brightness, progress),
                 lerp(from.alpha, to.alpha, progress))
 
-fun lerpHSB(from:FloatArray, progress:Float):Float {
+fun lerpHSB(from:FloatArray, progress:Float):Color {
     val fullProgress = progress * (from.size - 1)
     val firstIndex = fullProgress.toInt()
     if (firstIndex == from.lastIndex) {
-        return from.last()
+        return Color(from.last())
     }
-    return lerpHSB(from[firstIndex], from[firstIndex + 1], fullProgress % 1f)
+    return lerpHSB(Color(from[firstIndex]), Color(from[firstIndex + 1]), fullProgress % 1f)
 }
-
-val Float.hue:Float
-    get() {
-        val r:Float = this.red
-        val g:Float = this.green
-        val b:Float = this.blue
-
-        val cMax = maxOf(r,g, b)
-        val cMin = minOf(r, g, b)
-
-        var hue: Float
-        val saturation: Float = if (cMax != 0f) {
-            (cMax - cMin) / cMax
-        } else {
-            0f
-        }
-
-        if (saturation == 0f)
-            hue = 0f
-        else {
-            val redC = (cMax - r) / (cMax - cMin)
-            val greenC = (cMax - g) / (cMax - cMin)
-            val blueC = (cMax - b) / (cMax - cMin)
-            hue = when {
-                r == cMax -> blueC - greenC
-                g == cMax -> 2.0f + redC - blueC
-                else -> 4.0f + greenC - redC
-            }
-            hue /= 6.0f
-            if (hue < 0)
-                hue += 1.0f
-        }
-
-        return hue
-    }
-
-val Float.saturation:Float
-    get() {
-        val r:Float = this.red
-        val g:Float = this.green
-        val b:Float = this.blue
-
-        val cMax = maxOf(r,g, b)
-        val cMin = minOf(r, g, b)
-
-        return if (cMax != 0f) {
-            (cMax - cMin) / cMax
-        } else {
-            0f
-        }
-    }
-
-val Float.brightness:Float
-    get() {
-        val r:Float = this.red
-        val g:Float = this.green
-        val b:Float = this.blue
-
-        return maxOf(r,g, b)
-    }
-
-val Color.hue:Float
-    get() {
-        val cMax = maxOf(r,g, b)
-        val cMin = minOf(r, g, b)
-
-        var hue: Float
-        val saturation: Float = if (cMax != 0f) {
-            (cMax - cMin) / cMax
-        } else {
-            0f
-        }
-
-        if (saturation == 0f)
-            hue = 0f
-        else {
-            val redC = (cMax - r) / (cMax - cMin)
-            val greenC = (cMax - g) / (cMax - cMin)
-            val blueC = (cMax - b) / (cMax - cMin)
-            hue = when {
-                r == cMax -> blueC - greenC
-                g == cMax -> 2.0f + redC - blueC
-                else -> 4.0f + greenC - redC
-            }
-            hue /= 6.0f
-            if (hue < 0)
-                hue += 1.0f
-        }
-
-        return hue
-    }
-
-val Color.saturation:Float
-    get() {
-        val cMax = maxOf(r,g, b)
-        val cMin = minOf(r, g, b)
-
-        return if (cMax != 0f) {
-            (cMax - cMin) / cMax
-        } else {
-            0f
-        }
-    }
-
-val Color.brightness:Float
-    get() {
-        return maxOf(r,g, b)
-    }
 
 private fun smoothClamp(value:Float): Float {
     return Math.tanh((value + value).toDouble()).toFloat()
 }
 
-fun Color.set(color:Float):Color {
+fun GdxColor.set(color:Color):GdxColor {
     this.r = color.red
     this.g = color.green
     this.b = color.blue
@@ -302,7 +317,7 @@ private fun Random.fudgeAmount(coherence: Float, amount:Float):Float {
     return (offsetBase + (nextFloat() - 0.5f) * 0.2f) * amount
 }
 
-fun Float.fudge(random: Random, coherence:Float, amount:Float = 1f):Float {
+fun Color.fudge(random: Random, coherence:Float, amount:Float = 1f):Color {
     var hue = this.hue
     val saturation = this.saturation
     if (saturation < 0.001f) {
@@ -315,7 +330,7 @@ fun Float.fudge(random: Random, coherence:Float, amount:Float = 1f):Float {
     return hsb(h,s,b)
 }
 
-fun Color.fudge(random: Random, coherence:Float, amount:Float = 1f):Color {
+fun GdxColor.fudge(random: Random, coherence:Float, amount:Float = 1f):GdxColor {
     var hue = this.hue
     val saturation = this.saturation
     if (saturation < 0.001f) {

@@ -4,8 +4,6 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.VertexAttribute;
-import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.RenderableProvider;
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
@@ -16,6 +14,8 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import com.darkyen.paragrowth.WorldCharacteristics;
+import com.darkyen.paragrowth.render.MeshBuilding;
+import com.darkyen.paragrowth.render.Shaders;
 import com.darkyen.paragrowth.terrain.generator.Noise;
 import com.darkyen.paragrowth.util.DebugRenderKt;
 
@@ -28,11 +28,6 @@ public class DoodadWorld implements RenderableProvider {
     private static final int PATCH_SIZE = 256;
 
     private static final int DOODADS_PER_PATCH = 256;
-    private static final MeshBuilder MESH_BUILDER = new MeshBuilder();
-    private static final VertexAttributes MESH_ATTRIBUTES = new VertexAttributes(
-            VertexAttribute.Position(),//3
-            VertexAttribute.ColorPacked()//1
-    );
 
     private final Camera camera;
 
@@ -80,7 +75,7 @@ public class DoodadWorld implements RenderableProvider {
     }
 
     private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
-        final MeshBuilder builder = MESH_BUILDER;
+        final MeshBuilder builder = MeshBuilding.MESH_BUILDER;
         boolean begun = false;
 
         for (int i = 0; i < DOODADS_PER_PATCH; i++) {
@@ -94,7 +89,7 @@ public class DoodadWorld implements RenderableProvider {
             }
 
             if (!begun) {
-                builder.begin(MESH_ATTRIBUTES);
+                builder.begin(MeshBuilding.POSITION3_COLOR1_ATTRIBUTES);
                 begun = true;
             }
 
@@ -128,7 +123,7 @@ public class DoodadWorld implements RenderableProvider {
             box.getCenter(renderable.meshPart.center);
             renderable.meshPart.radius = PATCH_SIZE;
 
-            renderable.shader = DoodadShader.get(renderable);
+            renderable.shader = Shaders.DOODAD_SHADER;
             renderables.add(renderable);
         }
     }
