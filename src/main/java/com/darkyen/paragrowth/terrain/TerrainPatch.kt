@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.graphics.g3d.utils.TextureDescriptor
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.BoundingBox
-import com.badlogic.gdx.utils.Disposable
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider
@@ -37,12 +36,13 @@ const val PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP
 /** Total amount of triangles per patch */
 private const val TRIANGLE_COUNT = PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2
 /** Amount of indices needed to draw the whole patch */
-private const val INDEX_COUNT = TRIANGLE_COUNT * 3
+const val TERRAIN_PATCH_INDEX_COUNT = TRIANGLE_COUNT * 3
 /** Total amount of vertices needed to draw the whole patch.
  * Some triangles must overlap, because there is more triangles than vertices and we need an unique provoking
  * vertex for each one. For EVEN rows, the provoking vertex is the top-left one and top one.
  * For ODD rows, the provoking vertex is the top one and the top-right one. */
-private const val VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE
+const val TERRAIN_PATCH_VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE
+const val TERRAIN_PATCH_VERTEX_SIZE = /* XYZ */3 + /* Color */1 + /* Normal */3
 
 /*
 Arrangement:
@@ -57,224 +57,143 @@ X stagger: 0.5
 Y step: sqrt(3)/2
 */
 
-/** Generate vertices with Z coordinate, color and triangle normal */
-fun generateTerrainPatchVertexZColorNormal(xOffset:Float, yOffset:Float, xy:FloatArray, heightMap:FloatArray, generator: TerrainProvider): FloatArray {
+/** Generate vertices with coordinates, color and triangle normal.
+ * @param outVertices size should be TERRAIN_PATCH_VERTEX_COUNT * VERTEX_SIZE
+ * @param outHeightMap size should be PATCH_SIZE * PATCH_SIZE */
+fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: TerrainProvider, outVertices:FloatArray, outHeightMap:FloatArray) {
     val X_HALF_STEP = X_STEP * 0.5f
     val Y_HALF_STEP = Y_STEP * 0.5f
 
-    val vertices = FloatArray(VERTEX_COUNT * (/* Z */1 + /* Color */1 + /* Normal */3))
     val normal = Vector3()
 
-    var offXY = 0
     var v = 0
+    var yPos = yOffset
     var h = 0
     // Stepping through hourglass middles
     var y = 1
     while (y < PATCH_SIZE) {
+        var xPos = xOffset
         // Do a line of top X that makes the first row
 
         // Top of even row
-        var height = heightMap[h++]
+        var height = generator.getHeight(xPos, yPos)
+        outHeightMap[h++] = height
         for (x in 0 until PATCH_UNIT_SIZE) {
             run {
-                val xPos = xy[offXY++] + xOffset + X_HALF_STEP
-                val yPos = xy[offXY++] + yOffset + Y_HALF_STEP
+                val xTPos = xPos + X_HALF_STEP
+                val yTPos = yPos + Y_HALF_STEP
 
                 // Top left of red
-                vertices[v++] = height
-                vertices[v++] = generator.getColor(xPos, yPos)
-                generator.getNormal(normal, xPos, yPos)
-                vertices[v++] = normal.x
-                vertices[v++] = normal.y
-                vertices[v++] = normal.z
+                outVertices[v++] = xPos
+                outVertices[v++] = yPos
+                outVertices[v++] = height
+                outVertices[v++] = generator.getColor(xTPos, yTPos)
+                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = normal.x
+                outVertices[v++] = normal.y
+                outVertices[v++] = normal.z
             }
 
-            height = heightMap[h++]
+            xPos += X_STEP
+            height = generator.getHeight(xPos, yPos)
+            outHeightMap[h++] = height
 
             run {
-                val xPos = xy[offXY++] + xOffset
-                val yPos = xy[offXY++] + yOffset + Y_HALF_STEP
+                val xTPos = xPos
+                val yTPos = yPos + Y_HALF_STEP
 
                 // Top of green
-                vertices[v++] = height
-                vertices[v++] = generator.getColor(xPos, yPos)
-                generator.getNormal(normal, xPos, yPos)
-                vertices[v++] = normal.x
-                vertices[v++] = normal.y
-                vertices[v++] = normal.z
+                outVertices[v++] = xPos
+                outVertices[v++] = yPos
+                outVertices[v++] = height
+                outVertices[v++] = generator.getColor(xTPos, yTPos)
+                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = normal.x
+                outVertices[v++] = normal.y
+                outVertices[v++] = normal.z
             }
         }
 
-        height = heightMap[h++]
+        yPos += Y_STEP
+        xPos = xOffset + X_STAGGER
+        height = generator.getHeight(xPos, yPos)
+        outHeightMap[h++] = height
 
         // Top of odd row
         for (x in 0 until PATCH_UNIT_SIZE) {
             run {
-                val xPos = xy[offXY++] + xOffset
-                val yPos = xy[offXY++] + yOffset + Y_HALF_STEP
+                val xTPos = xPos
+                val yTPos = yPos + Y_HALF_STEP
 
                 // Top of dark red
-                vertices[v++] = height
-                vertices[v++] = generator.getColor(xPos, yPos)
-                generator.getNormal(normal, xPos, yPos)
-                vertices[v++] = normal.x
-                vertices[v++] = normal.y
-                vertices[v++] = normal.z
+                outVertices[v++] = xPos
+                outVertices[v++] = yPos
+                outVertices[v++] = height
+                outVertices[v++] = generator.getColor(xTPos, yTPos)
+                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = normal.x
+                outVertices[v++] = normal.y
+                outVertices[v++] = normal.z
             }
 
-            height = heightMap[h++]
+            xPos += X_STEP
+            height = generator.getHeight(xPos, yPos)
+            outHeightMap[h++] = height
 
             run {
-                val xPos = xy[offXY++] + xOffset - X_HALF_STEP
-                val yPos = xy[offXY++] + yOffset + Y_HALF_STEP
+                val xTPos = xPos - X_HALF_STEP
+                val yTPos = yPos + Y_HALF_STEP
 
                 // Top right of dark green
-                vertices[v++] = height
-                vertices[v++] = generator.getColor(xPos, yPos)
-                generator.getNormal(normal, xPos, yPos)
-                vertices[v++] = normal.x
-                vertices[v++] = normal.y
-                vertices[v++] = normal.z
+                outVertices[v++] = xPos
+                outVertices[v++] = yPos
+                outVertices[v++] = height
+                outVertices[v++] = generator.getColor(xTPos, yTPos)
+                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = normal.x
+                outVertices[v++] = normal.y
+                outVertices[v++] = normal.z
             }
         }
 
+        yPos += Y_STEP
         y += 2
     }
 
     // Do one more bottom row, without colors
     val NO_COLOR = Color.MAGENTA.toFloatBits()
-    var height = heightMap[h++]
+    var xPos = xOffset
+    var height = generator.getHeight(xPos, yPos)
+    outHeightMap[h++] = height
     for (x in 0 until PATCH_UNIT_SIZE) {
         // Top left of red
-        vertices[v++] = height
-        vertices[v++] = NO_COLOR
-        vertices[v++] = 0f
-        vertices[v++] = 0f
-        vertices[v++] = 1f
-
-        // Top of green
-        height = heightMap[h++]
-        vertices[v++] = height
-        vertices[v++] = NO_COLOR
-        vertices[v++] = 0f
-        vertices[v++] = 0f
-        vertices[v++] = 1f
-    }
-
-    return vertices
-}
-
-/** Generate height map based on array with xy coordinates. */
-fun generateHeightMap(offX:Float, offY:Float, generator: TerrainProvider):FloatArray {
-    val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
-    var h = 0
-
-    var yPos = 0f + offY
-    // Stepping through hourglass middles
-    var y = 1
-    while (y < PATCH_SIZE) {
-        var xPos = 0f + offX
-        // Do a line of top X that makes the first row
-
-        // Top of even row
-        heightMap[h++] = generator.getHeight(xPos, yPos)
-        for (x in 0 until PATCH_UNIT_SIZE) {
-            xPos += X_STEP
-            heightMap[h++] = generator.getHeight(xPos, yPos)
-        }
-
-        yPos += Y_STEP
-        xPos = X_STAGGER + offX
-        heightMap[h++] = generator.getHeight(xPos, yPos)
-
-        // Top of odd row
-        for (x in 0 until PATCH_UNIT_SIZE) {
-            xPos += X_STEP
-            heightMap[h++] = generator.getHeight(xPos, yPos)
-        }
-
-        yPos += Y_STEP
-        y += 2
-    }
-
-    // Do one more bottom row, without colors
-    var xPos = 0f + offX
-    heightMap[h++] = generator.getHeight(xPos, yPos)
-    for (x in 0 until PATCH_UNIT_SIZE) {
-        xPos += X_STEP
-        heightMap[h++] = generator.getHeight(xPos, yPos)
-    }
-
-    return heightMap
-}
-
-/** Generate vertices with x and y coordinate. These can be shared by all terrain patches. */
-fun generateTerrainPatchVertexXY():FloatArray {
-    val vertices = FloatArray(VERTEX_COUNT * 2)
-
-    var v = 0
-    var yPos = 0f
-    // Stepping through hourglass middles
-    var y = 1
-    while (y < PATCH_SIZE) {
-        var xPos = 0f
-        // Do a line of top X that makes the first row
-
-        // Top of even row
-        for (x in 0 until PATCH_UNIT_SIZE) {
-
-            // Top left of red
-            vertices[v++] = xPos
-            vertices[v++] = yPos
-
-            xPos += X_STEP
-
-            // Top of green
-            vertices[v++] = xPos
-            vertices[v++] = yPos
-        }
-
-        yPos += Y_STEP
-        xPos = X_STAGGER
-
-        // Top of odd row
-        for (x in 0 until PATCH_UNIT_SIZE) {
-            // Top of dark red
-            vertices[v++] = xPos
-            vertices[v++] = yPos
-
-            xPos += X_STEP
-
-            // Top right of dark green
-            vertices[v++] = xPos
-            vertices[v++] = yPos
-        }
-
-        yPos += Y_STEP
-        y += 2
-    }
-
-    // Do one more bottom row, without colors
-    var xPos = 0f
-    for (x in 0 until PATCH_UNIT_SIZE) {
-        // Top left of red
-        vertices[v++] = xPos
-        vertices[v++] = yPos
+        outVertices[v++] = xPos
+        outVertices[v++] = yPos
+        outVertices[v++] = height
+        outVertices[v++] = NO_COLOR
+        outVertices[v++] = 0f
+        outVertices[v++] = 0f
+        outVertices[v++] = 1f
 
         xPos += X_STEP
+        height = generator.getHeight(xPos, yPos)
+        outHeightMap[h++] = height
 
         // Top of green
-        vertices[v++] = xPos
-        vertices[v++] = yPos
+        outVertices[v++] = xPos
+        outVertices[v++] = yPos
+        outVertices[v++] = height
+        outVertices[v++] = NO_COLOR
+        outVertices[v++] = 0f
+        outVertices[v++] = 0f
+        outVertices[v++] = 1f
     }
-
-    return vertices
 }
 
 /** Generate indices for the terrain mesh */
 fun generateTerrainPatchIndices():ShortArray {
     val ROW_AMOUNT = PATCH_SIZE + PATCH_SIZE - 2
-    val indices = ShortArray(INDEX_COUNT)
+    val indices = ShortArray(TERRAIN_PATCH_INDEX_COUNT)
     var i = 0
 
     // Do all of the double-strips
@@ -317,27 +236,10 @@ fun generateTerrainPatchIndices():ShortArray {
     return indices
 }
 
-// TODO(jp): Inline!
-fun createTerrainPatch(xOffset:Float, yOffset:Float, generator:TerrainProvider, xy:FloatArray, xyBuffer: GlBuffer, indicesBuffer:GlBuffer):TerrainPatch {
-    val heightMap = generateHeightMap(xOffset, yOffset, generator)
-    val zColNor = generateTerrainPatchVertexZColorNormal(xOffset, yOffset, xy, heightMap, generator)
-
-    return TerrainPatch(xOffset, yOffset, heightMap, zColNor, xyBuffer, indicesBuffer)
-}
-
-fun createWaterTerrainPatch(xy:FloatArray, xyBuffer:GlBuffer, indicesBuffer:GlBuffer, generator:TerrainProvider):TerrainPatch {
-    val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE) { -1f }
-    val zColNor = generateTerrainPatchVertexZColorNormal(-PATCH_WIDTH, -PATCH_HEIGHT, xy, heightMap, generator)
-
-    return TerrainPatch(0f, 0f, heightMap, zColNor, xyBuffer, indicesBuffer)
-}
-
-val VA_POSITION_XY = VertexAttribute("a_position_xy", GL30.GL_FLOAT, 2)
-val VA_POSITION_Z = VertexAttribute("a_position_z", GL30.GL_FLOAT, 1)
+val VA_POSITION = VertexAttribute("a_position", GL30.GL_FLOAT, 3)
 
 val TERRAIN_PATCH_ATTRIBUTES = VertexAttributes(
-        VA_POSITION_XY,
-        VA_POSITION_Z,
+        VA_POSITION,
         VA_COLOR1,
         VA_NORMAL3
 )
@@ -346,7 +248,7 @@ class TerrainPatch(
         private val xOffset:Float,
         private val yOffset:Float,
         val heightMap:FloatArray,
-        zColNor:FloatArray, xyBuffer:GlBuffer, indicesBuffer:GlBuffer) : Disposable {
+        private val model:Model) {
 
     init {
         assert(heightMap.size == PATCH_SIZE * PATCH_SIZE)
@@ -363,26 +265,10 @@ class TerrainPatch(
         this.max.set(xOffset + PATCH_WIDTH, yOffset + PATCH_HEIGHT, max)
     }
 
-    private val zColNorBuffer = GlBuffer(GL20.GL_STATIC_DRAW).apply { setData(zColNor) }
-    private val vao = GlVertexArrayObject(indicesBuffer, TERRAIN_PATCH_ATTRIBUTES,
-            GlVertexArrayObject.Binding(xyBuffer, 2, 0), // xy
-            GlVertexArrayObject.Binding(zColNorBuffer, 5, 0), // z
-            GlVertexArrayObject.Binding(zColNorBuffer, 5, 1), // color
-            GlVertexArrayObject.Binding(zColNorBuffer, 5, 2) // normal
-    )
-
 
     fun fillRenderModel(model: RenderModel) {
-        model.worldTransform.translate(xOffset, yOffset, 0f)
-        model.vao = vao
-        model.primitiveType = GL20.GL_TRIANGLES
-        model.count = INDEX_COUNT
+        model.set(this.model)
         model.shader = TerrainShader
-    }
-
-    override fun dispose() {
-        zColNorBuffer.dispose()
-        vao.dispose()
     }
 }
 

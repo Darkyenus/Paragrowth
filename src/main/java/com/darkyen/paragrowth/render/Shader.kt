@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ObjectIntMap
 import com.darkyen.paragrowth.util.GdxArray
 import com.darkyen.paragrowth.util.stack
+import org.lwjgl.opengl.GL32
 import sun.plugin.dom.exception.InvalidStateException
 import java.io.File
 import com.badlogic.gdx.utils.IntArray as GdxIntArray
@@ -142,6 +143,7 @@ abstract class ParaShader(val order:Int,
         val primitiveType = renderable.primitiveType
         val offset = renderable.offset
         val count = renderable.count
+        val baseVertex = renderable.baseVertex
 
         val indices = currentVAO.indices
         if (indices != null) {
@@ -163,9 +165,11 @@ abstract class ParaShader(val order:Int,
 
             // Fun https://www.reddit.com/r/opengl/comments/3m9u36/how_to_render_using_glmultidrawarraysindirect/
             // TODO(jp): Allow glMultiDrawElements! (Not in GL ES, but can use lwjgl directly)
-            Gdx.gl20.glDrawElements(primitiveType, count, GL20.GL_UNSIGNED_SHORT, offsetBytes)
+            GL32.glDrawElementsBaseVertex(primitiveType, count, GL20.GL_UNSIGNED_SHORT, offsetBytes.toLong(), baseVertex)
+            //Gdx.gl30.glDrawElements(primitiveType, count, GL20.GL_UNSIGNED_SHORT, offsetBytes)
         } else {
-            Gdx.gl20.glDrawArrays(primitiveType, offset, count)
+            assert(baseVertex == 0)
+            Gdx.gl30.glDrawArrays(primitiveType, offset, count)
         }
     }
 

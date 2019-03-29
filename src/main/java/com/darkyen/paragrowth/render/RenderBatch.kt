@@ -43,6 +43,7 @@ class RenderBatch(context: RenderContext? = null) {
             rm.apply {
                 primitiveType = 0
                 offset = 0
+                baseVertex = 0
                 count = 0
                 vao = NULL_VAO
                 shader = NULL_SHADER

@@ -17,6 +17,9 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
      * in the indices array, otherwise it is the offset in the vertices array.  */
     var offset: Int = 0
 
+    /** Value to be added to indices to find the vertex to draw */
+    var baseVertex:Int = 0
+
     /** The size (in total number of vertices) of this part in the [.mesh]. When the mesh is indexed (
      * [Mesh.getNumIndices] > 0), this is the number of indices, otherwise it is the number of vertices.  */
     var count: Int = 0
@@ -37,6 +40,14 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
     /** After sorting by shader, items are ordered by this. Smaller values are sorted earlier.
      * Can be anything, typically it is a distance to the camera. */
     var order:Float = 0f
+
+    fun set(model:Model) {
+        primitiveType = model.primitive
+        offset = model.indexOffset
+        baseVertex = model.baseVertex
+        count = model.indexCount
+        vao = model.vao
+    }
 
     override fun compareTo(other: RenderModel): Int {
         val byShader = shader.order.compareTo(other.shader.order)

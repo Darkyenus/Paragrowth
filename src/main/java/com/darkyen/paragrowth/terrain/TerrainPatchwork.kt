@@ -1,13 +1,10 @@
 package com.darkyen.paragrowth.terrain
 
-import com.badlogic.gdx.graphics.Camera
-import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.badlogic.gdx.utils.Disposable
-import com.darkyen.paragrowth.render.GlBuffer
-import com.darkyen.paragrowth.render.RenderBatch
-import com.darkyen.paragrowth.render.Renderable
+import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider
 
 /**
@@ -20,30 +17,63 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
     private val patches: Array<TerrainPatch>
     private val seaPatch: TerrainPatch
 
-    private val xyBuffer:GlBuffer
-    private val indicesBuffer:GlBuffer
+    private val vertexBuffer:GlBuffer
+    private val indexBuffer:GlBuffer
+    private val vao:GlVertexArrayObject
 
     init {
         @Suppress("UNCHECKED_CAST")
         this.patches = arrayOfNulls<TerrainPatch>(patchAmountX * patchAmountY) as Array<TerrainPatch>
 
-        val xy = generateTerrainPatchVertexXY()
-        val xyBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
-        xyBuffer.setData(xy)
-        this.xyBuffer = xyBuffer
+        val indexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
+        indexBuffer.setData(generateTerrainPatchIndices())
+        this.indexBuffer = indexBuffer
 
-        val indicesBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
-        indicesBuffer.setData(generateTerrainPatchIndices())
-        this.indicesBuffer = indicesBuffer
+        val vertexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
+        vertexBuffer.reserve((patchAmountX * patchAmountY + 1 /* ocean */) * TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE, GL30.GL_FLOAT)
+        this.vertexBuffer = vertexBuffer
+        var vertexBufferFilled = 0
+        var baseVertex = 0
+
+        val vao = GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_ATTRIBUTES,
+                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
+                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
+                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4) // normal
+        )
+        this.vao = vao
+
+        val vertexArray = FloatArray(TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE)
 
         var i = 0
         for (y in 0 until patchAmountY) {
             for (x in 0 until patchAmountX) {
-                patches[i++] = createTerrainPatch(x * PATCH_WIDTH, y * PATCH_HEIGHT, terrainProvider, xy, xyBuffer, indicesBuffer)
+                val xOffset = x * PATCH_WIDTH
+                val yOffset = y * PATCH_HEIGHT
+                val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
+                generateTerrainPatchVertices(xOffset, yOffset, terrainProvider, vertexArray, heightMap)
+                vertexBuffer.setSubData(vertexBufferFilled, vertexArray)
+                vertexBufferFilled += vertexArray.size
+                val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
+                baseVertex += TERRAIN_PATCH_VERTEX_COUNT
+
+                patches[i++] = TerrainPatch(xOffset, yOffset, heightMap, model)
             }
         }
 
-        this.seaPatch = createWaterTerrainPatch(xy, xyBuffer, indicesBuffer, terrainProvider)
+
+        val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
+        generateTerrainPatchVertices(0f, 0f, object : TerrainProvider {
+            override fun getSizeX(): Float = terrainProvider.sizeX
+
+            override fun getSizeY(): Float = terrainProvider.sizeY
+
+            override fun getHeight(x: Float, y: Float): Float = -1f
+
+            override fun getColor(x: Float, y: Float): Float = terrainProvider.getColor(x, y)
+        }, vertexArray, heightMap)
+        vertexBuffer.setSubData(vertexBufferFilled, vertexArray)
+        val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
+        seaPatch = TerrainPatch(0f, 0f, heightMap, model)
     }
 
     private fun heightAtVertex(x: Int, y: Int): Float {
@@ -171,11 +201,8 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
     }
 
     override fun dispose() {
-        xyBuffer.dispose()
-        indicesBuffer.dispose()
-        for (patch in patches) {
-            patch.dispose()
-        }
-        seaPatch.dispose()
+        indexBuffer.dispose()
+        vertexBuffer.dispose()
+        vao.dispose()
     }
 }
