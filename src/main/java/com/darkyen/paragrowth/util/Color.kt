@@ -298,9 +298,14 @@ fun lerpHSB(from:FloatArray, progress:Float):Color {
     return lerpHSB(Color(from[firstIndex]), Color(from[firstIndex + 1]), fullProgress % 1f)
 }
 
-// TODO(jp): Verify that this clamps correctly (it does not look like it, it clamps to -1..1, but is used as 0..1)
-private fun smoothClamp(value:Float): Float {
-    return Math.tanh((value + value).toDouble()).toFloat()
+/** Smoothly clamp [value] to -1..1 range */
+private fun smoothClamp11(value:Float): Float {
+    return Math.tanh((value*2f).toDouble()).toFloat()
+}
+
+/** Smoothly clamp [value] to 0..1 range */
+private fun smoothClamp01(value:Float):Float {
+    return Math.tanh((value*4f - 2f).toDouble()).toFloat() * 0.5f + 0.5f
 }
 
 fun GdxColor.set(color:Color):GdxColor {
@@ -326,8 +331,8 @@ fun Color.fudge(random: Random, coherence:Float, amount:Float = 1f):Color {
     }
 
     val h = hue + random.fudgeAmount(coherence, amount * 0.2f)
-    val s = smoothClamp(saturation + random.fudgeAmount(coherence, amount * 0.5f))
-    val b = smoothClamp(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
+    val s = smoothClamp01(saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    val b = smoothClamp01(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     return hsb(h,s,b)
 }
 
@@ -339,8 +344,8 @@ fun GdxColor.fudge(random: Random, coherence:Float, amount:Float = 1f):GdxColor 
     }
 
     val h = hue + random.fudgeAmount(coherence, amount * 0.2f)
-    val s = smoothClamp(saturation + random.fudgeAmount(coherence, amount * 0.5f))
-    val b = smoothClamp(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
+    val s = smoothClamp01(saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    val b = smoothClamp01(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     this.fromHsb(h,s,b)
     return this
 }

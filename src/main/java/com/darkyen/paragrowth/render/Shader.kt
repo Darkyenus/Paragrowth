@@ -12,7 +12,6 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.BufferUtils
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ObjectIntMap
-import com.darkyen.paragrowth.render.GlBuffer.Companion.glSizeOf
 import com.darkyen.paragrowth.util.GdxArray
 import com.darkyen.paragrowth.util.stack
 import sun.plugin.dom.exception.InvalidStateException

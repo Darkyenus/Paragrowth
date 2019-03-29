@@ -3,9 +3,13 @@ package com.darkyen.paragrowth.terrain
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.GL30
+import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g3d.utils.RenderContext
+import com.badlogic.gdx.graphics.g3d.utils.TextureDescriptor
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.badlogic.gdx.utils.Disposable
+import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.terrain.generator.TerrainProvider
 
@@ -379,5 +383,48 @@ class TerrainPatch(
     override fun dispose() {
         zColNorBuffer.dispose()
         vao.dispose()
+    }
+}
+
+object TerrainShader : ParaShader(TERRAIN, "terrain", TERRAIN_PATCH_ATTRIBUTES) {
+
+    init {
+        localUniform("u_worldTrans") { uniform, _, renderable ->
+            uniform.set(renderable.worldTransform)
+        }
+        globalUniform("u_projViewTrans") { uniform, camera ->
+            uniform.set(camera.combined)
+        }
+
+        val startTime = System.currentTimeMillis()
+        globalUniform("u_time") { uniform, _ ->
+            val time = (System.currentTimeMillis() - startTime) / 1000f
+            uniform.set(time)
+        }
+
+        ParagrowthMain.assetManager.load("Water_001_DISP.png", Texture::class.java)
+        ParagrowthMain.assetManager.load("Water_001_NORM.jpg", Texture::class.java)
+        ParagrowthMain.assetManager.finishLoading()
+        val displacement = TextureDescriptor(ParagrowthMain.assetManager.get("Water_001_DISP.png", Texture::class.java), Texture.TextureFilter.Linear, Texture.TextureFilter.Linear, Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
+        val normal = TextureDescriptor(ParagrowthMain.assetManager.get("Water_001_NORM.jpg", Texture::class.java), Texture.TextureFilter.Linear, Texture.TextureFilter.Linear, Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
+
+        globalUniform("u_displacement") { uniform, _ ->
+            uniform.set(displacement)
+        }
+
+        globalUniform("u_normal") { uniform, _ ->
+            uniform.set(normal)
+        }
+
+        globalUniform("u_position") { uniform, camera ->
+            uniform.set(camera.position)
+        }
+    }
+
+    override fun adjustContext(context: RenderContext) {
+        context.setBlending(false, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
+        context.setCullFace(GL20.GL_BACK)
+        context.setDepthTest(GL20.GL_LESS)
+        context.setDepthMask(true)
     }
 }

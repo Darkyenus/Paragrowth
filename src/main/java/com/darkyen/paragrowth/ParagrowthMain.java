@@ -23,7 +23,7 @@ public class ParagrowthMain extends Game {
         INSTANCE = this;
     }
 
-    private static final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
+    public static final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
     private static Skin skin;
     private static SpriteBatch batch;
 
@@ -47,10 +47,11 @@ public class ParagrowthMain extends Game {
 
     public static void main(String[] args){
         Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
-        configuration.setTitle("Lowscape");
+        configuration.setTitle("Paragrowth");
         configuration.setBackBufferConfig(8, 8, 8, 8, 24, 0, 0);
         configuration.useOpenGL3(true, 3, 3);
         configuration.setWindowedMode(800, 600);
+        configuration.useVsync(false);
 
         new Lwjgl3Application(new ParagrowthMain(), configuration);
     }

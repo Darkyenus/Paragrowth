@@ -9,7 +9,11 @@ flat out vec4 v_color;
 
 uniform mat4 u_projViewTrans;
 uniform mat4 u_worldTrans;
+uniform vec3 u_position;
 uniform float u_time;
+
+uniform sampler2D u_displacement;
+uniform sampler2D u_normal;
 
 const vec3 lightDirection = vec3(0.2, 0.0, 0.9797958975);
 
@@ -22,12 +26,28 @@ void main() {
 	vec4 pos = u_worldTrans * vec4(a_position, 1.0);
 
 	if (pos.z <= 0.0) {
+		// General
 		float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
-		float heightDisplacement = sin(pos.x + u_time) * sin(pos.y + u_time) * 0.1 + sin(pos.x*2.0 - u_time) * sin(pos.y*2.0 + u_time) * 0.2;
-		float colorDisplacement = sin(pos.x + u_time*0.1 + 2.0) * cos(pos.y + u_time) * sin(pos.y + u_time) * 0.1 + sin(pos.x*0.08 - u_time) * sin(pos.y*0.08 + u_time) * 0.07;
+		vec2 oceanSamplePos = (pos.xy + vec2(u_time)) * 0.01;
+		float displacement = texture(u_displacement, oceanSamplePos).x;
 
+		// Position
+		float heightDisplacement = displacement /** revDisplacement*/ - 1.0;
 		pos.z = mix(0.0, heightDisplacement, mixFactor);
-		v_color.rgb += vec3(mix(0.0, colorDisplacement, mixFactor));
+
+		// Color
+		vec3 normal = normalize(texture(u_normal, oceanSamplePos).xyz);
+		vec3 cameraToHere = normalize(u_position - pos.xyz);
+		vec3 reflection = reflect(-lightDirection, normal);
+		float specularBase = dot(reflection, cameraToHere);
+		float specular = 0.0;
+		if (specularBase > 0.0) {
+			specular = pow(specularBase, 20.0);
+		}
+
+		float colorDisplacement = pow(displacement, 2.0);
+
+		v_color.rgb += vec3(specular + colorDisplacement * 0.5);
 	}
 
 	gl_Position = u_projViewTrans * pos;
