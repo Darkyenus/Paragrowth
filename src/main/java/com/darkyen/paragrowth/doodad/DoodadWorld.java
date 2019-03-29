@@ -3,27 +3,30 @@ package com.darkyen.paragrowth.doodad;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.g3d.Renderable;
-import com.badlogic.gdx.graphics.g3d.RenderableProvider;
-import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.math.Frustum;
 import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Pool;
+import com.badlogic.gdx.utils.Disposable;
 import com.darkyen.paragrowth.WorldCharacteristics;
+import com.darkyen.paragrowth.render.GlBuffer;
+import com.darkyen.paragrowth.render.GlVertexArrayObject;
 import com.darkyen.paragrowth.render.MeshBuilding;
+import com.darkyen.paragrowth.render.ModelBuilder;
+import com.darkyen.paragrowth.render.RenderBatch;
+import com.darkyen.paragrowth.render.RenderModel;
+import com.darkyen.paragrowth.render.Renderable;
 import com.darkyen.paragrowth.terrain.generator.Noise;
 import com.darkyen.paragrowth.util.DebugRenderKt;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Random;
 
 /**
  *
  */
-public class DoodadWorld implements RenderableProvider {
+public class DoodadWorld implements Renderable, Disposable {
     private static final int PATCH_SIZE = 256;
 
     private static final int DOODADS_PER_PATCH = 256;
@@ -31,9 +34,8 @@ public class DoodadWorld implements RenderableProvider {
     private final Camera camera;
 
     private final int patchCount;
-    private final Mesh[] patches;
+    private final DoodadPatch[] patches;
     private final Array<DoodadInstance>[] doodadInstances;
-    private final BoundingBox[] patchBoundingBoxes;
 
     public DoodadWorld(Camera camera, long seed, float[][] noise, WorldCharacteristics characteristics) {
         this.camera = camera;
@@ -42,10 +44,9 @@ public class DoodadWorld implements RenderableProvider {
         final int patchesX = (worldWidth + PATCH_SIZE - 1) / PATCH_SIZE;
         final int patchesY = (worldHeight + PATCH_SIZE - 1) / PATCH_SIZE;
 
-        this.patches = new Mesh[patchesX * patchesY];
+        this.patches = new DoodadPatch[patchesX * patchesY];
         //noinspection unchecked
         this.doodadInstances = new Array[this.patches.length];
-        this.patchBoundingBoxes = new BoundingBox[this.patches.length];
 
         final RandomXS128 random = new RandomXS128(seed);
 
@@ -55,12 +56,11 @@ public class DoodadWorld implements RenderableProvider {
         int i = 0;
         for (int x = 0; x < patchesX; x++) {
             for (int y = 0; y < patchesY; y++) {
-                final Mesh mesh = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, characteristics);
-                if (mesh == null)
+                final DoodadPatch patch = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, characteristics);
+                if (patch == null)
                     continue;
 
-                this.patches[i] = mesh;
-                this.patchBoundingBoxes[i] = mesh.calculateBoundingBox();
+                this.patches[i] = patch;
                 this.doodadInstances[i] = patchInstances;
 
                 totalDoodads += patchInstances.size;
@@ -73,9 +73,8 @@ public class DoodadWorld implements RenderableProvider {
         System.out.println("Generated "+totalDoodads+" doodads");
     }
 
-    private Mesh buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
-        final MeshBuilder builder = MeshBuilding.MESH_BUILDER;
-        boolean begun = false;
+    private DoodadPatch buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
+        final ModelBuilder builder = new ModelBuilder(3 + 1);
 
         for (int i = 0; i < DOODADS_PER_PATCH; i++) {
             final float x = baseX + random.nextFloat() * PATCH_SIZE;
@@ -87,44 +86,47 @@ public class DoodadWorld implements RenderableProvider {
                 continue;
             }
 
-            if (!begun) {
-                builder.begin(MeshBuilding.POSITION3_COLOR1_ATTRIBUTES);
-                begun = true;
-            }
-
             final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z, characteristics);
             instances.add(instance);
             instance.build(builder, random, characteristics);
         }
 
-        if (!begun) {
+        if (builder.getIndices().size == 0) {
             return null;
         }
-        return builder.end();
+
+        final GlBuffer vertices = builder.createVertexBuffer(true);
+        final GlBuffer indices = builder.createIndexBuffer(true);
+        final GlVertexArrayObject vao = new GlVertexArrayObject(indices, MeshBuilding
+                .getPOS3_COL1_ATTRS(),
+                new GlVertexArrayObject.Binding(vertices, 4, 0),
+                new GlVertexArrayObject.Binding(vertices, 4, 3));
+        final DoodadPatch patch = new DoodadPatch();
+        patch.indices = indices;
+        patch.vertices = vertices;
+        patch.vao = vao;
+        patch.count = builder.getIndices().size;
+        builder.computeBoundingBox3D(0, 4, patch.boundingBox);
+        return patch;
     }
 
     @Override
-    public void getRenderables(Array<Renderable> renderables, Pool<Renderable> pool) {
-        final Mesh[] patches = this.patches;
+    public void render(@NotNull RenderBatch batch, @NotNull Camera camera) {
+        final DoodadPatch[] patches = this.patches;
         final Frustum frustum = camera.frustum;
 
         for (int i = 0; i < patchCount; i++) {
-            final BoundingBox box = this.patchBoundingBoxes[i];
-            if (!frustum.boundsInFrustum(box)) {
+            final DoodadPatch patch = patches[i];
+            if (!frustum.boundsInFrustum(patch.boundingBox)) {
                 continue;
             }
 
-            final Mesh patch = patches[i];
-
-            final Renderable renderable = pool.obtain();
-            renderable.meshPart.set(null, patch, 0, patch.getNumIndices(), GL20.GL_TRIANGLES);
-            renderable.worldTransform.idt();
-            box.getCenter(renderable.meshPart.center);
-            renderable.meshPart.radius = PATCH_SIZE;
-
-            // TODO(jp): Uncomment
-            //renderable.shader = DoodadShader.INSTANCE;
-            renderables.add(renderable);
+            final RenderModel model = batch.render();
+            model.setVao(patch.vao);
+            model.setPrimitiveType(GL20.GL_TRIANGLES);
+            model.setCount(patch.count);
+            model.setOrder(camera.position.dst2(patch.boundingBox.getCenterX(), patch.boundingBox.getCenterY(), patch.boundingBox.getCenterZ()));
+            model.setShader(DoodadShader.INSTANCE);
         }
     }
 
@@ -132,7 +134,7 @@ public class DoodadWorld implements RenderableProvider {
         final Frustum frustum = camera.frustum;
 
         for (int i = 0; i < patchCount; i++) {
-            final BoundingBox box = this.patchBoundingBoxes[i];
+            final BoundingBox box = this.patches[i].boundingBox;
             final boolean shown = frustum.boundsInFrustum(box);
 
             DebugRenderKt.forEdges(box, (x1, y1, z1, x2, y2, z2) -> {
@@ -144,5 +146,25 @@ public class DoodadWorld implements RenderableProvider {
                 return null;
             });
         }
+    }
+
+    @Override
+    public void dispose() {
+        final DoodadPatch[] patches = this.patches;
+        for (int i = 0; i < patchCount; i++) {
+            final DoodadPatch patch = patches[i];
+            patch.indices.dispose();
+            patch.vertices.dispose();
+            patch.vao.dispose();
+        }
+    }
+
+    private static class DoodadPatch {
+        final BoundingBox boundingBox = new BoundingBox();
+
+        GlBuffer indices;
+        GlBuffer vertices;
+        GlVertexArrayObject vao;
+        int count;
     }
 }

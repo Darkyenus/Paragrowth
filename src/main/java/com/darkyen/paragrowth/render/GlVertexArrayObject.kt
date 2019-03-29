@@ -50,5 +50,5 @@ class GlVertexArrayObject(val indices:GlBuffer?, private val vertexAttributes:Ve
      * @param offset in bytes
      * See https://www.khronos.org/opengl/wiki/GLAPI/glVertexAttribPointer
      */
-    class Binding(val buffer: GlBuffer, val stride:Int, val offset:Int, val elementSize:Int = glSizeOf(buffer.currentType))
+    class Binding @JvmOverloads constructor(val buffer: GlBuffer, val stride:Int, val offset:Int, val elementSize:Int = glSizeOf(buffer.currentType))
 }

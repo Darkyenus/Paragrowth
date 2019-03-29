@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.VertexAttribute as GdxVertexAttribute
 import com.badlogic.gdx.graphics.VertexAttributes as GdxVertexAttributes
 import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
 import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.util.*
 
 /**
@@ -22,6 +23,7 @@ val POSITION3_COLOR1_ATTRIBUTES = GdxVertexAttributes(
         GdxVertexAttribute.ColorPacked()//1
 )
 
+// TODO(jp): move somewhere else
 val POS3_COL1_ATTRS = VertexAttributes(
         VA_POSITION3,
         VA_COLOR1
@@ -73,5 +75,17 @@ class ModelBuilder(val vertexFloats:Int) {
         val buffer = GlBuffer(if (static) GL20.GL_STATIC_DRAW else GL20.GL_DYNAMIC_DRAW)
         buffer.setData(indices.items, 0, indices.size)
         return buffer
+    }
+
+    fun computeBoundingBox3D(offset:Int, stride:Int, out:BoundingBox) {
+        val vertices = vertices.items
+        for (i in 0 until nextIndex) {
+            val off = i * stride + offset
+            val x = vertices[off]
+            val y = vertices[off + 1]
+            val z = vertices[off + 2]
+
+            out.ext(x, y, z)
+        }
     }
 }

@@ -55,9 +55,10 @@ class Doodad {
     DoodadInstance instantiate(Random random, float x, float y, float z, WorldCharacteristics characteristics) {
         final float trunkColor = characteristics.possiblyReplaceColor(random, ColorKt.hsb(trunkColorHue.get(random), trunkColorSaturation.get(random), trunkColorBrightness.get(random), 1f));
         final DoodadInstance instance = new DoodadInstance(this, initialWidth.get(random), trunkSides.getInt(random), trunkColor);
-        instance.position.set(x, y, z);
+        instance.getPosition().set(x, y, z);
         final float rootLength = this.rootLength.get(random);
-        instance.root = firstNode.instantiate(random, instance.position, Vector3.Z, instance.rootWidth, rootLength, initialBranchingFactor.get(random), 0, characteristics);
+        instance.setRoot(firstNode.instantiate(random, instance.getPosition(), Vector3.Z, instance
+                .getRootWidth(), rootLength, initialBranchingFactor.get(random), 0, characteristics));
         return instance;
     }
 
@@ -122,11 +123,11 @@ class Doodad {
             final float skew = this.skew.get(random);
 
             // Make end is correct from origin
-            final Vector3 end = instance.end.set(skew, 0f, 1f - skew).nor();
+            final Vector3 end = instance.getEnd().set(skew, 0f, 1f - skew).nor();
             // Rotate randomly
             end.rotateRad(random.nextFloat() * MathUtils.PI2, 0f, 0f, 1f);
             // end now contains normalized direction, save for branches
-            instance.direction.set(end);
+            instance.getDirection().set(end);
             // Extend by length
             end.scl(length);
             // Turn to fit on previous direction
@@ -135,7 +136,7 @@ class Doodad {
             // Translate on previous end
             end.add(previousEnd);
 
-            if (depth < MAX_BRANCHING_DEPTH && instance.endWidth > MIN_WIDTH) {
+            if (depth < MAX_BRANCHING_DEPTH && instance.getEndWidth() > MIN_WIDTH) {
                 // Generate branches, if any
                 for (int i = 0; i < branchingProbability.size; i++) {
                     final float factor = branchingFactor.getFactored(random, previousBranchingFactor);
@@ -144,8 +145,8 @@ class Doodad {
                         // Generate the branch
 
                         final DoodadInstance.TrunkInstance branch = branches.items[i].instantiate(random, end,
-                                instance.direction, instance.endWidth, length, factor,depth + 1, characteristics);
-                        instance.trunkChildren.add(branch);
+                                instance.getDirection(), instance.getEndWidth(), length, factor,depth + 1, characteristics);
+                        instance.getTrunkChildren().add(branch);
                     }
                 }
             }
@@ -157,7 +158,7 @@ class Doodad {
                     // Generate the leaf
 
                     final DoodadInstance.LeafInstance leaf = leaves.items[i].instantiate(random, instance, characteristics);
-                    instance.leafChildren.add(leaf);
+                    instance.getLeafChildren().add(leaf);
                 }
             }
 
@@ -204,7 +205,8 @@ class Doodad {
 
         @Override
         public DoodadInstance.HullLeafInstance instantiate(Random random, DoodadInstance.TrunkInstance ofTrunk, WorldCharacteristics characteristics) {
-            final float length = this.length.get(random) + extraLengthFromTrunkFactor.getFactored(random, ofTrunk.length);
+            final float length = this.length.get(random) + extraLengthFromTrunkFactor.getFactored(random, ofTrunk
+                    .getLength());
             final float widest = this.widest.get(random);
             final float roundness = this.roundness.get(random);
             final int ringsPre = Math.round(widest * length * roundness);
@@ -213,7 +215,7 @@ class Doodad {
             final DoodadInstance.HullLeafInstance instance = new DoodadInstance.HullLeafInstance(
                     tag, Math.round(sides.get(random)), ringsPre, ringsPost, widest, width.get(random), characteristics.possiblyReplaceColor(random, ColorKt.hsb(hue.get(random), saturation.get(random), brightness.get(random), 1f)));
 
-            instance.end.set(ofTrunk.end).mulAdd(ofTrunk.direction, length);
+            instance.getEnd().set(ofTrunk.getEnd()).mulAdd(ofTrunk.getDirection(), length);
 
             return instance;
         }

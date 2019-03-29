@@ -298,6 +298,7 @@ fun lerpHSB(from:FloatArray, progress:Float):Color {
     return lerpHSB(Color(from[firstIndex]), Color(from[firstIndex + 1]), fullProgress % 1f)
 }
 
+// TODO(jp): Verify that this clamps correctly (it does not look like it, it clamps to -1..1, but is used as 0..1)
 private fun smoothClamp(value:Float): Float {
     return Math.tanh((value + value).toDouble()).toFloat()
 }

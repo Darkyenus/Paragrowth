@@ -145,7 +145,9 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
                 if (x >= 0 && y >= 0 && x < patchAmountX && y < patchAmountY) {
                     val patch = patches[patchAmountX * y + x]
                     if (frustum.boundsInFrustum(patch.boundingBox)) {
-                        patch.fillRenderModel(batch.render())
+                        val model = batch.render()
+                        patch.fillRenderModel(model)
+                        model.order = camera.position.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
                     }
                 } else {
                     val patch = seaPatch
@@ -161,6 +163,7 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
                         val model = batch.render()
                         patch.fillRenderModel(model)
                         model.worldTransform.translate(xOff, yOff, 0f)
+                        model.order = camera.position.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
                     }
                 }
             }

@@ -7,8 +7,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20;
-import com.badlogic.gdx.graphics.profiling.GLErrorListener;
-import com.badlogic.gdx.graphics.profiling.GLProfiler;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -122,7 +120,7 @@ public final class WanderState extends ScreenAdapter {
 
         modelBatch.render(skyboxRenderable);
         modelBatch.render(terrain);
-        //modelBatch.render(doodads); // TODO(jp): Uncomment
+        modelBatch.render(doodads);
 
         modelBatch.end();
         Gdx.gl.glDisable(GL_DEPTH_CLAMP);
@@ -169,5 +167,6 @@ public final class WanderState extends ScreenAdapter {
         hudStage.dispose();
         skyboxRenderable.dispose();
         terrain.dispose();
+        doodads.dispose();
     }
 }
