@@ -15,7 +15,6 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.render.MeshBuilding;
-import com.darkyen.paragrowth.render.Shaders;
 import com.darkyen.paragrowth.terrain.generator.Noise;
 import com.darkyen.paragrowth.util.DebugRenderKt;
 
@@ -123,7 +122,8 @@ public class DoodadWorld implements RenderableProvider {
             box.getCenter(renderable.meshPart.center);
             renderable.meshPart.radius = PATCH_SIZE;
 
-            renderable.shader = Shaders.DOODAD_SHADER;
+            // TODO(jp): Uncomment
+            //renderable.shader = DoodadShader.INSTANCE;
             renderables.add(renderable);
         }
     }

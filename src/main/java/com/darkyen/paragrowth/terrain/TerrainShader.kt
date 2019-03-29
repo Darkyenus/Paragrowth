@@ -1,13 +1,13 @@
-package com.darkyen.paragrowth.render
+package com.darkyen.paragrowth.terrain
 
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
-import com.darkyen.paragrowth.util.PrioritizedShader.TERRAIN
+import com.darkyen.paragrowth.render.ParaShader
 
 /**
  *
  */
-class TerrainShader : ParaShader(TERRAIN, "terrain", TERRAIN_PATCH_ATTRIBUTES) {
+object TerrainShader : ParaShader(TERRAIN, "terrain", TERRAIN_PATCH_ATTRIBUTES) {
 
     init {
         localUniform("u_worldTrans") { uniform, _, renderable ->

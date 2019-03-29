@@ -52,7 +52,7 @@ public class ParagrowthMain extends Game {
         configuration.useOpenGL3(true, 3, 3);
         configuration.setWindowedMode(800, 600);
 
-        new Lwjgl3Application(new ParagrowthMain(),configuration);
+        new Lwjgl3Application(new ParagrowthMain(), configuration);
     }
 
     public static SpriteBatch batch() {

@@ -8,7 +8,6 @@ import wemi.Keys.runDirectory
 import wemi.Keys.runOptions
 import wemi.util.div
 import wemi.*
-import wemi.compile.KotlinCompilerFlags
 import wemi.compile.KotlinCompilerVersion
 
 val packResources by key<Unit>("Packs resources")
@@ -23,7 +22,7 @@ val paragrowth by project {
     projectGroup set { "com.darkyen" }
     projectVersion set { "0.1-SNAPSHOT" }
     
-    kotlinVersion set { KotlinCompilerVersion.Version1_3_20 }
+    //kotlinVersion set { KotlinCompilerVersion.Version1_3_20 }
 
     val gdxVersion = "1.9.7"
 

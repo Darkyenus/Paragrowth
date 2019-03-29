@@ -1,14 +1,15 @@
-package com.darkyen.paragrowth.render
+package com.darkyen.paragrowth.doodad
 
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.math.Matrix4
-import com.darkyen.paragrowth.util.PrioritizedShader.DOODADS
+import com.darkyen.paragrowth.render.POS3_COL1_ATTRS
+import com.darkyen.paragrowth.render.ParaShader
 
 /**
  *
  */
-class DoodadShader : ParaShader(DOODADS, "doodad", POSITION3_COLOR1_ATTRIBUTES) {
+object DoodadShader : ParaShader(DOODADS, "doodad", POS3_COL1_ATTRS) {
 
     init {
         val tmpMat4 = Matrix4()

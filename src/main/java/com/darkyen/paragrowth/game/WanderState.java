@@ -5,10 +5,10 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.graphics.g3d.Environment;
-import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20;
+import com.badlogic.gdx.graphics.profiling.GLErrorListener;
+import com.badlogic.gdx.graphics.profiling.GLProfiler;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -18,10 +18,10 @@ import com.darkyen.paragrowth.WorldCharacteristics;
 import com.darkyen.paragrowth.WorldGenerator;
 import com.darkyen.paragrowth.doodad.DoodadWorld;
 import com.darkyen.paragrowth.input.GameInput;
-import com.darkyen.paragrowth.skybox.SkyboxRenderable;
+import com.darkyen.paragrowth.render.RenderBatch;
+import com.darkyen.paragrowth.skybox.Skybox;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 import com.darkyen.paragrowth.util.DebugRenderKt;
-import com.darkyen.paragrowth.util.PrioritizedShader;
 import org.lwjgl.opengl.GL32;
 
 import static com.badlogic.gdx.graphics.GL20.GL_DEPTH_TEST;
@@ -40,15 +40,14 @@ public final class WanderState extends ScreenAdapter {
     private final Label statsLabel;
 
     //3D
-    private final ModelBatch modelBatch;
+    private final RenderBatch modelBatch;
     private final PerspectiveCamera worldCam;
     private final ScreenViewport worldView;
-    private final Environment environment;
 
     private final ImmediateModeRenderer debugRenderer;
 
     //3D Objects
-    private final SkyboxRenderable skyboxRenderable;
+    private final Skybox skyboxRenderable;
     private final TerrainPatchwork terrain;
     private final DoodadWorld doodads;
 
@@ -59,16 +58,14 @@ public final class WanderState extends ScreenAdapter {
     public WanderState(WorldCharacteristics worldCharacteristics) {
         this.worldCharacteristics = worldCharacteristics;
         System.out.println(worldCharacteristics);
-        modelBatch = new ModelBatch(PrioritizedShader.SORTER);
+        modelBatch = new RenderBatch();
         worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
         hudView = new ScreenViewport();
         hudStage = new Stage(hudView, ParagrowthMain.batch());
 
         hudStage.getRoot().setTransform(false);
-        skyboxRenderable = new SkyboxRenderable();
-
-        environment = new Environment();
+        skyboxRenderable = new Skybox();
 
         debugRenderer = new ImmediateModeRenderer20(5000, false, true, 0, DebugRenderKt.getDebugShader());
 
@@ -124,8 +121,8 @@ public final class WanderState extends ScreenAdapter {
         modelBatch.begin(worldCam);
 
         modelBatch.render(skyboxRenderable);
-        modelBatch.render(terrain, environment);
-        modelBatch.render(doodads, environment);
+        modelBatch.render(terrain);
+        //modelBatch.render(doodads); // TODO(jp): Uncomment
 
         modelBatch.end();
         Gdx.gl.glDisable(GL_DEPTH_CLAMP);
@@ -170,7 +167,6 @@ public final class WanderState extends ScreenAdapter {
     @Override
     public void dispose() {
         hudStage.dispose();
-        modelBatch.dispose();
         skyboxRenderable.dispose();
         terrain.dispose();
     }

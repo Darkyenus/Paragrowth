@@ -58,7 +58,7 @@ public class WorldGenerator implements TerrainProvider {
                 1f/200f, 2f, 5, 40f, 0.5f), -1f), -1f);
 
         doodadWorld = new DoodadWorld(camera, characteristics.seed, noise, characteristics);
-        terrainPatchwork = new TerrainPatchwork(camera, this);
+        terrainPatchwork = new TerrainPatchwork(this);
     }
 
     @Override
