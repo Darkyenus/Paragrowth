@@ -10,7 +10,6 @@ import com.badlogic.gdx.utils.Pool
 import com.darkyen.paragrowth.render.Shader.Companion.NULL_SHADER
 import com.darkyen.paragrowth.render.Shader.Companion.NULL_VAO
 import com.darkyen.paragrowth.util.GdxArray
-import com.darkyen.paragrowth.util.GdxIntArray
 import com.darkyen.paragrowth.util.stack
 import org.lwjgl.opengl.GL32
 
@@ -72,8 +71,6 @@ class RenderBatch(context: RenderContext? = null) {
     }
 
     private var maxDrawCalls = 0
-    private val tmpMultiDrawCount = GdxIntArray(16)
-    private val tmpMultiDrawBaseVertex = GdxIntArray(16)
 
     /** Flushes the batch, causing all [Renderable]s in the batch to be rendered.
      * Can only be called after the call to [begin] and before the call to [end]. */
