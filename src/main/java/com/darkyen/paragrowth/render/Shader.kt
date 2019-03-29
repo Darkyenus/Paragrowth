@@ -2,7 +2,10 @@ package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.files.FileHandle
-import com.badlogic.gdx.graphics.*
+import com.badlogic.gdx.graphics.Camera
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.GLTexture
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.graphics.g3d.utils.TextureDescriptor
 import com.badlogic.gdx.math.Matrix3
@@ -10,33 +13,36 @@ import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.BufferUtils
-import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ObjectIntMap
 import com.darkyen.paragrowth.util.GdxArray
 import com.darkyen.paragrowth.util.stack
-import org.lwjgl.opengl.GL32
 import sun.plugin.dom.exception.InvalidStateException
 import java.io.File
 import com.badlogic.gdx.utils.IntArray as GdxIntArray
 
-typealias LocalSetter = (uniform: ParaShader.Uniform, camera:Camera, renderable: RenderModel) -> Unit
-typealias GlobalSetter = (uniform: ParaShader.Uniform, camera:Camera) -> Unit
+typealias LocalSetter = (uniform: Shader.Uniform, camera:Camera, renderable: RenderModel) -> Unit
+typealias GlobalSetter = (uniform: Shader.Uniform, camera:Camera) -> Unit
 
-abstract class ParaShader(val order:Int,
-                          val name:String,
-                          val vertexAttributes:VertexAttributes) {
+abstract class Shader(val order:Int,
+                      val name:String,
+                      val vertexAttributes:VertexAttributes,
+                      vertexShaderName:String = name,
+                      fragmentShaderName:String = name) {
 
     private var program = 0
 
-    private val vertexShaderFile: FileHandle = Gdx.files.local("${name}_vert.glsl")
+    private val vertexShaderFile: FileHandle = Gdx.files.local("${vertexShaderName}_vert.glsl")
     private var vertexShader = 0
 
-    private val fragmentShaderFile: FileHandle = Gdx.files.local("${name}_frag.glsl")
+    private val fragmentShaderFile: FileHandle = Gdx.files.local("${fragmentShaderName}_frag.glsl")
     private var fragmentShader = 0
 
     private val uniforms = GdxArray<Uniform>()
     private val globalUniforms = GdxArray<Uniform>()
     private val localUniforms = GdxArray<Uniform>()
+
+    val hasLocalUniforms:Boolean
+        get() = localUniforms.size > 0
 
     /** Compile this shader program. Call while not bound!
      * Can be called repeatedly for shader hotswapping.  */
@@ -110,7 +116,6 @@ abstract class ParaShader(val order:Int,
 
     private var context: RenderContext? = null
     private var camera: Camera? = null
-    private var currentVAO:GlVertexArrayObject? = null
 
     fun begin(camera: Camera, context: RenderContext) {
         this.camera = camera
@@ -125,58 +130,15 @@ abstract class ParaShader(val order:Int,
         }
     }
 
-    fun render(renderable: RenderModel) {
-        assert(renderable.shader.vertexAttributes == vertexAttributes) { "Expected $vertexAttributes, got ${renderable.shader.vertexAttributes}" }
-
+    fun updateLocalUniforms(renderable:RenderModel) {
         for (uniform in localUniforms) {
             if (uniform.location < 0) continue
             uniform.localSetter!!.invoke(uniform, camera!!, renderable)
         }
-
-        var currentVAO = currentVAO
-        if (currentVAO !== renderable.vao) {
-            currentVAO = renderable.vao
-            Gdx.gl30.glBindVertexArray(currentVAO.handle)
-            this.currentVAO = currentVAO
-        }
-
-        val primitiveType = renderable.primitiveType
-        val offset = renderable.offset
-        val count = renderable.count
-        val baseVertex = renderable.baseVertex
-
-        val indices = currentVAO.indices
-        if (indices != null) {
-            val offsetSize = when (indices.currentType) {
-                GL30.GL_UNSIGNED_BYTE -> 1
-                GL30.GL_UNSIGNED_SHORT -> 2
-                GL30.GL_UNSIGNED_INT -> 4
-                else -> {
-                    assert(indices.currentLengthBytes == 0) { "Indices are not empty, but have an unsupported type: ${indices.currentType}" }
-                    return
-                }
-            }
-
-            val offsetBytes = offset * offsetSize
-            if (count * offsetSize + offsetBytes > indices.currentLengthBytes) {
-                throw GdxRuntimeException("Mesh attempting to access memory outside of the index buffer (count: "
-                        + count + ", offset: " + offset + ", max: " + indices.currentLengthBytes / offsetSize + ")")
-            }
-
-            // Fun https://www.reddit.com/r/opengl/comments/3m9u36/how_to_render_using_glmultidrawarraysindirect/
-            // TODO(jp): Allow glMultiDrawElements! (Not in GL ES, but can use lwjgl directly)
-            GL32.glDrawElementsBaseVertex(primitiveType, count, GL20.GL_UNSIGNED_SHORT, offsetBytes.toLong(), baseVertex)
-            //Gdx.gl30.glDrawElements(primitiveType, count, GL20.GL_UNSIGNED_SHORT, offsetBytes)
-        } else {
-            assert(baseVertex == 0)
-            Gdx.gl30.glDrawArrays(primitiveType, offset, count)
-        }
     }
 
     fun end() {
-        currentVAO = null
-        Gdx.gl30.glBindVertexArray(0)
-        Gdx.gl30.glUseProgram(0)
+        context = null
     }
 
     fun dispose() {
@@ -211,7 +173,7 @@ abstract class ParaShader(val order:Int,
     }
 
     class Uniform internal constructor(
-            private val shader: ParaShader,
+            private val shader: Shader,
             internal val localSetter: LocalSetter?,
             internal val globalSetter: GlobalSetter?) {
 
@@ -295,19 +257,20 @@ abstract class ParaShader(val order:Int,
     }
 
     companion object {
-        const val DOODADS = 11
+        const val DOODADS = 20
+        const val TERRAIN_OCEAN = 11
         const val TERRAIN = 10
         const val SKYBOX = -1000
 
         private const val NEVER_INIT = Int.MIN_VALUE
 
-        internal val NULL_SHADER: ParaShader
+        internal val NULL_SHADER: Shader
         /** Here, for lack of better place to put it. */
         internal val NULL_VAO: GlVertexArrayObject
 
         init {
             val EMPTY_VERTEX_ATTRIBUTES = VertexAttributes()
-            NULL_SHADER = object : ParaShader(NEVER_INIT, "", EMPTY_VERTEX_ATTRIBUTES) {}
+            NULL_SHADER = object : Shader(NEVER_INIT, "", EMPTY_VERTEX_ATTRIBUTES) {}
             NULL_VAO = GlVertexArrayObject(null, EMPTY_VERTEX_ATTRIBUTES)
         }
 
@@ -337,7 +300,7 @@ abstract class ParaShader(val order:Int,
             return shader
         }
 
-        private val reloadedShaders = HashSet<ParaShader>()
+        private val reloadedShaders = HashSet<Shader>()
 
         init {
             Thread({

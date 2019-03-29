@@ -69,7 +69,7 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
 
             override fun getHeight(x: Float, y: Float): Float = -1f
 
-            override fun getColor(x: Float, y: Float): Float = terrainProvider.getColor(x, y)
+            override fun getColor(x: Float, y: Float): Float = terrainProvider.getColor(x - PATCH_WIDTH, y - PATCH_HEIGHT)
         }, vertexArray, heightMap)
         vertexBuffer.setSubData(vertexBufferFilled, vertexArray)
         val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
@@ -176,7 +176,8 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
                     val patch = patches[patchAmountX * y + x]
                     if (frustum.boundsInFrustum(patch.boundingBox)) {
                         val model = batch.render()
-                        patch.fillRenderModel(model)
+                        model.set(patch.model)
+                        model.shader = TERRAIN_SHADER
                         model.order = camera.position.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
                     }
                 } else {
@@ -191,7 +192,8 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
 
                     if (frustum.boundsInFrustum(box)) {
                         val model = batch.render()
-                        patch.fillRenderModel(model)
+                        model.set(patch.model)
+                        model.shader = TERRAIN_OCEAN_SHADER
                         model.worldTransform.translate(xOff, yOff, 0f)
                         model.order = camera.position.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
                     }

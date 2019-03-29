@@ -7,6 +7,7 @@ in vec3 a_normal;
 flat out vec4 v_color;
 
 uniform mat4 u_projViewTrans;
+uniform mat4 u_worldTrans;
 uniform vec3 u_position;
 uniform float u_time;
 
@@ -19,7 +20,7 @@ void main() {
 	float diffuse = dot(a_normal, lightDirection);
 	v_color = vec4(a_color.rgb * diffuse, 1.0);
 
-	vec4 pos = vec4(a_position, 1.0);
+	vec4 pos = u_worldTrans * vec4(a_position, 1.0);
 
 	if (pos.z <= 0.0) {
 		// General

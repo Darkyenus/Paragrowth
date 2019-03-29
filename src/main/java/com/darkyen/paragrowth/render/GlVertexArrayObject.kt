@@ -10,7 +10,7 @@ import com.badlogic.gdx.utils.Array as GdxArray
  * @param vertexAttributes for which this VAO should be built
  * @param bindings matching array of concrete bindings for individual [vertexAttributes] attributes
  */
-class GlVertexArrayObject(val indices:GlBuffer?, private val vertexAttributes:VertexAttributes, private vararg val bindings: Binding) : Disposable {
+class GlVertexArrayObject(val indices:GlBuffer?, val vertexAttributes:VertexAttributes, private vararg val bindings: Binding) : Disposable {
 
     init {
         assert(vertexAttributes.attributes.size == bindings.size) { "Incompatible vertex attributes and their bindings" }

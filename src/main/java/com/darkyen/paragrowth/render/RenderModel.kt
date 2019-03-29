@@ -3,8 +3,8 @@ package com.darkyen.paragrowth.render
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Mesh
 import com.badlogic.gdx.math.Matrix4
-import com.darkyen.paragrowth.render.ParaShader.Companion.NULL_SHADER
-import com.darkyen.paragrowth.render.ParaShader.Companion.NULL_VAO
+import com.darkyen.paragrowth.render.Shader.Companion.NULL_SHADER
+import com.darkyen.paragrowth.render.Shader.Companion.NULL_VAO
 
 /** Holds info needed to draw something. */
 class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
@@ -27,8 +27,8 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
     /** Holds bound buffers to render. */
     var vao:GlVertexArrayObject = NULL_VAO
 
-    /** The [ParaShader] to be used to render this [RenderModel] using a [RenderBatch]. */
-    var shader:ParaShader = NULL_SHADER
+    /** The [Shader] to be used to render this [RenderModel] using a [RenderBatch]. */
+    var shader:Shader = NULL_SHADER
 
     /** Used to specify the transformations (like translation, scale and rotation) to apply to the shape. In other words: it is used
      * to transform the vertices from model space into world space.  */

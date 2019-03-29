@@ -63,7 +63,7 @@ class Skybox : Renderable, Disposable {
     }
 }
 
-object SkyboxShader : ParaShader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
+object SkyboxShader : Shader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
 
     init {
         globalUniform("u_cameraUp") { uniform, camera ->

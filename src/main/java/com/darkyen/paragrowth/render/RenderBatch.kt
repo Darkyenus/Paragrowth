@@ -2,13 +2,17 @@ package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Camera
+import com.badlogic.gdx.graphics.GL30
 import com.badlogic.gdx.graphics.g3d.utils.DefaultTextureBinder
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
-import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.Pool
-import com.darkyen.paragrowth.render.ParaShader.Companion.NULL_SHADER
-import com.darkyen.paragrowth.render.ParaShader.Companion.NULL_VAO
+import com.darkyen.paragrowth.render.Shader.Companion.NULL_SHADER
+import com.darkyen.paragrowth.render.Shader.Companion.NULL_VAO
+import com.darkyen.paragrowth.util.GdxArray
+import com.darkyen.paragrowth.util.GdxIntArray
+import com.darkyen.paragrowth.util.stack
+import org.lwjgl.opengl.GL32
 
 /** Collects [RenderModel]s, sorts them and renders them. */
 class RenderBatch(context: RenderContext? = null) {
@@ -55,7 +59,7 @@ class RenderBatch(context: RenderContext? = null) {
     }
 
     /** list of Renderables to be rendered in the current batch  */
-    private val renderables = Array<RenderModel>(RenderModel::class.java)
+    private val renderables = GdxArray<RenderModel>(RenderModel::class.java)
 
     /** Start accepting [RenderModel]s to be rendered, through [render].
      * Must be followed by a call to [end]. The OpenGL context must not be altered until then.
@@ -68,6 +72,8 @@ class RenderBatch(context: RenderContext? = null) {
     }
 
     private var maxDrawCalls = 0
+    private val tmpMultiDrawCount = GdxIntArray(16)
+    private val tmpMultiDrawBaseVertex = GdxIntArray(16)
 
     /** Flushes the batch, causing all [Renderable]s in the batch to be rendered.
      * Can only be called after the call to [begin] and before the call to [end]. */
@@ -78,28 +84,97 @@ class RenderBatch(context: RenderContext? = null) {
 
         renderables.sort()
 
-        val renderableItems = renderables.items
         val camera = camera!!
         val context = renderContext
 
-        val firstItem = renderableItems[0]
-        var currentShader: ParaShader = firstItem.shader
-        currentShader.begin(camera, context)
-        currentShader.render(firstItem)
+        var drawCalls = 0
 
-        for (i in 1 until renderablesSize) {
-            val renderable = renderableItems[i]
-            val renderableShader = renderable.shader
-            if (currentShader !== renderableShader) {
-                currentShader.end()
-                currentShader = renderableShader
-                currentShader.begin(camera, context)
+        var currentShader:Shader? = null
+        var currentVao:GlVertexArrayObject? = null
+
+        renderables.forSimilarRenderables { items, from, to ->
+            val first = items[from]
+            // Bind shader and VAO
+            val shader = first.shader
+            if (shader != currentShader) {
+                currentShader?.end()
+                shader.begin(camera, context)
+                currentShader = shader
             }
-            currentShader.render(renderable)
-        }
-        currentShader.end()
+            val vao = first.vao
+            if (vao != currentVao) {
+                Gdx.gl30.glBindVertexArray(vao.handle)
+                currentVao = vao
+            }
 
-        val drawCalls = renderables.size
+            val primitiveType = first.primitiveType
+            // Check if we can do any optimizations
+            if (vao.indices == null) {
+                // No indices
+                // TODO(jp): Optimize when needed
+                for (i in from until to) {
+                    val rm = items[i]
+                    assert(rm.baseVertex == 0) { "Can't use baseVertex without indices" }
+                    drawCalls++
+                    Gdx.gl30.glDrawArrays(primitiveType, rm.offset, rm.count)
+                }
+            } else {
+                // With indices
+                val indicesType = vao.indices.currentType
+                val offsetSize = when (indicesType) {
+                    GL30.GL_UNSIGNED_BYTE -> 1
+                    GL30.GL_UNSIGNED_SHORT -> 2
+                    GL30.GL_UNSIGNED_INT -> 4
+                    else -> {
+                        assert(vao.indices.currentLengthBytes == 0) { "Indices are not empty, but have an unsupported type: $indicesType" }
+                        return@forSimilarRenderables
+                    }
+                }
+
+                val drawCount = to - from
+
+                // Different draw methods when uniforms are set and when not
+                if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */) {
+                    // Must do the slow path
+                    for (i in from until to) {
+                        val rm = items[i]
+
+                        val count = rm.count
+                        val offsetBytes = rm.offset * offsetSize
+
+                        assert(count * offsetSize + offsetBytes <= vao.indices.currentLengthBytes) {
+                            "Mesh attempting to access memory outside of the index buffer (count: $count, offset: ${rm.offset}, max: ${vao.indices.currentLengthBytes / offsetSize})"
+                        }
+
+                        shader.updateLocalUniforms(rm)
+
+                        drawCalls++
+                        GL32.glDrawElementsBaseVertex(primitiveType, count, indicesType, offsetBytes.toLong(), rm.baseVertex)
+                    }
+                } else stack {
+                    // Can merge everything into common
+                    val countArr = IntArray(drawCount)
+                    val offsetBuf = mallocPointer(drawCount)
+                    val baseVertexArr = IntArray(drawCount)
+
+                    for ((bufI, i) in (from until to).withIndex()) {
+                        val rm = items[i]
+
+                        countArr[bufI] = rm.count
+                        offsetBuf.put(bufI, (rm.offset * offsetSize).toLong())
+                        baseVertexArr[bufI] = rm.baseVertex
+                    }
+
+                    drawCalls++
+                    GL32.glMultiDrawElementsBaseVertex(primitiveType, countArr, indicesType, offsetBuf, baseVertexArr)
+
+                    // Fun https://www.reddit.com/r/opengl/comments/3m9u36/how_to_render_using_glmultidrawarraysindirect/
+                }
+
+                // TODO(jp): Instancing!
+            }
+        }
+
         if (maxDrawCalls < drawCalls) {
             maxDrawCalls = drawCalls
             Gdx.app.log("RenderBatch", "Draw call top mark $drawCalls")
@@ -107,6 +182,35 @@ class RenderBatch(context: RenderContext? = null) {
 
         renderablesPool.freeAll(renderables)
         renderables.size = 0
+    }
+
+    private inline fun GdxArray<RenderModel>.forSimilarRenderables(action:(items:Array<RenderModel>, from:Int, to:Int) -> Unit) {
+        val renderableItems = this.items
+        val renderablesSize = renderables.size
+
+        var first:RenderModel? = null
+        var firstIndex = -1
+        for (i in 0 until renderablesSize) {
+            val nextRenderable = renderableItems[i]
+            assert(nextRenderable.vao.vertexAttributes == nextRenderable.shader.vertexAttributes) { "VAO and shader vertex attributes don't match (${nextRenderable.shader})" }
+
+            if (first == null) {
+                first = nextRenderable
+                firstIndex = i
+            } else if (first.vao !== nextRenderable.vao
+                    || first.shader !== nextRenderable.shader
+                    || first.primitiveType != nextRenderable.primitiveType) {
+                // Flush!
+                action(renderableItems, firstIndex, i)
+                first = nextRenderable
+                firstIndex = i
+            }// else has common vao, keep it for the action
+        }
+
+        if (first != null) {
+            // Final flush
+            action(renderableItems, firstIndex, renderablesSize)
+        }
     }
 
     /** Close this batch for further [RenderModel]s and [flush] all which were added so far.

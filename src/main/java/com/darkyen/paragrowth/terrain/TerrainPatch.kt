@@ -248,7 +248,7 @@ class TerrainPatch(
         private val xOffset:Float,
         private val yOffset:Float,
         val heightMap:FloatArray,
-        private val model:Model) {
+        val model:Model) {
 
     init {
         assert(heightMap.size == PATCH_SIZE * PATCH_SIZE)
@@ -264,20 +264,21 @@ class TerrainPatch(
         this.min.set(xOffset, yOffset, min)
         this.max.set(xOffset + PATCH_WIDTH, yOffset + PATCH_HEIGHT, max)
     }
-
-
-    fun fillRenderModel(model: RenderModel) {
-        model.set(this.model)
-        model.shader = TerrainShader
-    }
 }
 
-object TerrainShader : ParaShader(TERRAIN, "terrain", TERRAIN_PATCH_ATTRIBUTES) {
+val TERRAIN_SHADER = TerrainShader(false)
+val TERRAIN_OCEAN_SHADER = TerrainShader(true)
+
+class TerrainShader(ocean:Boolean) : Shader(if (ocean) TERRAIN_OCEAN else TERRAIN, if (ocean) "terrain_ocean" else "terrain", TERRAIN_PATCH_ATTRIBUTES, fragmentShaderName = "terrain") {
 
     init {
-        localUniform("u_worldTrans") { uniform, _, renderable ->
-            uniform.set(renderable.worldTransform)
+        if (ocean) {
+            // Only ocean needs transformation matrix, normal terrain has position baked in
+            localUniform("u_worldTrans") { uniform, _, renderable ->
+                uniform.set(renderable.worldTransform)
+            }
         }
+
         globalUniform("u_projViewTrans") { uniform, camera ->
             uniform.set(camera.combined)
         }
