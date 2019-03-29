@@ -2,7 +2,7 @@
 
 in vec3 a_position;
 in vec4 a_color;
-in vec3 a_normal;
+in vec4 a_normal;
 
 flat out vec4 v_color;
 
@@ -17,7 +17,7 @@ uniform sampler2D u_normal;
 const vec3 lightDirection = vec3(0.2, 0.0, 0.9797958975);
 
 void main() {
-	float diffuse = dot(a_normal, lightDirection);
+	float diffuse = dot(a_normal.xyz, lightDirection);
 	v_color = vec4(a_color.rgb * diffuse, 1.0);
 
 	vec4 pos = u_worldTrans * vec4(a_position, 1.0);

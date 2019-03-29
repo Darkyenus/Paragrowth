@@ -2,7 +2,6 @@ package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.graphics.GL30
 import com.darkyen.paragrowth.render.GlBuffer.Companion.glNameOfType
-import com.darkyen.paragrowth.render.GlBuffer.Companion.glSizeOf
 
 /**
  * Represents a single vertex attribute.
@@ -11,16 +10,10 @@ import com.darkyen.paragrowth.render.GlBuffer.Companion.glSizeOf
  * @param normalized `true` = convert the full range of the value to `0..1` or `-1..1` range, `false` = convert to float directly, `null` = no conversion, shader type is integer
  * @param arraySize amount of vectors in array, matrix or combination of thereof
  */
-class VertexAttribute(val name:String, val type:Int, val numComponents:Int, val normalized:Boolean? = false, val arraySize:Int = 1) {
-    val byteSize: Int
-        get() {
-            return glSizeOf(type) * numComponents * arraySize
-        }
-}
+class VertexAttribute(val name:String, val type:Int, val numComponents:Int, val normalized:Boolean? = false, val arraySize:Int = 1)
 
 val VA_POSITION3 = VertexAttribute("a_position", GL30.GL_FLOAT, 3)
 val VA_COLOR1 = VertexAttribute("a_color", GL30.GL_UNSIGNED_BYTE, 3, normalized = true)
-val VA_NORMAL3 = VertexAttribute("a_normal", GL30.GL_FLOAT, 3)
 
 class VertexAttributes(vararg val attributes:VertexAttribute) {
 
@@ -33,9 +26,6 @@ class VertexAttributes(vararg val attributes:VertexAttribute) {
             result
         }
     }
-
-    @JvmField
-    val byteSize = attributes.sumBy { it.byteSize }
 
     override fun hashCode(): Int {
         val attributes = attributes

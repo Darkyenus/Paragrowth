@@ -42,7 +42,7 @@ const val TERRAIN_PATCH_INDEX_COUNT = TRIANGLE_COUNT * 3
  * vertex for each one. For EVEN rows, the provoking vertex is the top-left one and top one.
  * For ODD rows, the provoking vertex is the top one and the top-right one. */
 const val TERRAIN_PATCH_VERTEX_COUNT = PATCH_SIZE * PATCH_SIZE + PATCH_UNIT_SIZE * PATCH_UNIT_SIZE
-const val TERRAIN_PATCH_VERTEX_SIZE = /* XYZ */3 + /* Color */1 + /* Normal */3
+const val TERRAIN_PATCH_VERTEX_SIZE = /* XYZ */3 + /* Color (packed) */1 + /* Normal (packed) */1
 
 /*
 Arrangement:
@@ -56,6 +56,16 @@ X step: 1
 X stagger: 0.5
 Y step: sqrt(3)/2
 */
+
+private fun packNormal(normal:Vector3):Float {
+    val max =  0b01111_11111
+    val mask = 0b11111_11111
+    val x = (normal.x * max).toInt() and mask
+    val y = (normal.y * max).toInt() and mask
+    val z = (normal.z * max).toInt() and mask
+    val xyz = x or (y shl 10) or (z shl 20)
+    return Float.fromBits(xyz)
+}
 
 /** Generate vertices with coordinates, color and triangle normal.
  * @param outVertices size should be TERRAIN_PATCH_VERTEX_COUNT * VERTEX_SIZE
@@ -89,9 +99,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = height
                 outVertices[v++] = generator.getColor(xTPos, yTPos)
                 generator.getNormal(normal, xTPos, yTPos)
-                outVertices[v++] = normal.x
-                outVertices[v++] = normal.y
-                outVertices[v++] = normal.z
+                outVertices[v++] = packNormal(normal)
             }
 
             xPos += X_STEP
@@ -108,9 +116,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = height
                 outVertices[v++] = generator.getColor(xTPos, yTPos)
                 generator.getNormal(normal, xTPos, yTPos)
-                outVertices[v++] = normal.x
-                outVertices[v++] = normal.y
-                outVertices[v++] = normal.z
+                outVertices[v++] = packNormal(normal)
             }
         }
 
@@ -131,9 +137,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = height
                 outVertices[v++] = generator.getColor(xTPos, yTPos)
                 generator.getNormal(normal, xTPos, yTPos)
-                outVertices[v++] = normal.x
-                outVertices[v++] = normal.y
-                outVertices[v++] = normal.z
+                outVertices[v++] = packNormal(normal)
             }
 
             xPos += X_STEP
@@ -150,9 +154,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = height
                 outVertices[v++] = generator.getColor(xTPos, yTPos)
                 generator.getNormal(normal, xTPos, yTPos)
-                outVertices[v++] = normal.x
-                outVertices[v++] = normal.y
-                outVertices[v++] = normal.z
+                outVertices[v++] = packNormal(normal)
             }
         }
 
@@ -162,6 +164,8 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
 
     // Do one more bottom row, without colors
     val NO_COLOR = Color.MAGENTA.toFloatBits()
+    val NO_NORMAL = packNormal(normal.set(0f, 0f, 1f))
+
     var xPos = xOffset
     var height = generator.getHeight(xPos, yPos)
     outHeightMap[h++] = height
@@ -171,9 +175,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
         outVertices[v++] = yPos
         outVertices[v++] = height
         outVertices[v++] = NO_COLOR
-        outVertices[v++] = 0f
-        outVertices[v++] = 0f
-        outVertices[v++] = 1f
+        outVertices[v++] = NO_NORMAL
 
         xPos += X_STEP
         height = generator.getHeight(xPos, yPos)
@@ -184,9 +186,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
         outVertices[v++] = yPos
         outVertices[v++] = height
         outVertices[v++] = NO_COLOR
-        outVertices[v++] = 0f
-        outVertices[v++] = 0f
-        outVertices[v++] = 1f
+        outVertices[v++] = NO_NORMAL
     }
 }
 
@@ -236,12 +236,12 @@ fun generateTerrainPatchIndices():ShortArray {
     return indices
 }
 
-val VA_POSITION = VertexAttribute("a_position", GL30.GL_FLOAT, 3)
+val VA_NORMAL3_TINY = VertexAttribute("a_normal", GL30.GL_INT_2_10_10_10_REV, 4, true)
 
 val TERRAIN_PATCH_ATTRIBUTES = VertexAttributes(
-        VA_POSITION,
+        VA_POSITION3,
         VA_COLOR1,
-        VA_NORMAL3
+        VA_NORMAL3_TINY
 )
 
 class TerrainPatch(
