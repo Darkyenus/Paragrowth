@@ -27,7 +27,9 @@ abstract class Shader(val order:Int,
                       val name:String,
                       val vertexAttributes:VertexAttributes,
                       vertexShaderName:String = name,
-                      fragmentShaderName:String = name) {
+                      fragmentShaderName:String = name,
+                      /** Set to the size of arrays for instanced uniforms */
+                      internal val maxInstances:Int = 0) {
 
     private var program = 0
 
@@ -40,9 +42,13 @@ abstract class Shader(val order:Int,
     private val uniforms = GdxArray<Uniform>()
     private val globalUniforms = GdxArray<Uniform>()
     private val localUniforms = GdxArray<Uniform>()
+    private val instancedUniforms = GdxArray<Uniform>()
 
     val hasLocalUniforms:Boolean
         get() = localUniforms.size > 0
+
+    val hasInstancedUniforms:Boolean
+        get() = instancedUniforms.size > 0
 
     /** Compile this shader program. Call while not bound!
      * Can be called repeatedly for shader hotswapping.  */
@@ -131,9 +137,26 @@ abstract class Shader(val order:Int,
     }
 
     fun updateLocalUniforms(renderable:RenderModel) {
+        val camera = camera!!
         for (uniform in localUniforms) {
             if (uniform.location < 0) continue
-            uniform.localSetter!!.invoke(uniform, camera!!, renderable)
+            uniform.localSetter!!.invoke(uniform, camera, renderable)
+        }
+    }
+
+    fun updateInstancedUniforms(renderables:Array<RenderModel>, from:Int, to:Int) {
+        val camera = camera!!
+        for (uniform in instancedUniforms) {
+            if (uniform.location < 0) continue
+            val originalLocation = uniform.location
+            try {
+                for ((instance, renderableI) in (from until to).withIndex()) {
+                    uniform.location = originalLocation + instance
+                    uniform.localSetter!!.invoke(uniform, camera, renderables[renderableI])
+                }
+            } finally {
+                uniform.location = originalLocation
+            }
         }
     }
 
@@ -163,6 +186,13 @@ abstract class Shader(val order:Int,
         uniform.name = name
         uniforms.add(uniform)
         localUniforms.add(uniform)
+    }
+
+    protected fun instancedUniform(name:String, setter: LocalSetter) {
+        val uniform = Uniform(this, setter, null)
+        uniform.name = name
+        uniforms.add(uniform)
+        instancedUniforms.add(uniform)
     }
 
     protected fun globalUniform(name:String, setter: GlobalSetter) {

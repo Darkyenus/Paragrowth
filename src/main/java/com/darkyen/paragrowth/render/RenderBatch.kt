@@ -89,7 +89,13 @@ class RenderBatch(context: RenderContext? = null) {
         var currentShader:Shader? = null
         var currentVao:GlVertexArrayObject? = null
 
-        renderables.forSimilarRenderables { items, from, to ->
+        for (renderable in renderables) {
+            assert(renderable.vao.vertexAttributes == renderable.shader.vertexAttributes) { "VAO and shader vertex attributes don't match (${renderable.shader})" }
+        }
+
+        renderables.forSimilarRenderables({ a, b ->
+            a.vao === b.vao && a.shader === b.shader && a.primitiveType == b.primitiveType
+        }) { items, from, to ->
             val first = items[from]
             // Bind shader and VAO
             val shader = first.shader
@@ -148,6 +154,17 @@ class RenderBatch(context: RenderContext? = null) {
                         drawCalls++
                         GL32.glDrawElementsBaseVertex(primitiveType, count, indicesType, offsetBytes.toLong(), rm.baseVertex)
                     }
+                } else if (shader.hasInstancedUniforms) {
+                    renderables.forSimilarRenderables({ a, b ->
+                        a.offset == b.offset && a.baseVertex == b.baseVertex && a.count == b.count
+                    }, from, to, shader.maxInstances) {
+                        _, insFrom, insTo ->
+                        val base = items[insFrom]
+
+                        shader.updateInstancedUniforms(items, insFrom, insTo)
+                        drawCalls++
+                        GL32.glDrawElementsInstancedBaseVertex(primitiveType, base.count, indicesType, base.offset.toLong(), insTo - insFrom, base.baseVertex)
+                    }
                 } else stack {
                     // Can merge everything into common
                     val countArr = IntArray(drawCount)
@@ -167,8 +184,6 @@ class RenderBatch(context: RenderContext? = null) {
 
                     // Fun https://www.reddit.com/r/opengl/comments/3m9u36/how_to_render_using_glmultidrawarraysindirect/
                 }
-
-                // TODO(jp): Instancing!
             }
         }
 
@@ -181,32 +196,31 @@ class RenderBatch(context: RenderContext? = null) {
         renderables.size = 0
     }
 
-    private inline fun GdxArray<RenderModel>.forSimilarRenderables(action:(items:Array<RenderModel>, from:Int, to:Int) -> Unit) {
+    private inline fun GdxArray<RenderModel>.forSimilarRenderables(
+            isSimilar:(RenderModel, RenderModel) -> Boolean,
+            begin:Int = 0, end:Int = this.size, maxLength:Int = Int.MAX_VALUE,
+            action:(items:Array<RenderModel>, from:Int, to:Int) -> Unit) {
         val renderableItems = this.items
-        val renderablesSize = renderables.size
 
         var first:RenderModel? = null
         var firstIndex = -1
-        for (i in 0 until renderablesSize) {
+        for (i in begin until end) {
             val nextRenderable = renderableItems[i]
-            assert(nextRenderable.vao.vertexAttributes == nextRenderable.shader.vertexAttributes) { "VAO and shader vertex attributes don't match (${nextRenderable.shader})" }
 
             if (first == null) {
                 first = nextRenderable
                 firstIndex = i
-            } else if (first.vao !== nextRenderable.vao
-                    || first.shader !== nextRenderable.shader
-                    || first.primitiveType != nextRenderable.primitiveType) {
+            } else if (i - firstIndex == maxLength || !isSimilar(first, nextRenderable)) {
                 // Flush!
                 action(renderableItems, firstIndex, i)
                 first = nextRenderable
                 firstIndex = i
-            }// else has common vao, keep it for the action
+            } // else keep it for the action
         }
 
         if (first != null) {
             // Final flush
-            action(renderableItems, firstIndex, renderablesSize)
+            action(renderableItems, firstIndex, end)
         }
     }
 
