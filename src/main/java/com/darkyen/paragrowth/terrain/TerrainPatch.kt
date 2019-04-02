@@ -269,24 +269,29 @@ class TerrainPatch(
 val TERRAIN_SHADER = TerrainShader(false)
 val TERRAIN_OCEAN_SHADER = TerrainShader(true)
 
-class TerrainShader(ocean:Boolean) : Shader(if (ocean) TERRAIN_OCEAN else TERRAIN, if (ocean) "terrain_ocean" else "terrain", TERRAIN_PATCH_ATTRIBUTES, fragmentShaderName = "terrain") {
+val TERRAIN_OCEAN_OFFSET_ATTRIBUTE = attributeKeyVector2("terrain_ocean_offset")
+val TERRAIN_TIME_ATTRIBUTE = attributeKeyFloat("terrain_time")
+
+class TerrainShader(ocean:Boolean) : Shader(
+        if (ocean) TERRAIN_OCEAN else TERRAIN,
+        if (ocean) "terrain_ocean" else "terrain",
+        TERRAIN_PATCH_ATTRIBUTES, fragmentShaderName = "terrain",
+        maxInstances = if (ocean) 64 else 0) {
 
     init {
         if (ocean) {
             // Only ocean needs transformation matrix, normal terrain has position baked in
-            localUniform("u_worldTrans") { uniform, _, renderable ->
-                uniform.set(renderable.worldTransform)
+            instancedUniform("u_worldTrans") { uniform, _, renderable ->
+                uniform.set(renderable.attributes[TERRAIN_OCEAN_OFFSET_ATTRIBUTE])
             }
         }
 
-        globalUniform("u_projViewTrans") { uniform, camera ->
+        globalUniform("u_projViewTrans") { uniform, camera, _ ->
             uniform.set(camera.combined)
         }
 
-        val startTime = System.currentTimeMillis()
-        globalUniform("u_time") { uniform, _ ->
-            val time = (System.currentTimeMillis() - startTime) / 1000f
-            uniform.set(time)
+        globalUniform("u_time") { uniform, _, attributes ->
+            uniform.set(attributes[TERRAIN_TIME_ATTRIBUTE][0])
         }
 
         ParagrowthMain.assetManager.load("Water_001_DISP.png", Texture::class.java)
@@ -295,15 +300,15 @@ class TerrainShader(ocean:Boolean) : Shader(if (ocean) TERRAIN_OCEAN else TERRAI
         val displacement = TextureDescriptor(ParagrowthMain.assetManager.get("Water_001_DISP.png", Texture::class.java), Texture.TextureFilter.Linear, Texture.TextureFilter.Linear, Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
         val normal = TextureDescriptor(ParagrowthMain.assetManager.get("Water_001_NORM.jpg", Texture::class.java), Texture.TextureFilter.Linear, Texture.TextureFilter.Linear, Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
 
-        globalUniform("u_displacement") { uniform, _ ->
+        globalUniform("u_displacement") { uniform, _, _ ->
             uniform.set(displacement)
         }
 
-        globalUniform("u_normal") { uniform, _ ->
+        globalUniform("u_normal") { uniform, _, _ ->
             uniform.set(normal)
         }
 
-        globalUniform("u_position") { uniform, camera ->
+        globalUniform("u_position") { uniform, camera, _ ->
             uniform.set(camera.position)
         }
     }

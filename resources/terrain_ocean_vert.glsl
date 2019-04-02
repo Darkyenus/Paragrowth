@@ -7,7 +7,7 @@ in vec4 a_normal;
 flat out vec4 v_color;
 
 uniform mat4 u_projViewTrans;
-uniform mat4 u_worldTrans;
+uniform vec2 u_worldTrans[64];
 uniform vec3 u_position;
 uniform float u_time;
 
@@ -20,7 +20,8 @@ void main() {
 	float diffuse = dot(a_normal.xyz, lightDirection);
 	v_color = vec4(a_color.rgb * diffuse, 1.0);
 
-	vec4 pos = u_worldTrans * vec4(a_position, 1.0);
+	vec4 pos = vec4(a_position, 1.0);
+	pos.xy += u_worldTrans[gl_InstanceID];
 
 	if (pos.z <= 0.0) {
 		// General
@@ -29,7 +30,7 @@ void main() {
 		float displacement = texture(u_displacement, oceanSamplePos).x;
 
 		// Position
-		float heightDisplacement = displacement /** revDisplacement*/ - 1.0;
+		float heightDisplacement = displacement - 1.0;
 		pos.z = mix(0.0, heightDisplacement, mixFactor);
 
 		// Color

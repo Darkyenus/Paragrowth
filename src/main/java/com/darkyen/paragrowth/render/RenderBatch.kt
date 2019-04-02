@@ -16,16 +16,9 @@ import org.lwjgl.opengl.GL32
 /** Collects [RenderModel]s, sorts them and renders them. */
 class RenderBatch(context: RenderContext? = null) {
 
-    /** Backing field for [defaultAttributes] */
-    private val attributes = Attributes(null)
-
     /** Fallback attributes used for all [RenderModel]s drawn by this [RenderBatch].
-     * Do not use between [begin] and [end]. */
-    val defaultAttributes:Attributes
-        get() {
-            assert(camera == null) { "Used while batch is running" }
-            return attributes
-        }
+     * Do not modify use between [begin] and [end]. */
+    val attributes = Attributes(null)
 
     /** Whether [renderContext] is owned and managed by this [RenderBatch].
      * When it isn't, caller is responsible for calling the [RenderContext.begin] and
@@ -50,7 +43,6 @@ class RenderBatch(context: RenderContext? = null) {
                 count = 0
                 vao = NULL_VAO
                 shader = NULL_SHADER
-                worldTransform.idt()
                 attributes.clear()
                 order = 0f
             }
@@ -101,7 +93,7 @@ class RenderBatch(context: RenderContext? = null) {
             val shader = first.shader
             if (shader != currentShader) {
                 currentShader?.end()
-                shader.begin(camera, context)
+                shader.begin(camera, context, attributes)
                 currentShader = shader
             }
             val vao = first.vao

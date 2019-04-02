@@ -87,6 +87,7 @@ public class WorldCharacteristics {
     public long seed;
 
     public static WorldCharacteristics random(long seed) {
+        // 1554244498678 beautiful small azure world
         if (seed == 0) {
             try {
                 seed = Long.parseLong(System.getenv("PARAGROWTH_SEED"));

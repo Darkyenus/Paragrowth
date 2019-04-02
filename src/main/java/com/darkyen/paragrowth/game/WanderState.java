@@ -18,6 +18,7 @@ import com.darkyen.paragrowth.doodad.DoodadWorld;
 import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.render.RenderBatch;
 import com.darkyen.paragrowth.skybox.Skybox;
+import com.darkyen.paragrowth.terrain.TerrainPatchKt;
 import com.darkyen.paragrowth.terrain.TerrainPatchwork;
 import com.darkyen.paragrowth.util.DebugRenderKt;
 import org.lwjgl.opengl.GL32;
@@ -52,6 +53,8 @@ public final class WanderState extends ScreenAdapter {
     //Input
     private final GameInput gameInput;
     private final HeightmapPersonController cameraController;
+
+    private final long startTime = System.currentTimeMillis();
 
     public WanderState(WorldCharacteristics worldCharacteristics) {
         this.worldCharacteristics = worldCharacteristics;
@@ -116,6 +119,8 @@ public final class WanderState extends ScreenAdapter {
         // Used for skybox and for objects too close to camera
         // (they won't get proper depth-testing, but skybox won't show through)
         Gdx.gl.glEnable(GL_DEPTH_CLAMP);
+        modelBatch.getAttributes().get(TerrainPatchKt.getTERRAIN_TIME_ATTRIBUTE())[0] = (System.currentTimeMillis() - startTime) / 1000f;
+
         modelBatch.begin(worldCam);
 
         modelBatch.render(skyboxRenderable);

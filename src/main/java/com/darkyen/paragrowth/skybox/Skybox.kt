@@ -66,13 +66,13 @@ class Skybox : Renderable, Disposable {
 object SkyboxShader : Shader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
 
     init {
-        globalUniform("u_cameraUp") { uniform, camera ->
+        globalUniform("u_cameraUp") { uniform, camera, _ ->
             uniform.set(camera.up)
         }
 
         val resultCombined = Matrix4()
         val tmp = Matrix4()
-        globalUniform("u_viewTurnMat") { uniform, camera ->
+        globalUniform("u_viewTurnMat") { uniform, camera, _ ->
             val origCam = camera as PerspectiveCamera
             //Sets it to origCam.combined but without the translation part
             uniform.set(resultCombined.set(origCam.projection).mul(tmp.setToLookAt(origCam.direction, origCam.up)))

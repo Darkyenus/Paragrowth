@@ -11,7 +11,7 @@ import com.darkyen.paragrowth.render.Shader
 object DoodadShader : Shader(DOODADS, "doodad", POS3_COL1_ATTRS) {
 
     init {
-        globalUniform("u_projViewTrans") { uniform, camera ->
+        globalUniform("u_projViewTrans") { uniform, camera, _ ->
             uniform.set(camera.combined)
         }
     }

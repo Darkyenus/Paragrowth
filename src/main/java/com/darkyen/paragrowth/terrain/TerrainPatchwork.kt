@@ -194,7 +194,7 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
                         val model = batch.render()
                         model.set(patch.model)
                         model.shader = TERRAIN_OCEAN_SHADER
-                        model.worldTransform.translate(xOff, yOff, 0f)
+                        model.attributes[TERRAIN_OCEAN_OFFSET_ATTRIBUTE].set(xOff, yOff)
                         model.order = camera.position.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
                     }
                 }

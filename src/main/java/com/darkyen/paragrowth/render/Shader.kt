@@ -21,7 +21,7 @@ import java.io.File
 import com.badlogic.gdx.utils.IntArray as GdxIntArray
 
 typealias LocalSetter = (uniform: Shader.Uniform, camera:Camera, renderable: RenderModel) -> Unit
-typealias GlobalSetter = (uniform: Shader.Uniform, camera:Camera) -> Unit
+typealias GlobalSetter = (uniform: Shader.Uniform, camera:Camera, attributes:Attributes) -> Unit
 
 abstract class Shader(val order:Int,
                       val name:String,
@@ -123,7 +123,7 @@ abstract class Shader(val order:Int,
     private var context: RenderContext? = null
     private var camera: Camera? = null
 
-    fun begin(camera: Camera, context: RenderContext) {
+    fun begin(camera: Camera, context: RenderContext, attributes:Attributes) {
         this.camera = camera
         this.context = context
         init()
@@ -132,7 +132,7 @@ abstract class Shader(val order:Int,
         adjustContext(context)
         for (uniform in globalUniforms) {
             if (uniform.location < 0) continue
-            uniform.globalSetter!!.invoke(uniform, camera)
+            uniform.globalSetter!!.invoke(uniform, camera, attributes)
         }
     }
 
@@ -149,9 +149,11 @@ abstract class Shader(val order:Int,
         for (uniform in instancedUniforms) {
             if (uniform.location < 0) continue
             val originalLocation = uniform.location
+            assert(uniform.location1 > originalLocation)
+            val stride = uniform.location1 - originalLocation
             try {
                 for ((instance, renderableI) in (from until to).withIndex()) {
-                    uniform.location = originalLocation + instance
+                    uniform.location = originalLocation + instance * stride
                     uniform.localSetter!!.invoke(uniform, camera, renderables[renderableI])
                 }
             } finally {
@@ -189,6 +191,8 @@ abstract class Shader(val order:Int,
     }
 
     protected fun instancedUniform(name:String, setter: LocalSetter) {
+        assert(maxInstances > 1)
+
         val uniform = Uniform(this, setter, null)
         uniform.name = name
         uniforms.add(uniform)
@@ -211,6 +215,8 @@ abstract class Shader(val order:Int,
 
         private var shaderProgram:Int = 0
         internal var location = -2
+        /** Location of the second array position, for stride calculation. */
+        internal var location1 = -1
 
         internal fun init() {
             val currentShaderProgram = shader.program
@@ -221,6 +227,8 @@ abstract class Shader(val order:Int,
                 location = Gdx.gl30.glGetUniformLocation(currentShaderProgram, name)
                 if (location < 0) {
                     Gdx.app.log("ParaShader", "${shader.name}: Location of $name uniform not found")
+                } else {
+                    location1 = Gdx.gl30.glGetUniformLocation(currentShaderProgram, "$name[1]")
                 }
             }
         }

@@ -47,12 +47,12 @@ class GlBuffer(
 
         Gdx.gl20.apply {
             glBindBuffer(GL20.GL_ARRAY_BUFFER, handle)
-            if (currentLengthBytes == byteLength) {
+            //if (currentLengthBytes == byteLength) {
                 glBufferData(GL20.GL_ARRAY_BUFFER, byteLength, buffer, usage)
-            } else {
-                // Faster, it does not have to reallocate the buffer
-                glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, byteLength, buffer)
-            }
+            //} else {
+            //    // Faster, it does not have to reallocate the buffer
+            //    glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, byteLength, buffer)
+            //}
             glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
         }
         currentLengthBytes = byteLength

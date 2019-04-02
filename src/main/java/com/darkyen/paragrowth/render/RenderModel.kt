@@ -2,7 +2,6 @@ package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Mesh
-import com.badlogic.gdx.math.Matrix4
 import com.darkyen.paragrowth.render.Shader.Companion.NULL_SHADER
 import com.darkyen.paragrowth.render.Shader.Companion.NULL_VAO
 
@@ -29,10 +28,6 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
 
     /** The [Shader] to be used to render this [RenderModel] using a [RenderBatch]. */
     var shader:Shader = NULL_SHADER
-
-    /** Used to specify the transformations (like translation, scale and rotation) to apply to the shape. In other words: it is used
-     * to transform the vertices from model space into world space.  */
-    val worldTransform = Matrix4()
 
     /** Attributes to pass on to shaders for this object. Backed by attributes of the [RenderBatch]. */
     val attributes = Attributes(parentAttributes)

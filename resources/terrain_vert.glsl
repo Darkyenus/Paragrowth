@@ -28,7 +28,7 @@ void main() {
 		float displacement = texture(u_displacement, oceanSamplePos).x;
 
 		// Position
-		float heightDisplacement = displacement /** revDisplacement*/ - 1.0;
+		float heightDisplacement = displacement - 1.0;
 		pos.z = mix(0.0, heightDisplacement, mixFactor);
 
 		// Color
