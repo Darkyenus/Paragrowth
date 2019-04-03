@@ -60,7 +60,7 @@ public final class WanderState extends ScreenAdapter {
         this.worldCharacteristics = worldCharacteristics;
         System.out.println(worldCharacteristics);
         modelBatch = new RenderBatch();
-        worldCam = new PerspectiveCamera(90f,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        worldCam = new PerspectiveCamera(90f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         worldView = new ScreenViewport(worldCam);
         hudView = new ScreenViewport();
         hudStage = new Stage(hudView, ParagrowthMain.batch());
@@ -72,7 +72,7 @@ public final class WanderState extends ScreenAdapter {
 
         worldCam.up.set(0,0,1f);
         worldCam.near = 0.4f;
-        worldCam.far = 700f;
+        worldCam.far = 500f;
 
         worldCam.position.set(1f, 1f, 10f);
         worldCam.direction.set(1,0,0);
@@ -127,7 +127,7 @@ public final class WanderState extends ScreenAdapter {
         modelBatch.render(terrain);
         modelBatch.render(doodads);
 
-        modelBatch.end();
+        rendered = modelBatch.end();
         Gdx.gl.glDisable(GL_DEPTH_CLAMP);
 
         if (cameraController.PATCHWORK_DEBUG.isPressed()) {
@@ -154,6 +154,8 @@ public final class WanderState extends ScreenAdapter {
 
     private static final StringBuilder extraStats = new StringBuilder();
 
+    private int rendered = 0;
+
     private void updateWorld(float delta) {
         cameraController.update(delta);
 
@@ -162,6 +164,7 @@ public final class WanderState extends ScreenAdapter {
                 .append("\nX: ").append(worldCam.position.x)
                 .append("\nY: ").append(worldCam.position.y)
                 .append("\nZ: ").append(worldCam.position.z)
+                .append("\nRendered: ").append(rendered)
                 .append("\n");
 
         statsLabel.setText(extraStats);

@@ -65,11 +65,12 @@ class RenderBatch(context: RenderContext? = null) {
     private var maxDrawCalls = 0
 
     /** Flushes the batch, causing all [Renderable]s in the batch to be rendered.
-     * Can only be called after the call to [begin] and before the call to [end]. */
-    fun flush() {
+     * Can only be called after the call to [begin] and before the call to [end].
+     * @return items rendered*/
+    fun flush():Int {
         val renderablesSize = renderables.size
         if (renderablesSize == 0)
-            return
+            return 0
 
         renderables.sort()
 
@@ -186,6 +187,7 @@ class RenderBatch(context: RenderContext? = null) {
 
         renderablesPool.freeAll(renderables)
         renderables.size = 0
+        return renderablesSize
     }
 
     private inline fun GdxArray<RenderModel>.forSimilarRenderables(
@@ -218,10 +220,11 @@ class RenderBatch(context: RenderContext? = null) {
 
     /** Close this batch for further [RenderModel]s and [flush] all which were added so far.
      * Must be called after a call to [begin]. After a call to this method the OpenGL context can be altered again. */
-    fun end() {
-        flush()
+    fun end():Int {
+        val rendered = flush()
         if (ownContext) renderContext.end()
         camera = null
+        return rendered
     }
 
     /** Add a single [RenderModel] to the batch and return it, so that it may be set up.
