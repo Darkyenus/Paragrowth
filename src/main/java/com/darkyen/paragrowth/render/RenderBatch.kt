@@ -130,7 +130,7 @@ class RenderBatch(context: RenderContext? = null) {
                 val drawCount = to - from
 
                 // Different draw methods when uniforms are set and when not
-                if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */) {
+                if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */ || true) {
                     // Must do the slow path
                     for (i in from until to) {
                         val rm = items[i]
@@ -143,6 +143,7 @@ class RenderBatch(context: RenderContext? = null) {
                         }
 
                         shader.updateLocalUniforms(rm)
+                        shader.updateInstancedUniforms(items, i, i + 1)
 
                         drawCalls++
                         GL32.glDrawElementsBaseVertex(primitiveType, count, indicesType, offsetBytes.toLong(), rm.baseVertex)

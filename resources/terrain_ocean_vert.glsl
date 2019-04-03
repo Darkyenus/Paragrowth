@@ -15,6 +15,8 @@ uniform sampler2D u_displacement;
 uniform sampler2D u_normal;
 
 const vec3 lightDirection = vec3(0.2, 0.0, 0.9797958975);
+const float lodDst = 200;
+const float lodDst2 = lodDst * lodDst;
 
 void main() {
 	float diffuse = dot(a_normal.xyz, lightDirection);
@@ -25,13 +27,19 @@ void main() {
 
 	if (pos.z <= 0.0) {
 		// General
-		float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
 		vec2 oceanSamplePos = (pos.xy + vec2(u_time)) * 0.01;
 		float displacement = texture(u_displacement, oceanSamplePos).x;
 
 		// Position
-		float heightDisplacement = displacement - 1.0;
-		pos.z = mix(0.0, heightDisplacement, mixFactor);
+		{
+			vec3 dst = pos.xyz - u_position.xyz;
+			// To prevent sky showing through in distant LODs, flatten the surface
+			if (dot(dst, dst) < lodDst2) {
+				float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
+				float heightDisplacement = displacement - 1.0;
+				pos.z = mix(0.0, heightDisplacement, mixFactor);
+			}
+		}
 
 		// Color
 		vec3 normal = normalize(texture(u_normal, oceanSamplePos).xyz);

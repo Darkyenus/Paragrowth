@@ -26,7 +26,11 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
         this.patches = arrayOfNulls<TerrainPatch>(patchAmountX * patchAmountY) as Array<TerrainPatch>
 
         val indexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
-        indexBuffer.setData(generateTerrainPatchIndices())
+        val normalIndices = generateTerrainPatchIndices()
+        val lod1Indices = generateTerrainPatchIndicesLoD1()
+        indexBuffer.reserve(normalIndices.size + lod1Indices.size, GL20.GL_UNSIGNED_SHORT)
+        indexBuffer.setSubData(0, normalIndices)
+        indexBuffer.setSubData(normalIndices.size, lod1Indices)
         this.indexBuffer = indexBuffer
 
         val vertexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
@@ -161,6 +165,9 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
 
     override fun render(batch: RenderBatch, camera: Camera) {
         val frustum = camera.frustum
+        val cameraPosition = camera.position
+        val lodDistance = 200
+        val lodDistance2 = lodDistance * lodDistance
         val bounds = this.render_bounds.set(frustum.planePoints)
 
         val lowX = Math.floor(((bounds.min.x - X_STEP) / PATCH_WIDTH).toDouble()).toInt()
@@ -178,7 +185,11 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
                         val model = batch.render()
                         model.set(patch.model)
                         model.shader = TERRAIN_SHADER
-                        model.order = camera.position.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+                        model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+                        /*if (model.order > lodDistance2) {
+                            model.offset = TERRAIN_PATCH_INDEX_COUNT
+                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+                        }*/
                     }
                 } else {
                     val patch = seaPatch
@@ -195,7 +206,11 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
                         model.set(patch.model)
                         model.shader = TERRAIN_OCEAN_SHADER
                         model.attributes[TERRAIN_OCEAN_OFFSET_ATTRIBUTE].set(xOff, yOff)
-                        model.order = camera.position.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
+                        model.order = cameraPosition.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
+                        if (model.order > lodDistance2) {
+                            model.offset = TERRAIN_PATCH_INDEX_COUNT
+                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+                        }
                     }
                 }
             }

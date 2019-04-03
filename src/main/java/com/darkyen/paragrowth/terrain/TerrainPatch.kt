@@ -33,10 +33,9 @@ const val PATCH_WIDTH = PATCH_UNIT_SIZE * X_STEP
 /** Total size of the patch in world space, Y coordinate */
 const val PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP
 
-/** Total amount of triangles per patch */
-private const val TRIANGLE_COUNT = PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2
 /** Amount of indices needed to draw the whole patch */
-const val TERRAIN_PATCH_INDEX_COUNT = TRIANGLE_COUNT * 3
+const val TERRAIN_PATCH_INDEX_COUNT = (PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2) * 3
+const val TERRAIN_PATCH_LOD1_INDEX_COUNT = (PATCH_UNIT_SIZE/2 * (1 + 2 + PATCH_UNIT_SIZE - 1)) * 3
 /** Total amount of vertices needed to draw the whole patch.
  * Some triangles must overlap, because there is more triangles than vertices and we need an unique provoking
  * vertex for each one. For EVEN rows, the provoking vertex is the top-left one and top one.
@@ -233,6 +232,60 @@ fun generateTerrainPatchIndices():ShortArray {
         }
         y += 2
     }
+    assert(i == indices.size)
+
+    return indices
+}
+
+/** Generate indices for the terrain mesh, LoD 1 */
+fun generateTerrainPatchIndicesLoD1():ShortArray {
+    val ROW_AMOUNT = PATCH_SIZE + PATCH_SIZE - 2
+    val indices = ShortArray(TERRAIN_PATCH_LOD1_INDEX_COUNT)
+    var i = 0
+
+    // Do all of the double-strips
+    var y = 0
+    while (y < PATCH_UNIT_SIZE) {
+        /*
+        Arrangement:
+        0 \  /\  /\  /\ even
+        1 /\/  \/  \/-/ odd
+        2 \  /\  /\  /\
+        3 /\/  \/  \/-/
+        4
+         */
+
+        // Begin speck (not equilateral)
+        indices[i++] = (y * ROW_AMOUNT).toShort()
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1).toShort()
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
+
+        // Big tiles with wide top
+        for (x in 0 until PATCH_UNIT_SIZE / 2) {
+            indices[i++] = (x * 4 + y * ROW_AMOUNT).toShort()
+            indices[i++] = (x * 4 + 3 + y * ROW_AMOUNT).toShort()
+            indices[i++] = (x * 4 + 1 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
+        }
+
+        // Big tiles with wide bottom
+        for (x in 1 until PATCH_UNIT_SIZE / 2) {
+            indices[i++] = (x * 4 - 1 + y * ROW_AMOUNT).toShort()
+            indices[i++] = (x * 4 + 1 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
+            indices[i++] = (x * 4 - 2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
+        }
+
+        // End speck (not equilateral)
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 2).toShort()
+
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
+        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 2).toShort()
+        y += 2
+    }
+    assert(i == indices.size)
+
     return indices
 }
 
@@ -261,8 +314,8 @@ class TerrainPatch(
             min = minOf(min, h)
             max = maxOf(max, h)
         }
-        this.min.set(xOffset, yOffset, min)
-        this.max.set(xOffset + PATCH_WIDTH, yOffset + PATCH_HEIGHT, max)
+        this.min.set(xOffset, yOffset, min - 1f)
+        this.max.set(xOffset + PATCH_WIDTH, yOffset + PATCH_HEIGHT, max + 1f)
     }
 }
 
