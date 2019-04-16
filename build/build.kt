@@ -4,11 +4,11 @@
 
 import com.darkyen.resourcepacker.PackingOperation
 import com.darkyen.resourcepacker.PreferSymlinks
+import org.jline.utils.OSUtils
 import wemi.Keys.runDirectory
 import wemi.Keys.runOptions
 import wemi.util.div
 import wemi.*
-import wemi.compile.KotlinCompilerVersion
 
 val packResources by key<Unit>("Packs resources")
 
@@ -21,8 +21,6 @@ val paragrowth by project {
     projectName set { "paragrowth" }
     projectGroup set { "com.darkyen" }
     projectVersion set { "0.1-SNAPSHOT" }
-    
-    //kotlinVersion set { KotlinCompilerVersion.Version1_3_20 }
 
     val gdxVersion = "1.9.7"
 
@@ -39,6 +37,8 @@ val paragrowth by project {
     }
 
     mainClass set { "com.darkyen.paragrowth.ParagrowthMain" }
-    runOptions add {"-XstartOnFirstThread"}
+    if (OSUtils.IS_OSX) {
+        runOptions add { "-XstartOnFirstThread" }
+    }
     runDirectory set { projectRoot.get() / "assets" }
 }
