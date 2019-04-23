@@ -16,7 +16,6 @@ import com.badlogic.gdx.utils.BufferUtils
 import com.badlogic.gdx.utils.ObjectIntMap
 import com.darkyen.paragrowth.util.GdxArray
 import com.darkyen.paragrowth.util.stack
-import sun.plugin.dom.exception.InvalidStateException
 import java.io.File
 import com.badlogic.gdx.utils.IntArray as GdxIntArray
 
@@ -109,7 +108,7 @@ abstract class Shader(val order:Int,
     fun init() {
         if (program == 0) {
             if (order == NEVER_INIT) {
-                throw InvalidStateException("This is a null shader")
+                throw IllegalStateException("This is a null shader")
             }
 
             compile()
