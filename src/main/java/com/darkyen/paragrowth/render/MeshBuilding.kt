@@ -23,12 +23,6 @@ val POSITION3_COLOR1_ATTRIBUTES = GdxVertexAttributes(
         GdxVertexAttribute.ColorPacked()//1
 )
 
-// TODO(jp): move somewhere else
-val POS3_COL1_ATTRS = VertexAttributes(
-        VA_POSITION3,
-        VA_COLOR1
-)
-
 
 inline fun buildMesh(attributes:GdxVertexAttributes, build:MeshBuilder.() -> Unit): Mesh {
     val builder = MESH_BUILDER

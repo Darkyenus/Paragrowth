@@ -1,6 +1,5 @@
 package com.darkyen.paragrowth.terrain
 
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.GL30
 import com.badlogic.gdx.graphics.Texture
@@ -10,7 +9,8 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
-import com.darkyen.paragrowth.terrain.generator.TerrainProvider
+import com.darkyen.paragrowth.util.Color
+import com.darkyen.paragrowth.util.rgb
 
 /*
 triangles = (size-1)^2*2
@@ -56,7 +56,8 @@ X stagger: 0.5
 Y step: sqrt(3)/2
 */
 
-private fun packNormal(normal:Vector3):Float {
+@PublishedApi
+internal fun packNormal(normal:Vector3):Float {
     val max =  0b01111_11111
     val mask = 0b11111_11111
     val x = (normal.x * max).toInt() and mask
@@ -69,11 +70,13 @@ private fun packNormal(normal:Vector3):Float {
 /** Generate vertices with coordinates, color and triangle normal.
  * @param outVertices size should be TERRAIN_PATCH_VERTEX_COUNT * VERTEX_SIZE
  * @param outHeightMap size should be PATCH_SIZE * PATCH_SIZE */
-fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: TerrainProvider, outVertices:FloatArray, outHeightMap:FloatArray) {
+inline fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float,
+                                        getHeight:(x:Float, y:Float) -> Float, getColor:(x:Float, y:Float) -> Color, getNormal:(out:Vector3, x:Float, y:Float) -> Unit,
+                                        outVertices:FloatArray, outHeightMap:FloatArray) {
     val X_HALF_STEP = X_STEP * 0.5f
     val Y_HALF_STEP = Y_STEP * 0.5f
 
-    val normal = Vector3()
+    val normal = Vector3(0f, 0f, 1f)
 
     var v = 0
     var yPos = yOffset
@@ -85,7 +88,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
         // Do a line of top X that makes the first row
 
         // Top of even row
-        var height = generator.getHeight(xPos, yPos)
+        var height = getHeight(xPos, yPos)
         outHeightMap[h++] = height
         for (x in 0 until PATCH_UNIT_SIZE) {
             run {
@@ -96,13 +99,13 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = xPos
                 outVertices[v++] = yPos
                 outVertices[v++] = height
-                outVertices[v++] = generator.getColor(xTPos, yTPos)
-                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = getColor(xTPos, yTPos)
+                getNormal(normal, xTPos, yTPos)
                 outVertices[v++] = packNormal(normal)
             }
 
             xPos += X_STEP
-            height = generator.getHeight(xPos, yPos)
+            height = getHeight(xPos, yPos)
             outHeightMap[h++] = height
 
             run {
@@ -113,15 +116,15 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = xPos
                 outVertices[v++] = yPos
                 outVertices[v++] = height
-                outVertices[v++] = generator.getColor(xTPos, yTPos)
-                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = getColor(xTPos, yTPos)
+                getNormal(normal, xTPos, yTPos)
                 outVertices[v++] = packNormal(normal)
             }
         }
 
         yPos += Y_STEP
         xPos = xOffset + X_STAGGER
-        height = generator.getHeight(xPos, yPos)
+        height = getHeight(xPos, yPos)
         outHeightMap[h++] = height
 
         // Top of odd row
@@ -134,13 +137,13 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = xPos
                 outVertices[v++] = yPos
                 outVertices[v++] = height
-                outVertices[v++] = generator.getColor(xTPos, yTPos)
-                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = getColor(xTPos, yTPos)
+                getNormal(normal, xTPos, yTPos)
                 outVertices[v++] = packNormal(normal)
             }
 
             xPos += X_STEP
-            height = generator.getHeight(xPos, yPos)
+            height = getHeight(xPos, yPos)
             outHeightMap[h++] = height
 
             run {
@@ -151,8 +154,8 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
                 outVertices[v++] = xPos
                 outVertices[v++] = yPos
                 outVertices[v++] = height
-                outVertices[v++] = generator.getColor(xTPos, yTPos)
-                generator.getNormal(normal, xTPos, yTPos)
+                outVertices[v++] = getColor(xTPos, yTPos)
+                getNormal(normal, xTPos, yTPos)
                 outVertices[v++] = packNormal(normal)
             }
         }
@@ -162,11 +165,11 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
     }
 
     // Do one more bottom row, without colors
-    val NO_COLOR = Color.MAGENTA.toFloatBits()
+    val NO_COLOR = rgb(1f, 0f, 1f)
     val NO_NORMAL = packNormal(normal.set(0f, 0f, 1f))
 
     var xPos = xOffset
-    var height = generator.getHeight(xPos, yPos)
+    var height = getHeight(xPos, yPos)
     outHeightMap[h++] = height
     for (x in 0 until PATCH_UNIT_SIZE) {
         // Top left of red
@@ -177,7 +180,7 @@ fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float, generator: Terrai
         outVertices[v++] = NO_NORMAL
 
         xPos += X_STEP
-        height = generator.getHeight(xPos, yPos)
+        height = getHeight(xPos, yPos)
         outHeightMap[h++] = height
 
         // Top of green
@@ -297,6 +300,15 @@ val TERRAIN_PATCH_ATTRIBUTES = VertexAttributes(
         VA_NORMAL3_TINY
 )
 
+val TERRAIN_PATCH_BLEND_ATTRIBUTES = VertexAttributes(
+        VA_POSITION3,
+        VA_COLOR1,
+        VA_NORMAL3_TINY,
+        VA_POSITION3.withName("a_position_blend"),
+        VA_COLOR1.withName("a_color_blend"),
+        VA_NORMAL3_TINY.withName("a_normal_blend")
+)
+
 class TerrainPatch(
         private val xOffset:Float,
         private val yOffset:Float,
@@ -319,23 +331,48 @@ class TerrainPatch(
     }
 }
 
-val TERRAIN_SHADER = TerrainShader(false)
-val TERRAIN_OCEAN_SHADER = TerrainShader(true)
+enum class TerrainShaderType {
+    OCEAN,
+    TERRAIN,
+    TERRAIN_BLEND
+}
+
+val TERRAIN_SHADER = TerrainShader(TerrainShaderType.TERRAIN)
+val TERRAIN_OCEAN_SHADER = TerrainShader(TerrainShaderType.OCEAN)
+val TERRAIN_BLEND_SHADER = TerrainShader(TerrainShaderType.TERRAIN_BLEND)
 
 val TERRAIN_OCEAN_OFFSET_ATTRIBUTE = attributeKeyVector2("terrain_ocean_offset")
 val TERRAIN_TIME_ATTRIBUTE = attributeKeyFloat("terrain_time")
+val TERRAIN_BLEND_ATTRIBUTE = attributeKeyFloat("terrain_blend")
 
-class TerrainShader(ocean:Boolean) : Shader(
-        if (ocean) TERRAIN_OCEAN else TERRAIN,
-        if (ocean) "terrain_ocean" else "terrain",
-        TERRAIN_PATCH_ATTRIBUTES, fragmentShaderName = "terrain",
-        maxInstances = if (ocean) 64 else 0) {
+class TerrainShader(type:TerrainShaderType) : Shader(
+        when (type) {
+            TerrainShaderType.OCEAN -> TERRAIN_OCEAN
+            TerrainShaderType.TERRAIN -> TERRAIN
+            TerrainShaderType.TERRAIN_BLEND -> TERRAIN
+        },
+        when (type) {
+            TerrainShaderType.OCEAN -> "terrain_ocean"
+            TerrainShaderType.TERRAIN -> "terrain"
+            TerrainShaderType.TERRAIN_BLEND -> "terrain_blend"
+        },
+        when (type) {
+            TerrainShaderType.OCEAN, TerrainShaderType.TERRAIN -> TERRAIN_PATCH_ATTRIBUTES
+            TerrainShaderType.TERRAIN_BLEND -> TERRAIN_PATCH_BLEND_ATTRIBUTES
+        }, fragmentShaderName = "terrain",
+        maxInstances = if (type == TerrainShaderType.OCEAN) 64 else 0) {
 
     init {
-        if (ocean) {
+        if (type == TerrainShaderType.OCEAN) {
             // Only ocean needs transformation matrix, normal terrain has position baked in
             instancedUniform("u_worldTrans") { uniform, _, renderable ->
                 uniform.set(renderable.attributes[TERRAIN_OCEAN_OFFSET_ATTRIBUTE])
+            }
+        }
+
+        if (type == TerrainShaderType.TERRAIN_BLEND) {
+            globalUniform("u_blend") { uniform, _, attributes ->
+                uniform.set(attributes[TERRAIN_BLEND_ATTRIBUTE][0])
             }
         }
 

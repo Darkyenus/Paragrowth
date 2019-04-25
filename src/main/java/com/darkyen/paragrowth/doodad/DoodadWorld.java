@@ -5,19 +5,19 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.math.Frustum;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.darkyen.paragrowth.WorldCharacteristics;
+import com.darkyen.paragrowth.WorldSpecifics;
 import com.darkyen.paragrowth.render.GlBuffer;
 import com.darkyen.paragrowth.render.GlVertexArrayObject;
-import com.darkyen.paragrowth.render.MeshBuilding;
 import com.darkyen.paragrowth.render.ModelBuilder;
 import com.darkyen.paragrowth.render.RenderBatch;
 import com.darkyen.paragrowth.render.RenderModel;
 import com.darkyen.paragrowth.render.Renderable;
-import com.darkyen.paragrowth.terrain.generator.Noise;
 import com.darkyen.paragrowth.util.DebugRenderKt;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,26 +37,26 @@ public class DoodadWorld implements Renderable, Disposable {
     private final DoodadPatch[] patches;
     private final Array<DoodadInstance>[] doodadInstances;
 
-    public DoodadWorld(Camera camera, long seed, float[][] noise, WorldCharacteristics characteristics) {
+    public DoodadWorld(Camera camera, long seed, WorldSpecifics world) {
         this.camera = camera;
-        final int worldWidth = noise.length;
-        final int worldHeight = noise[0].length;
-        final int patchesX = (worldWidth + PATCH_SIZE - 1) / PATCH_SIZE;
-        final int patchesY = (worldHeight + PATCH_SIZE - 1) / PATCH_SIZE;
+        final int minPatchX = MathUtils.floor(world.offsetX / PATCH_SIZE);
+        final int minPatchY = MathUtils.floor(world.offsetY / PATCH_SIZE);
+        final int maxPatchX = MathUtils.ceil((world.offsetX + world.sizeX()) / PATCH_SIZE);
+        final int maxPatchY = MathUtils.ceil((world.offsetY + world.sizeY()) / PATCH_SIZE);
 
-        this.patches = new DoodadPatch[patchesX * patchesY];
+        this.patches = new DoodadPatch[(maxPatchX - minPatchX) * (maxPatchY - minPatchY)];
         //noinspection unchecked
         this.doodadInstances = new Array[this.patches.length];
 
         final RandomXS128 random = new RandomXS128(seed);
 
-        final Array<Doodad> doodadSet = Doodads.createDoodadSet(random, characteristics);
+        final Array<Doodad> doodadSet = Doodads.createDoodadSet(random, world.characteristics);
         Array<DoodadInstance> patchInstances = new Array<>(DoodadInstance.class);
         int totalDoodads = 0;
         int i = 0;
-        for (int x = 0; x < patchesX; x++) {
-            for (int y = 0; y < patchesY; y++) {
-                final DoodadPatch patch = buildPatch(random, noise, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, characteristics);
+        for (int x = minPatchX; x < maxPatchX; x++) {
+            for (int y = minPatchY; y < maxPatchX; y++) {
+                final DoodadPatch patch = buildPatch(random, world, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, world.characteristics);
                 if (patch == null)
                     continue;
 
@@ -73,14 +73,14 @@ public class DoodadWorld implements Renderable, Disposable {
         System.out.println("Generated "+totalDoodads+" doodads");
     }
 
-    private DoodadPatch buildPatch(Random random, float[][] noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
+    private static DoodadPatch buildPatch(Random random, WorldSpecifics noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
         final ModelBuilder builder = new ModelBuilder(3 + 1);
 
         for (int i = 0; i < DOODADS_PER_PATCH; i++) {
             final float x = baseX + random.nextFloat() * PATCH_SIZE;
             final float y = baseY + random.nextFloat() * PATCH_SIZE;
 
-            final float z = Noise.getHeight(noise, x, y);
+            final float z = noise.getHeight(x, y);
             // Cull doodads in water or (TODO:) too close
             if (z <= 0.1f) {
                 continue;
@@ -97,8 +97,7 @@ public class DoodadWorld implements Renderable, Disposable {
 
         final GlBuffer vertices = builder.createVertexBuffer(true);
         final GlBuffer indices = builder.createIndexBuffer(true);
-        final GlVertexArrayObject vao = new GlVertexArrayObject(indices, MeshBuilding
-                .getPOS3_COL1_ATTRS(),
+        final GlVertexArrayObject vao = new GlVertexArrayObject(indices, DoodadShaderKt.getDOODAD_ATTRIBUTES(),
                 new GlVertexArrayObject.Binding(vertices, 4, 0),
                 new GlVertexArrayObject.Binding(vertices, 4, 3));
         final DoodadPatch patch = new DoodadPatch();

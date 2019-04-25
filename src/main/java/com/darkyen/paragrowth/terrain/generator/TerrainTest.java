@@ -13,7 +13,7 @@ import java.awt.image.BufferedImage;
  */
 public class TerrainTest {
 
-    private static float getBrightness(TerrainProvider terrain, float x, float y){
+    private static float getBrightness(Noise terrain, float x, float y){
         float myHeight = terrain.getHeight(x,y);
         float topHeight = terrain.getHeight(x, y-1);
         float leftHeight = terrain.getHeight(x-1, y);
@@ -49,8 +49,8 @@ public class TerrainTest {
         return (float) ((Math.tanh(f) + 1f) / 2f);
     }
 
-    private static BufferedImage toImage(TerrainProvider terrain, float scale){
-        final BufferedImage result = new BufferedImage(MathUtils.ceil(terrain.getSizeX() * scale), MathUtils.ceil(terrain.getSizeY() * scale), BufferedImage.TYPE_4BYTE_ABGR);
+    private static BufferedImage toImage(Noise terrain, float scale) {
+        final BufferedImage result = new BufferedImage(MathUtils.ceil(terrain.sizeX * scale), MathUtils.ceil(terrain.sizeY * scale), BufferedImage.TYPE_4BYTE_ABGR);
         for (int y = 0; y < result.getHeight(); y++) {
             for (int x = 0; x < result.getWidth(); x++) {
                 final float qX = x / scale;
@@ -69,166 +69,33 @@ public class TerrainTest {
         return result;
     }
 
-    private static TerrainProvider terrainProviderSimplexRaw() {
-        return new TerrainProvider() {
-
-            final OpenSimplexNoise n = new OpenSimplexNoise();
-            {
-                n.initialize(System.currentTimeMillis());
-            }
-
-            @Override
-            public float getSizeX() {
-                return 100;
-            }
-
-            @Override
-            public float getSizeY() {
-                return 100;
-            }
-
-            @Override
-            public float getHeight(float x, float y) {
-                return n.evaluate(x, y);
-            }
-
-            @Override
-            public float getColor(float x, float y) {
-                return 0;
-            }
-        };
-    }
-
-    private static TerrainProvider terrainProviderSimplex() {
-        return new TerrainProvider() {
-
-            final int width = 100;
-            final int height = 100;
-            final float[][] noise = Noise.islandize(Noise.generateSimplexNoise(width, height,
-                    System.currentTimeMillis(), 1f,
-                    1f/80f, 2f, 5, 40f, 0.5f), -0.1f);
-
-            @Override
-            public float getSizeX() {
-                return width;
-            }
-
-            @Override
-            public float getSizeY() {
-                return height;
-            }
-
-            @Override
-            public float getHeight(float x, float y) {
-                return Noise.getHeight(noise, x, y);
-            }
-
-            @Override
-            public float getColor(float x, float y) {
-                return 0;
-            }
-        };
-    }
-
-    private static TerrainProvider terrainProviderDiamond() {
-        return new TerrainProvider() {
-
-            final float[][] noise = DiamondSquare.generate(8, System.currentTimeMillis(), 1f, 10f);
-
-            @Override
-            public float getSizeX() {
-                return noise.length;
-            }
-
-            @Override
-            public float getSizeY() {
-                return noise.length;
-            }
-
-            @Override
-            public float getHeight(float x, float y) {
-                return Noise.getHeight(noise, x, y);
-            }
-
-            @Override
-            public float getColor(float x, float y) {
-                return 0;
-            }
-        };
-    }
-
-    private static TerrainProvider terrainProviderHydraulic() {
-        return new TerrainProvider() {
-
-            final float[][] noise = Noise.generateHydraulicNoise(100, System.currentTimeMillis(), 500, 0.005f);
-
-            @Override
-            public float getSizeX() {
-                return noise.length;
-            }
-
-            @Override
-            public float getSizeY() {
-                return noise.length;
-            }
-
-            @Override
-            public float getHeight(float x, float y) {
-                return Noise.getHeight(noise, x, y);
-            }
-
-            @Override
-            public float getColor(float x, float y) {
-                return 0;
-            }
-        };
-    }
-
-    private static TerrainProvider terrainProviderHydraulicPerlin() {
-        return new TerrainProvider() {
-
-            final float[][] noise = Noise.islandize(Noise.generatePerlinNoise(Noise.generateHydraulicNoise(100, 55, 500, 0.005f), 3, 0.5f), 1f, 0f);
-
-            @Override
-            public float getSizeX() {
-                return noise.length;
-            }
-
-            @Override
-            public float getSizeY() {
-                return noise.length;
-            }
-
-            @Override
-            public float getHeight(float x, float y) {
-                return Noise.getHeight(noise, x, y);
-            }
-
-            @Override
-            public float getColor(float x, float y) {
-                return 0;
-            }
-        };
-    }
-
     private final static int WINDOW_SIZE = 800;
     public static void main(String[] args){
 
         JFrame frame = new JFrame("Terrain Test");
         Canvas canvas = new Canvas(){
 
-            private TerrainProvider terrainProvider() {
-                return terrainProviderSimplex();
+            private Noise noise() {
+                final int width = getWidth();
+                final int height = getHeight();
+                // Simplex
+                return Noise.generateSimplexNoise(width, height, System.currentTimeMillis(), 1f, 1f/80f, 2f, 5, 40f, 0.5f, 0f).islandize(1f, -0.1f);
+                // Diamond
+                //return DiamondSquare.generate(8, System.currentTimeMillis(), 1f, 10f);
+                // Hydraulic
+                //return Noise.generateHydraulicNoise(100, System.currentTimeMillis(), 500, 0.005f);
+                // Hydraulic Perlin
+                //return Noise.generatePerlinNoise(Noise.generateHydraulicNoise(100, 55, 500, 0.005f), 3, 0.5f).islandize( 1f, 0f);
             }
 
             private float scale = 3f;
-            private BufferedImage image = toImage(terrainProvider(), scale);
+            private BufferedImage image = toImage(noise(), scale);
 
             {
                 addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
-                        image = toImage(terrainProvider(), scale);
+                        image = toImage(noise(), scale);
                         repaint();
                     }
                 });

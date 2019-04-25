@@ -13,7 +13,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.darkyen.paragrowth.ParagrowthMain;
 import com.darkyen.paragrowth.WorldCharacteristics;
-import com.darkyen.paragrowth.WorldGenerator;
+import com.darkyen.paragrowth.WorldSpecifics;
 import com.darkyen.paragrowth.doodad.DoodadWorld;
 import com.darkyen.paragrowth.input.GameInput;
 import com.darkyen.paragrowth.render.RenderBatch;
@@ -30,8 +30,6 @@ import static org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP;
  * @author Darkyen
  */
 public final class WanderState extends ScreenAdapter {
-
-    private final WorldCharacteristics worldCharacteristics;
 
     //2D
     private final ScreenViewport hudView;
@@ -57,7 +55,6 @@ public final class WanderState extends ScreenAdapter {
     private final long startTime = System.currentTimeMillis();
 
     public WanderState(WorldCharacteristics worldCharacteristics) {
-        this.worldCharacteristics = worldCharacteristics;
         System.out.println(worldCharacteristics);
         modelBatch = new RenderBatch();
         worldCam = new PerspectiveCamera(90f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -85,15 +82,17 @@ public final class WanderState extends ScreenAdapter {
         hudStage.addActor(hudTable);
 
         //Terrain generation
-        final WorldGenerator generator = new WorldGenerator(worldCam, worldCharacteristics);
-        terrain = generator.terrainPatchwork;
-        doodads = generator.doodadWorld;
+        final WorldSpecifics worldSpecifics = new WorldSpecifics(worldCharacteristics, 0f, 0f);
+        terrain = new TerrainPatchwork(worldSpecifics);
+        final WorldCharacteristics worldCharacteristics2 = WorldCharacteristics.random(System.currentTimeMillis() * 2);
+        worldCharacteristics2.size = worldCharacteristics.size;
+        doodads = new DoodadWorld(worldCam, worldCharacteristics.seed, worldSpecifics);
 
         cameraController = new HeightmapPersonController(worldCam, terrain);
         gameInput = new GameInput(cameraController.INPUT);
         gameInput.build();
 
-        generator.setupInitialPosition(worldCam.position);
+        worldSpecifics.setupInitialPosition(worldCam.position);
     }
 
     @Override

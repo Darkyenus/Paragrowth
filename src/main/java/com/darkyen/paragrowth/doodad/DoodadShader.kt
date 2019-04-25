@@ -2,13 +2,17 @@ package com.darkyen.paragrowth.doodad
 
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
-import com.darkyen.paragrowth.render.POS3_COL1_ATTRS
-import com.darkyen.paragrowth.render.Shader
+import com.darkyen.paragrowth.render.*
+
+val DOODAD_ATTRIBUTES = VertexAttributes(
+        VA_POSITION3,
+        VA_COLOR1
+)
 
 /**
  *
  */
-object DoodadShader : Shader(DOODADS, "doodad", POS3_COL1_ATTRS) {
+object DoodadShader : Shader(DOODADS, "doodad", DOODAD_ATTRIBUTES) {
 
     init {
         globalUniform("u_projViewTrans") { uniform, camera, _ ->

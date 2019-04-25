@@ -4,22 +4,34 @@ import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.badlogic.gdx.utils.Disposable
+import com.darkyen.paragrowth.WorldSpecifics
 import com.darkyen.paragrowth.render.*
-import com.darkyen.paragrowth.terrain.generator.TerrainProvider
 
 /**
  * A collection of terrain patches.
  */
-class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposable {
+class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
 
-    private val patchAmountX: Int = MathUtils.ceilPositive(terrainProvider.sizeX / PATCH_WIDTH)
-    private val patchAmountY: Int = MathUtils.ceilPositive(terrainProvider.sizeY / PATCH_HEIGHT)
+    private val offsetX = worldSpec.offsetX
+    private val offsetY = worldSpec.offsetY
+
+    // inclusive min
+    private val minPatchX = MathUtils.floor(worldSpec.offsetX / PATCH_WIDTH)
+    private val minPatchY = MathUtils.floor(worldSpec.offsetY / PATCH_HEIGHT)
+    // exclusive max
+    private val maxPatchX = MathUtils.ceil((worldSpec.offsetX + worldSpec.noise.sizeX) / PATCH_WIDTH)
+    private val maxPatchY = MathUtils.ceil((worldSpec.offsetY + worldSpec.noise.sizeY) / PATCH_HEIGHT)
+
+    private val patchAmountX: Int = maxPatchX - minPatchX
+    private val patchAmountY: Int = maxPatchY - minPatchY
     private val patches: Array<TerrainPatch>
     private val seaPatch: TerrainPatch
 
     private val vertexBuffer:GlBuffer
     private val indexBuffer:GlBuffer
     private val vao:GlVertexArrayObject
+
+    private var blendVao:GlVertexArrayObject? = null
 
     init {
         @Suppress("UNCHECKED_CAST")
@@ -49,12 +61,13 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
         val vertexArray = FloatArray(TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE)
 
         var i = 0
-        for (y in 0 until patchAmountY) {
-            for (x in 0 until patchAmountX) {
+        for (y in minPatchY until maxPatchY) {
+            for (x in minPatchX until maxPatchX) {
                 val xOffset = x * PATCH_WIDTH
                 val yOffset = y * PATCH_HEIGHT
                 val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
-                generateTerrainPatchVertices(xOffset, yOffset, terrainProvider, vertexArray, heightMap)
+                val colorQuery = worldSpec.queryColors()
+                generateTerrainPatchVertices(xOffset, yOffset, worldSpec::getHeight, colorQuery::getColor, worldSpec::getNormal, vertexArray, heightMap)
                 vertexBuffer.setSubData(vertexBufferFilled, vertexArray)
                 vertexBufferFilled += vertexArray.size
                 val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
@@ -64,35 +77,38 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
             }
         }
 
-
         val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
-        generateTerrainPatchVertices(0f, 0f, object : TerrainProvider {
-            override fun getSizeX(): Float = terrainProvider.sizeX
-
-            override fun getSizeY(): Float = terrainProvider.sizeY
-
-            override fun getHeight(x: Float, y: Float): Float = -1f
-
-            override fun getColor(x: Float, y: Float): Float = terrainProvider.getColor(x - PATCH_WIDTH, y - PATCH_HEIGHT)
-        }, vertexArray, heightMap)
+        generateTerrainPatchVertices(0f, 0f, { _, _ -> -1f }, { _, _ -> worldSpec.waterColor}, { _, _, _ -> }, vertexArray, heightMap)
         vertexBuffer.setSubData(vertexBufferFilled, vertexArray)
         val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
         seaPatch = TerrainPatch(0f, 0f, heightMap, model)
     }
 
+    fun blendTo(tp:TerrainPatchwork) {
+        blendVao = GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_BLEND_ATTRIBUTES,
+                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
+                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
+                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4), // normal
+
+                GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
+                GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
+                GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4) // normal
+        )
+    }
+
     private fun heightAtVertex(x: Int, y: Int): Float {
         val patchX = Math.floorDiv(x, PATCH_UNIT_SIZE)
-        if (patchX < 0 || patchX >= patchAmountX) {
+        if (patchX < minPatchX || patchX >= maxPatchX) {
             return -1f
         }
         val patchY = Math.floorDiv(y, PATCH_UNIT_SIZE)
-        if (patchY < 0 || patchY >= patchAmountY) {
+        if (patchY < minPatchY || patchY >= maxPatchY) {
             return -1f
         }
 
         val inPatchX = Math.floorMod(x, PATCH_UNIT_SIZE)
         val inPatchY = Math.floorMod(y, PATCH_UNIT_SIZE)
-        return patches[patchY * patchAmountX + patchX].heightMap[inPatchY * PATCH_SIZE + inPatchX]
+        return patches[(patchY - minPatchY) * patchAmountX + (patchX - minPatchX)].heightMap[inPatchY * PATCH_SIZE + inPatchX]
     }
 
     // For easier to debug math
@@ -179,13 +195,20 @@ class TerrainPatchwork(terrainProvider: TerrainProvider) : Renderable, Disposabl
         for (y in lowY..highY) {
             for (x in lowX..highX) {
 
-                if (x >= 0 && y >= 0 && x < patchAmountX && y < patchAmountY) {
-                    val patch = patches[patchAmountX * y + x]
+                if (x >= minPatchX && y >= minPatchY && x < maxPatchX && y < maxPatchY) {
+                    val patch = patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
                     if (frustum.boundsInFrustum(patch.boundingBox)) {
                         val model = batch.render()
                         model.set(patch.model)
                         model.shader = TERRAIN_SHADER
+                        blendVao?.let {
+                            model.vao = it
+                            model.shader = TERRAIN_BLEND_SHADER
+                        }
                         model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+
+
+                        // TODO Investigate re-enabling this after having better lod indices
                         /*if (model.order > lodDistance2) {
                             model.offset = TERRAIN_PATCH_INDEX_COUNT
                             model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
