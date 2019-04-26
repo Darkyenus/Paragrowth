@@ -16,6 +16,7 @@
 
 package com.darkyen.paragrowth.terrain.generator;
 
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.RandomXS128;
 import com.badlogic.gdx.math.Vector3;
 
@@ -68,12 +69,46 @@ public final class Noise {
         return lerp(bottomX, topX, alphaY);
     }
 
-    public void getNormal(Vector3 to, float x, float y) {
+    public void getNormalSlow(Vector3 to, float x, float y) {
         float here = getHeight(x, y);
         float up = getHeight(x + 1f, y);
         float right = getHeight(x, y + 1f);
 
         to.set(1f, 0f, up - here).crs(0f, 1f, right - here).nor();
+    }
+
+    public void getNormal(Vector3 to, float x, float y) {
+        // Using https://en.wikipedia.org/wiki/Sobel_operator
+
+        final int sizeX = this.sizeX;
+        final int sizeY = this.sizeY;
+        final int centerX = MathUtils.round(x);
+        final int centerY = MathUtils.round(y);
+
+        // We need to query 1 around, hence the imprecise range
+        if (centerX < 1 || centerX + 1 >= sizeX || centerY < 1 || centerY + 1 >= sizeY) {
+            to.set(0f, 0f, 1f);
+            return;
+        }
+
+        int i = (centerX - 1) + (centerY - 1) * sizeX;
+        final float[] values = this.values;
+        final float topLeft = values[i];
+        final float top = values[i + 1];
+        final float topRight = values[i + 2];
+        i = (centerX - 1) + (centerY) * sizeX;
+        final float left = values[i];
+        final float right = values[i + 2];
+        i = (centerX - 1) + (centerY + 1) * sizeX;
+        final float botLeft = values[i];
+        final float bot = values[i + 1];
+        final float botRight = values[i + 2];
+
+        final float scale = 0.5f;
+        to.x = (-topLeft + topRight + 2f * (-left + right) - botLeft + botRight) * scale;
+        to.y = (-topLeft + botLeft + 2f * (-top + bot) - topRight + botRight) * scale;
+        to.z = 1f;
+        to.nor();
     }
 
     public boolean findRandomPositionInHeightRange(Vector3 to, Random RNG, float min, float max) {

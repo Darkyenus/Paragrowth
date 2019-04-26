@@ -26,6 +26,8 @@ import org.lwjgl.opengl.GL32
 import com.badlogic.gdx.graphics.GL20.GL_DEPTH_TEST
 import com.badlogic.gdx.math.MathUtils
 import org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP
+import java.util.concurrent.Callable
+import java.util.concurrent.ForkJoinTask
 
 /**
  * @author Darkyen
@@ -112,10 +114,12 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         Gdx.input.isCursorCatched = true
     }
 
+    private var nextWorldSpecificsTask: ForkJoinTask<WorldSpecifics>? = null
+
     override fun render(delta: Float) {
         var nextTerrain = nextTerrain
         if (nextTerrain != null) {
-            nextTerrainAlpha += delta * 0.1f
+            nextTerrainAlpha += delta //* 0.1f
             terrain.blendProgress = nextTerrainAlpha
             if (nextTerrainAlpha > 1f) {
                 terrain.dispose()
@@ -124,12 +128,22 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 nextTerrainAlpha = 0f
             }
         } else if (cameraController.CYCLE_TERRAIN_DEBUG.isPressed) {
-            val worldSpecifics = WorldSpecifics(WorldCharacteristics.random(System.currentTimeMillis()), worldCam.position.x, worldCam.position.y, true)
-            nextTerrain = TerrainPatchwork(worldSpecifics)
-            this.nextTerrain = nextTerrain
-            terrain.blendTo(nextTerrain)
-            nextTerrainAlpha = 0f
-            terrain.blendProgress = nextTerrainAlpha
+            var nextWorldSpecificsTask = nextWorldSpecificsTask
+            if (nextWorldSpecificsTask == null) {
+                val seed = System.currentTimeMillis()
+                val centerX = worldCam.position.x
+                val centerY = worldCam.position.y
+                nextWorldSpecificsTask = ParagrowthMain.WORKER_POOL.submit(Callable { WorldSpecifics(WorldCharacteristics.random(seed), centerX, centerY, true) })
+                this.nextWorldSpecificsTask = nextWorldSpecificsTask
+            } else if (nextWorldSpecificsTask.isDone) {
+                val worldSpecifics = nextWorldSpecificsTask.get()
+                this.nextWorldSpecificsTask = null
+                nextTerrain = TerrainPatchwork(worldSpecifics)
+                this.nextTerrain = nextTerrain
+                terrain.blendTo(nextTerrain)
+                nextTerrainAlpha = 0f
+                terrain.blendProgress = nextTerrainAlpha
+            }
         }
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)

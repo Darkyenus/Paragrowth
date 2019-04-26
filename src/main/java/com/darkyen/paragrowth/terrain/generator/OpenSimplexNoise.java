@@ -42,8 +42,8 @@ public final class OpenSimplexNoise {
         final float xs = x + stretchOffset;
         final float ys = y + stretchOffset;
 
-        final int xsb = floor(xs);
-        final int ysb = floor(ys);
+        final int xsb = (int) Math.floor(xs);
+        final int ysb = (int) Math.floor(ys);
 
         final float squishOffset = (xsb + ysb) * Contribution2.SQUISH_2D;
         final float dx0 = x - (xsb + squishOffset);
@@ -62,6 +62,10 @@ public final class OpenSimplexNoise {
 
         Contribution2 c = Contribution2.lookup2D[hash];
 
+        final byte[] perm = this.perm;
+        final byte[] perm2D = this.perm2D;
+        final float[] gradients2D = Contribution2.gradients2D;
+
         float value = 0f;
         while (c != null) {
             final float dx = dx0 + c.dx;
@@ -72,7 +76,7 @@ public final class OpenSimplexNoise {
                 final int py = ysb + c.ysb;
 
                 final int i = perm2D[(perm[px & 0xFF] + py) & 0xFF] & 0xFF;
-                final float valuePart = Contribution2.gradients2D[i] * dx + Contribution2.gradients2D[i + 1] * dy;
+                final float valuePart = gradients2D[i] * dx + gradients2D[i + 1] * dy;
 
                 attn *= attn;
                 value += attn * attn * valuePart;
@@ -92,9 +96,9 @@ public final class OpenSimplexNoise {
         final float ys = y + stretchOffset;
         final float zs = z + stretchOffset;
 
-        final int xsb = floor(xs);
-        final int ysb = floor(ys);
-        final int zsb = floor(zs);
+        final int xsb = (int) Math.floor(xs);
+        final int ysb = (int) Math.floor(ys);
+        final int zsb = (int) Math.floor(zs);
 
         final float squishOffset = (xsb + ysb + zsb) * Contribution3.SQUISH_3D;
         final float dx0 = x - (xsb + squishOffset);
@@ -118,6 +122,10 @@ public final class OpenSimplexNoise {
 
         Contribution3 c = Contribution3.lookup3D[hash];
 
+        final byte[] perm = this.perm;
+        final byte[] perm3D = this.perm3D;
+        final float[] gradients3D = Contribution3.gradients3D;
+
         float value = 0;
         while (c != null) {
             final float dx = dx0 + c.dx;
@@ -130,7 +138,7 @@ public final class OpenSimplexNoise {
                 final int pz = zsb + c.zsb;
 
                 final int i = perm3D[(perm[(perm[px & 0xFF] + py) & 0xFF] + pz) & 0xFF] & 0xFF;
-                final float valuePart = Contribution3.gradients3D[i] * dx + Contribution3.gradients3D[i + 1] * dy + Contribution3.gradients3D[i + 2] * dz;
+                final float valuePart = gradients3D[i] * dx + gradients3D[i + 1] * dy + gradients3D[i + 2] * dz;
 
                 attn *= attn;
                 value += attn * attn * valuePart;
@@ -148,10 +156,10 @@ public final class OpenSimplexNoise {
         final float zs = z + stretchOffset;
         final float ws = w + stretchOffset;
 
-        final int xsb = floor(xs);
-        final int ysb = floor(ys);
-        final int zsb = floor(zs);
-        final int wsb = floor(ws);
+        final int xsb = (int) Math.floor(xs);
+        final int ysb = (int) Math.floor(ys);
+        final int zsb = (int) Math.floor(zs);
+        final int wsb = (int) Math.floor(ws);
 
         final float squishOffset = (xsb + ysb + zsb + wsb) * Contribution4.SQUISH_4D;
         final float dx0 = x - (xsb + squishOffset);
@@ -235,7 +243,6 @@ public final class OpenSimplexNoise {
                     }
                     previous = current;
                 }
-                assert current != null;
                 current.Next = new Contribution2(p2D[i + 1], p2D[i + 2], p2D[i + 3]);
             }
 
@@ -309,7 +316,6 @@ public final class OpenSimplexNoise {
                     }
                     previous = current;
                 }
-                assert current != null;
                 current.Next = new Contribution3(p3D[i + 1], p3D[i + 2], p3D[i + 3], p3D[i + 4]);
                 current.Next.Next = new Contribution3(p3D[i + 5], p3D[i + 6], p3D[i + 7], p3D[i + 8]);
             }
@@ -386,7 +392,6 @@ public final class OpenSimplexNoise {
                     }
                     previous = current;
                 }
-                assert current != null;
                 current.Next = new Contribution4(p4D[i + 1], p4D[i + 2], p4D[i + 3], p4D[i + 4], p4D[i + 5]);
                 current.Next.Next = new Contribution4(p4D[i + 6], p4D[i + 7], p4D[i + 8], p4D[i + 9], p4D[i + 10]);
                 current.Next.Next.Next = new Contribution4(p4D[i + 11], p4D[i + 12], p4D[i + 13], p4D[i + 14], p4D[i + 15]);
@@ -413,10 +418,5 @@ public final class OpenSimplexNoise {
             this.wsb = wsb;
         }
 
-    }
-
-    private static int floor(final float x) {
-        final int xi = (int) x;
-        return x < xi ? xi - 1 : xi;
     }
 }

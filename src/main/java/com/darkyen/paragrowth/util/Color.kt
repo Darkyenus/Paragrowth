@@ -8,31 +8,19 @@ import java.util.*
 
 typealias GdxColor = com.badlogic.gdx.graphics.Color
 
-/*inline class Color(val float:Float) {
-    constructor(gdx:GdxColor) : this(gdx.toFloatBits())
-}*/
-
-// Inline classes crash the build, this is a temporary workaround
 typealias Color = Float
 
-val Color.float:Float
-    get() = this
-
-fun Color(float:Float):Color = float
-fun Color(gdx:GdxColor):Color = gdx.toFloatBits()
-// End of workaround
-
 val Color.red:Float
-    get() = ((NumberUtils.floatToIntColor(float) ushr (8*0)) and 0xFF) / 0xFF.toFloat()
+    get() = ((NumberUtils.floatToIntColor(this) ushr (8*0)) and 0xFF) / 0xFF.toFloat()
 
 val Color.green:Float
-    get() = ((NumberUtils.floatToIntColor(float) ushr (8*1)) and 0xFF) / 0xFF.toFloat()
+    get() = ((NumberUtils.floatToIntColor(this) ushr (8*1)) and 0xFF) / 0xFF.toFloat()
 
 val Color.blue:Float
-    get() = ((NumberUtils.floatToIntColor(float) ushr (8*2)) and 0xFF) / 0xFF.toFloat()
+    get() = ((NumberUtils.floatToIntColor(this) ushr (8*2)) and 0xFF) / 0xFF.toFloat()
 
 val Color.alpha:Float
-    get() = ((NumberUtils.floatToIntColor(float) ushr (8*3)) and 0xFF) / 0xFF.toFloat()
+    get() = ((NumberUtils.floatToIntColor(this) ushr (8*3)) and 0xFF) / 0xFF.toFloat()
 
 val Color.hue:Float
     get() {
@@ -94,6 +82,44 @@ val Color.brightness:Float
         return maxOf(r,g, b)
     }
 
+inline fun Color.getHSB(returnHue:(Float)->Unit, returnSaturation:(Float)->Unit, returnBrightness:(Float)->Unit) {
+    val r:Float = this.red
+    val g:Float = this.green
+    val b:Float = this.blue
+
+    val cMax = maxOf(r, g, b)
+    val cMin = minOf(r, g, b)
+
+    returnBrightness(cMax)
+
+    val saturation: Float = if (cMax != 0f) {
+        (cMax - cMin) / cMax
+    } else {
+        0f
+    }
+
+    returnSaturation(saturation)
+
+    var hue: Float
+    if (saturation == 0f) {
+        hue = 0f
+    } else {
+        val redC = (cMax - r) / (cMax - cMin)
+        val greenC = (cMax - g) / (cMax - cMin)
+        val blueC = (cMax - b) / (cMax - cMin)
+        hue = when {
+            r == cMax -> blueC - greenC
+            g == cMax -> 2.0f + redC - blueC
+            else -> 4.0f + greenC - redC
+        }
+        hue /= 6.0f
+        if (hue < 0)
+            hue += 1.0f
+    }
+
+    returnHue(hue)
+}
+
 val GdxColor.hue:Float
     get() {
         val cMax = maxOf(r,g, b)
@@ -142,7 +168,7 @@ val GdxColor.brightness:Float
         return maxOf(r,g, b)
     }
 
-val White = Color(GdxColor.WHITE)
+val White = GdxColor.WHITE.toFloatBits()
 
 val HueRed = 0/6f
 val HueOrange = 1/6f
@@ -155,11 +181,11 @@ val HuePurple = 5/6f
  * Create RGB Color
  */
 fun rgb(red:Float, green:Float = red, blue:Float = green, alpha:Float = 1f):Color =
-        Color(GdxColor.toFloatBits(
+        GdxColor.toFloatBits(
                 clamp(red, 0f, 1f),
                 clamp(green, 0f, 1f),
                 clamp(blue, 0f, 1f),
-                clamp(alpha, 0f, 1f)))
+                clamp(alpha, 0f, 1f))
 
 fun hsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f): Color {
     val satu = clamp(saturation, 0f, 1f)
@@ -211,7 +237,7 @@ fun hsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f): Col
             }
         }
     }
-    return Color(GdxColor.toFloatBits(r, g, b, clamp(alpha, 0f, 1f)))
+    return GdxColor.toFloatBits(r, g, b, clamp(alpha, 0f, 1f))
 }
 
 fun GdxColor.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Float = 1f) {
@@ -272,7 +298,7 @@ fun GdxColor.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Flo
 }
 
 fun randomColor(): Color {
-    return Color(java.lang.Float.intBitsToFloat(MathUtils.random.nextInt() or -0x2000000))
+    return java.lang.Float.intBitsToFloat(MathUtils.random.nextInt() or -0x2000000)
 }
 
 fun lerpRGB(from:Color, to:Color, progress:Float) =
@@ -284,7 +310,7 @@ fun lerpRGB(from:Color, to:Color, progress:Float) =
 
 fun lerpHSB(from:Color, to:Color, progress:Float) =
         hsb(
-                MathUtils.lerpAngleDeg(from.hue * 360f, to.hue * 360f, progress) / 360f,
+                lerpHue(from.hue, to.hue, progress),
                 lerp(from.saturation, to.saturation, progress),
                 lerp(from.brightness, to.brightness, progress),
                 lerp(from.alpha, to.alpha, progress))
@@ -293,19 +319,117 @@ fun lerpHSB(from:FloatArray, progress:Float):Color {
     val fullProgress = progress * (from.size - 1)
     val firstIndex = fullProgress.toInt()
     if (firstIndex == from.lastIndex) {
-        return Color(from.last())
+        return from.last()
     }
-    return lerpHSB(Color(from[firstIndex]), Color(from[firstIndex + 1]), fullProgress % 1f)
+    return lerpHSB(from[firstIndex], from[firstIndex + 1], fullProgress % 1f)
+}
+
+/** In modulo 1 lerp in the shorter direction */
+private fun lerpHue(from: Float, to: Float, progress: Float): Float {
+    val delta = (to - from + 1.5f) % 1f - 0.5f
+    return (from + delta * progress + 1f) % 1f
+}
+
+private fun fastHsb(hue:Float, saturation:Float, brightness:Float):Color {
+    // This is the fastest variant. Modulo, roundtrip to int, etc. is all slower
+    val h = (hue - Math.floor(hue.toDouble()).toFloat()) * 6.0f
+    val f = h - Math.floor(h.toDouble()).toFloat()
+
+    val p = brightness * (1.0f - saturation)
+    val q = brightness * (1.0f - saturation * f)
+    val t = brightness * (1.0f - saturation * (1.0f - f))
+
+    val r: Float
+    val g: Float
+    val b: Float
+    when (h.toInt()) {
+        0 -> {
+            r = brightness
+            g = t
+            b = p
+        }
+        1 -> {
+            r = q
+            g = brightness
+            b = p
+        }
+        2 -> {
+            r = p
+            g = brightness
+            b = t
+        }
+        3 -> {
+            r = p
+            g = q
+            b = brightness
+        }
+        4 -> {
+            r = t
+            g = p
+            b = brightness
+        }
+        else -> {
+            r = brightness
+            g = p
+            b = q
+        }
+    }
+
+    return GdxColor.toFloatBits(r, g, b, 1f)
+}
+
+/** A very optimized combination of HSB lerp and fudge. */
+fun lerpHSBAndFudge(from:FloatArray, progress:Float, random: Random, coherence:Float, amount:Float = 1f):Color {
+    val fullProgress = progress * (from.size - 1)
+    val firstIndex = fullProgress.toInt()
+    if (firstIndex == from.lastIndex) {
+        // TODO(jp): Forgot about fudge
+        return from.last()
+    }
+
+    var fromHue = 0f
+    var fromSaturation = 0f
+    var fromBrightness = 0f
+    from[firstIndex].getHSB({fromHue = it}, {fromSaturation = it}, {fromBrightness = it})
+
+    var toHue = 0f
+    var toSaturation = 0f
+    var toBrightness = 0f
+    from[firstIndex + 1].getHSB({toHue = it}, {toSaturation = it}, {toBrightness = it})
+
+    val blend = fullProgress % 1f
+    var hue = lerpHue(fromHue, toHue, blend)
+    var saturation = lerp(fromSaturation, toSaturation, blend)
+    var brightness = lerp(fromBrightness, toBrightness, blend)
+
+    if (saturation < 0.001f) {
+        hue = random.nextFloat()
+    }
+
+    hue += random.fudgeAmount(coherence, amount * 0.2f)
+    saturation += random.fudgeAmount(coherence, amount * 0.5f)
+    brightness += random.fudgeAmount(coherence, amount * 0.5f)
+
+    saturation = clamp01(saturation)
+    brightness = clamp01(brightness)
+
+    return fastHsb(hue, saturation, brightness)
 }
 
 /** Smoothly clamp [value] to -1..1 range */
 private fun smoothClamp11(value:Float): Float {
+    //WARNING: VERY SLOW
     return Math.tanh((value*2f).toDouble()).toFloat()
 }
 
 /** Smoothly clamp [value] to 0..1 range */
 private fun smoothClamp01(value:Float):Float {
+    // WARNING: VERY SLOW
     return Math.tanh((value*4f - 2f).toDouble()).toFloat() * 0.5f + 0.5f
+}
+
+private fun clamp01(value:Float):Float {
+    return if (value <= 0f) 0f else if (value >= 1f) 1f else value
 }
 
 fun GdxColor.set(color:Color):GdxColor {
@@ -331,8 +455,8 @@ fun Color.fudge(random: Random, coherence:Float, amount:Float = 1f):Color {
     }
 
     val h = hue + random.fudgeAmount(coherence, amount * 0.2f)
-    val s = smoothClamp01(saturation + random.fudgeAmount(coherence, amount * 0.5f))
-    val b = smoothClamp01(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
+    val s = clamp01(saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    val b = clamp01(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     return hsb(h,s,b)
 }
 
@@ -344,8 +468,8 @@ fun GdxColor.fudge(random: Random, coherence:Float, amount:Float = 1f):GdxColor 
     }
 
     val h = hue + random.fudgeAmount(coherence, amount * 0.2f)
-    val s = smoothClamp01(saturation + random.fudgeAmount(coherence, amount * 0.5f))
-    val b = smoothClamp01(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
+    val s = clamp01(saturation + random.fudgeAmount(coherence, amount * 0.5f))
+    val b = clamp01(this.brightness + random.fudgeAmount(coherence, amount * 0.5f))
     this.fromHsb(h,s,b)
     return this
 }

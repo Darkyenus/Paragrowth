@@ -12,6 +12,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.darkyen.paragrowth.game.WanderState;
 import com.darkyen.paragrowth.util.AutoReloadShaderProgram;
 
+import java.util.concurrent.ForkJoinPool;
+
 /**
  * @author Darkyen
  */
@@ -22,6 +24,8 @@ public class ParagrowthMain extends Game {
     {
         INSTANCE = this;
     }
+
+    public static final ForkJoinPool WORKER_POOL = new ForkJoinPool();
 
     public static final AssetManager assetManager = new AssetManager(new LocalFileHandleResolver());
     private static Skin skin;

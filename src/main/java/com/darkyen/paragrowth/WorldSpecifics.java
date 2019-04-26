@@ -111,11 +111,19 @@ public class WorldSpecifics {
             final float height = noise.getHeight(x - offsetX, y - offsetY);
             if (height <= 0f) {
                 return waterColor;
-            } else if (height < 1f) {
-                return ColorKt.fudge(ColorKt.lerpHSB(beachColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_BEACH, y * COLOR_NOISE_SCALE_BEACH, height * COLOR_NOISE_SCALE_BEACH)), randomForColors, characteristics.coherence, 0.6f);
-            } else {
-                return ColorKt.fudge(ColorKt.lerpHSB(terrainColor, colorNoise.evaluatePositive(x * COLOR_NOISE_SCALE_TERRAIN, y * COLOR_NOISE_SCALE_TERRAIN, height * COLOR_NOISE_SCALE_TERRAIN)), randomForColors, characteristics.coherence, 0.6f);
             }
+            final float[] colorBase;
+            final float colorNoiseScale;
+            if (height < 1f) {
+                colorBase = beachColor;
+                colorNoiseScale = COLOR_NOISE_SCALE_BEACH;
+            } else {
+                colorBase = terrainColor;
+                colorNoiseScale = COLOR_NOISE_SCALE_TERRAIN;
+            }
+
+            final float alpha = colorNoise.evaluatePositive(x * colorNoiseScale, y * colorNoiseScale, height * colorNoiseScale);
+            return ColorKt.lerpHSBAndFudge(colorBase, alpha, randomForColors, characteristics.coherence, 0.6f);
         }
     }
 

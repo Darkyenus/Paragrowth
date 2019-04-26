@@ -11,6 +11,7 @@ import org.lwjgl.opengl.GL15
 import org.lwjgl.system.MemoryUtil
 import java.lang.Float
 import java.lang.Short
+import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
@@ -97,6 +98,31 @@ class GlBuffer(
             it.put(data, offset, length)
             it.flip()
         })
+    }
+
+    fun accessMapped(access:Int, operation:(ByteBuffer) -> Unit) {
+        Gdx.gl20.apply {
+            glBindBuffer(GL20.GL_ARRAY_BUFFER, handle)
+            val mapped = GL15.glMapBuffer(GL20.GL_ARRAY_BUFFER, access, currentLengthBytes.toLong(), null)
+            if (mapped == null) {
+                Gdx.app.log("GlBuffer", "Failed to map buffer, using fallback")
+                stack {
+                    val fallback = malloc(8, currentLengthBytes)
+                    if (access == GL15.GL_READ_ONLY || access == GL15.GL_READ_WRITE) {
+                        GL15.glGetBufferSubData(GL20.GL_ARRAY_BUFFER, 0, fallback)
+                    }
+                    operation(fallback)
+                    fallback.clear()
+                    glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, currentLengthBytes, buffer)
+                }
+            } else {
+                operation(mapped)
+                if (!GL15.glUnmapBuffer(GL20.GL_ARRAY_BUFFER)) {
+                    Gdx.app.log("GlBuffer", "Failed to unmap buffer, memory content may be undefined")
+                }
+            }
+            glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
+        }
     }
 
     fun getDataDebug():ByteBuffer {

@@ -12,6 +12,7 @@ import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN_OCEAN
 import com.darkyen.paragrowth.util.*
+import java.nio.FloatBuffer
 
 /*
 triangles = (size-1)^2*2
@@ -68,12 +69,22 @@ internal fun packNormal(normal:Vector3):Float {
     return Float.fromBits(xyz)
 }
 
+@Suppress("NOTHING_TO_INLINE")
+inline operator fun FloatBuffer.set(index:Int, value:Float) {
+    this.put(index, value)
+}
+
+@PublishedApi
+internal val NO_COLOR = rgb(1f, 0f, 1f)
+@PublishedApi
+internal val NO_NORMAL = packNormal(Vector3.Z)
+
 /** Generate vertices with coordinates, color and triangle normal.
  * @param outVertices size should be TERRAIN_PATCH_VERTEX_COUNT * VERTEX_SIZE
  * @param outHeightMap size should be PATCH_SIZE * PATCH_SIZE */
 inline fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float,
                                         getHeight:(x:Float, y:Float) -> Float, getColor:(x:Float, y:Float) -> Color, getNormal:(out:Vector3, x:Float, y:Float) -> Unit,
-                                        outVertices:FloatArray, outHeightMap:FloatArray) {
+                                        outVertices: FloatBuffer, outHeightMap:FloatArray) {
     val X_HALF_STEP = X_STEP * 0.5f
     val Y_HALF_STEP = Y_STEP * 0.5f
 
@@ -166,9 +177,6 @@ inline fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float,
     }
 
     // Do one more bottom row, without colors
-    val NO_COLOR = rgb(1f, 0f, 1f)
-    val NO_NORMAL = packNormal(normal.set(0f, 0f, 1f))
-
     var xPos = xOffset
     var height = getHeight(xPos, yPos)
     outHeightMap[h++] = height
