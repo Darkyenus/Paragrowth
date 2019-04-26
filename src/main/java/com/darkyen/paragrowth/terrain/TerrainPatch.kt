@@ -11,7 +11,8 @@ import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN_OCEAN
-import com.darkyen.paragrowth.util.*
+import com.darkyen.paragrowth.util.Color
+import com.darkyen.paragrowth.util.rgb
 import java.nio.FloatBuffer
 
 /*
@@ -178,6 +179,7 @@ inline fun generateTerrainPatchVertices(xOffset:Float, yOffset:Float,
 
     // Do one more bottom row, without colors
     var xPos = xOffset
+    yPos = yOffset + PATCH_HEIGHT // By now, a lot of error has accumulated, so a better reset is needed to get rid of a seam
     var height = getHeight(xPos, yPos)
     outHeightMap[h++] = height
     for (x in 0 until PATCH_UNIT_SIZE) {

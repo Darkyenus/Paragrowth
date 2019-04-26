@@ -11,7 +11,6 @@ import org.lwjgl.opengl.GL15
 import org.lwjgl.system.MemoryUtil
 import java.lang.Float
 import java.lang.Short
-import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
@@ -98,6 +97,60 @@ class GlBuffer(
             it.put(data, offset, length)
             it.flip()
         })
+    }
+
+    private var mappedAccessIsFake:Boolean = false
+    private var mappedAccessBuffer:ByteBuffer? = null
+
+    fun beginMappedAccess(access:Int):ByteBuffer {
+        if (mappedAccessBuffer != null) {
+            throw IllegalStateException("Mapped access on $this is already in progress")
+        }
+        return Gdx.gl20.run {
+            glBindBuffer(GL20.GL_ARRAY_BUFFER, handle)
+            val mapped = GL15.glMapBuffer(GL20.GL_ARRAY_BUFFER, access, currentLengthBytes.toLong(), null)
+            val buffer = if (mapped == null) {
+                Gdx.app.log("GlBuffer", "Failed to map buffer, using fallback")
+                val fallback = MemoryUtil.memAlignedAlloc(8, currentLengthBytes)
+                        ?: throw IllegalStateException("Mapped access failed, can't allocate enough space")
+                if (access == GL15.GL_READ_ONLY || access == GL15.GL_READ_WRITE) {
+                    GL15.glGetBufferSubData(GL20.GL_ARRAY_BUFFER, 0, fallback)
+                }
+                mappedAccessIsFake = true
+                fallback
+            } else {
+                mappedAccessIsFake = false
+                mapped
+            }
+
+            glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
+            mappedAccessBuffer = buffer
+            buffer
+        }
+    }
+
+    fun endMappedAccess():Boolean {
+        val mappedAccessBuffer = mappedAccessBuffer
+                ?: throw IllegalStateException("Mapped access on $this is not in progress")
+        this.mappedAccessBuffer = null
+
+        return Gdx.gl20.run {
+            glBindBuffer(GL20.GL_ARRAY_BUFFER, handle)
+
+            var success = true
+            if (mappedAccessIsFake) {
+                mappedAccessBuffer.clear()
+                glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, currentLengthBytes, buffer)
+            } else {
+                if (!GL15.glUnmapBuffer(GL20.GL_ARRAY_BUFFER)) {
+                    Gdx.app.log("GlBuffer", "Failed to unmap buffer, memory content may be undefined")
+                    success = false
+                }
+            }
+
+            glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
+            success
+        }
     }
 
     fun accessMapped(access:Int, operation:(ByteBuffer) -> Unit) {

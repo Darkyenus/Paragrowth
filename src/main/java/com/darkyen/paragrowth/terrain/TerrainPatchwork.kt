@@ -9,13 +9,15 @@ import com.badlogic.gdx.utils.Disposable
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.WorldSpecifics
 import com.darkyen.paragrowth.render.*
+import com.darkyen.paragrowth.util.Delayed
+import com.darkyen.paragrowth.util.arrayOfSize
 import org.lwjgl.opengl.GL15.GL_WRITE_ONLY
 import java.util.concurrent.ForkJoinTask
 
 /**
  * A collection of terrain patches.
  */
-class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
+class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Renderable, Disposable {
 
     // inclusive min
     private val minPatchX = MathUtils.floor(worldSpec.offsetX / PATCH_WIDTH)
@@ -26,94 +28,93 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
 
     private val patchAmountX: Int = maxPatchX - minPatchX
     private val patchAmountY: Int = maxPatchY - minPatchY
-    private val patches: Array<TerrainPatch>
-    private val seaPatch: TerrainPatch
 
-    private val vertexBuffer:GlBuffer
-    private val vao:GlVertexArrayObject
+    private val patches: Array<TerrainPatch> = arrayOfSize(patchAmountX * patchAmountY + 1 /* ocean */)
+
+    private val vertexBuffer:GlBuffer = GlBuffer(GL20.GL_STATIC_DRAW).apply {
+        reserve((patchAmountX * patchAmountY + 1 /* ocean */) * TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE, GL30.GL_FLOAT)
+    }
+    private val vao:GlVertexArrayObject = GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_ATTRIBUTES,
+            GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
+            GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
+            GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4) // normal
+    )
+
+    private var patchTasks:Array<ForkJoinTask<*>>? = beginInitialization()
+
+    private fun beginInitialization():Array<ForkJoinTask<*>> {
+        val tasks = arrayOfSize<ForkJoinTask<*>>(patches.size)
+
+        val vertexBufferMemory = vertexBuffer.beginMappedAccess(GL_WRITE_ONLY)
+
+        var patchI = 0
+        var baseVertex = 0
+        val patchSizeBytes = TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE * java.lang.Float.BYTES
+
+        for (y in minPatchY until maxPatchY) {
+            for (x in minPatchX until maxPatchX) {
+                val vertexArray = vertexBufferMemory.asFloatBuffer()
+                vertexBufferMemory.position(vertexBufferMemory.position() + patchSizeBytes)
+
+                val patchIndex = patchI++
+                val patchBaseVertex = baseVertex
+                baseVertex += TERRAIN_PATCH_VERTEX_COUNT
+
+                tasks[patchIndex] = ParagrowthMain.WORKER_POOL.submit {
+                    val xOffset = x * PATCH_WIDTH
+                    val yOffset = y * PATCH_HEIGHT
+                    val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
+                    val colorQuery = worldSpec.queryColors()
+                    generateTerrainPatchVertices(xOffset, yOffset, worldSpec::getHeight, colorQuery::getColor, worldSpec::getNormal, vertexArray, heightMap)
+                    val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, patchBaseVertex)
+
+                    patches[patchIndex] = TerrainPatch(xOffset, yOffset, heightMap, model)
+                }
+            }
+        }
+
+        tasks[patchI] = ParagrowthMain.WORKER_POOL.submit {
+            val vertexArray = vertexBufferMemory.asFloatBuffer()
+            val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
+            generateTerrainPatchVertices(0f, 0f, { _, _ -> -1f }, { _, _ -> worldSpec.waterColor }, { _, _, _ -> }, vertexArray, heightMap)
+            val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
+            patches[patchI] = TerrainPatch(0f, 0f, heightMap, model)
+        }
+
+        return tasks
+    }
+
+    private fun tryCompleteInitialization():Boolean {
+        val patchTasks = patchTasks ?: return true
+        if (patchTasks.all { it.isDone }) {
+            this.patchTasks = null
+            patchTasks.forEach { it.join() }
+            if (!vertexBuffer.endMappedAccess()) {
+                this.patchTasks = beginInitialization()
+                return false
+            }
+            return true
+        }
+        return false
+    }
+
+    private fun completeInitialization() {
+        var patchTasks = patchTasks ?: return
+        this.patchTasks = null
+
+        while (true) {
+            patchTasks.forEach { it.join() }
+            if (vertexBuffer.endMappedAccess()) {
+                break
+            }
+            patchTasks = beginInitialization()
+        }
+    }
 
     private var blendingTo:TerrainPatchwork? = null
     private var blendVao:Array<GlVertexArrayObject>? = null
     private var blendVaoMinY = 0
     var blendProgress:Float = 0f
-
-    private object Indices {
-        val indexBuffer:GlBuffer
-
-        init {
-            val indexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
-            val normalIndices = generateTerrainPatchIndices()
-            val lod1Indices = generateTerrainPatchIndicesLoD1()
-            indexBuffer.reserve(normalIndices.size + lod1Indices.size, GL20.GL_UNSIGNED_SHORT)
-            indexBuffer.setSubData(0, normalIndices)
-            indexBuffer.setSubData(normalIndices.size, lod1Indices)
-            this.indexBuffer = indexBuffer
-        }
-    }
-
-    init {
-        val startTime = System.currentTimeMillis()
-
-        @Suppress("UNCHECKED_CAST")
-        this.patches = arrayOfNulls<TerrainPatch>(patchAmountX * patchAmountY) as Array<TerrainPatch>
-
-        val vertexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
-        vertexBuffer.reserve((patchAmountX * patchAmountY + 1 /* ocean */) * TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE, GL30.GL_FLOAT)
-        this.vertexBuffer = vertexBuffer
-        var baseVertex = 0
-
-        val vao = GlVertexArrayObject(Indices.indexBuffer, TERRAIN_PATCH_ATTRIBUTES,
-                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
-                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
-                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4) // normal
-        )
-        this.vao = vao
-
-        lateinit var seaPatch:TerrainPatch
-
-        vertexBuffer.accessMapped(GL_WRITE_ONLY) { vertexBufferMemory ->
-            @Suppress("UNCHECKED_CAST")
-            val tasks = arrayOfNulls<ForkJoinTask<*>>(patches.size) as Array<ForkJoinTask<*>>
-
-            val patchSizeBytes = TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE * java.lang.Float.BYTES
-            var i = 0
-            for (y in minPatchY until maxPatchY) {
-                for (x in minPatchX until maxPatchX) {
-                    val vertexArray = vertexBufferMemory.asFloatBuffer()
-                    vertexBufferMemory.position(vertexBufferMemory.position() + patchSizeBytes)
-
-                    val patchIndex = i++
-                    val patchBaseVertex = baseVertex
-                    baseVertex += TERRAIN_PATCH_VERTEX_COUNT
-
-                    tasks[patchIndex] = ParagrowthMain.WORKER_POOL.submit {
-                        val xOffset = x * PATCH_WIDTH
-                        val yOffset = y * PATCH_HEIGHT
-                        val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
-                        val colorQuery = worldSpec.queryColors()
-                        generateTerrainPatchVertices(xOffset, yOffset, worldSpec::getHeight, colorQuery::getColor, worldSpec::getNormal, vertexArray, heightMap)
-                        val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, patchBaseVertex)
-
-                        patches[patchIndex] = TerrainPatch(xOffset, yOffset, heightMap, model)
-                    }
-                }
-            }
-
-            val vertexArray = vertexBufferMemory.asFloatBuffer()
-            val heightMap = FloatArray(PATCH_SIZE * PATCH_SIZE)
-            generateTerrainPatchVertices(0f, 0f, { _, _ -> -1f }, { _, _ -> worldSpec.waterColor }, { _, _, _ -> }, vertexArray, heightMap)
-            val model = Model(vao, TERRAIN_PATCH_INDEX_COUNT, 0, baseVertex)
-            seaPatch = TerrainPatch(0f, 0f, heightMap, model)
-
-            for (task in tasks) {
-                task.join()
-            }
-        }
-
-        this.seaPatch = seaPatch
-
-        println("TerrainPatchwork generation took ${System.currentTimeMillis() - startTime}ms")
-    }
 
     fun blendTo(tp:TerrainPatchwork) {
         blendingTo = tp
@@ -130,7 +131,7 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
             val positionInThat = (rowY - tp.minPatchY) * tp.patchAmountX + (rowX - tp.minPatchX)
             val off = TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE * (positionInThat - positionInThis)
 
-            GlVertexArrayObject(Indices.indexBuffer, TERRAIN_PATCH_BLEND_ATTRIBUTES,
+            GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_BLEND_ATTRIBUTES,
                     GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
                     GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
                     GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4), // normal
@@ -245,6 +246,8 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
         val lowY = Math.floor(((bounds.min.y - Y_STEP) / PATCH_HEIGHT).toDouble()).toInt()
         val highY = Math.ceil(((bounds.max.y + Y_STEP) / PATCH_HEIGHT).toDouble()).toInt()
 
+        val patches = patches
+
         for (y in lowY..highY) {
             for (x in lowX..highX) {
                 /*
@@ -265,7 +268,7 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
 
                 // w
                 if ((!baseLand && blendToLand == null) || (!baseLand && blendToLand == false)) {
-                    val patch = seaPatch
+                    val patch = patches[patches.size - 1]// seaPatch
                     val xOff = x * PATCH_WIDTH
                     val yOff = y * PATCH_HEIGHT
 
@@ -285,54 +288,56 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
                             model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
                         }
                     }
-                } else if /* l */ ((baseLand && blendToLand == null /* Land */)
-                        || (!baseLand && blendToLand == true /* Water -> Land */)
-                        || (baseLand && blendToLand == false /* Land -> Water */)) {
+                } else {
+                    if /* l */ ((baseLand && blendToLand == null /* Land */)
+                            || (!baseLand && blendToLand == true /* Water -> Land */)
+                            || (baseLand && blendToLand == false /* Land -> Water */)) {
 
-                    val patch = if (blendToLand != true)
-                        patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
-                    else {
-                        val b = blendingTo!!
-                        b.patches[b.patchAmountX * (y - b.minPatchY) + (x - b.minPatchX)]
-                    }
-
-
-                    if (frustum.boundsInFrustum(patch.boundingBox)) {
-                        val model = batch.render()
-                        model.set(patch.model)
-                        if (blendToLand != null) {
-                            model.shader = if (blendToLand) TERRAIN_SHADER_W_L else TERRAIN_SHADER_L_W
-                        } else {
-                            model.shader = TERRAIN_SHADER_L_W
+                        val patch = if (blendToLand != true)
+                            patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
+                        else {
+                            val b = blendingTo!!
+                            b.patches[b.patchAmountX * (y - b.minPatchY) + (x - b.minPatchX)]
                         }
-                        model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
 
 
-                        // TODO Investigate re-enabling this after having better lod indices
-                        /*if (model.order > lodDistance2) {
-                            model.offset = TERRAIN_PATCH_INDEX_COUNT
-                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
-                        }*/
-                    }
-                } else /* Land -> Land */ {
-                    assert(baseLand && blendToLand == true)
-
-                    val patch = patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
-                    val blendingTo = blendingTo!!.run{ patches[patchAmountX * (y - minPatchY) + (x - minPatchX)] }
-
-                    if (frustum.boundsInFrustum(patch.boundingBox) || frustum.boundsInFrustum(blendingTo.boundingBox)) {
-                        val model = batch.render()
-                        model.set(patch.model)
-                        model.vao = blendVao!![y - blendVaoMinY]
-                        model.shader = TERRAIN_SHADER_L_L
-                        model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+                        if (frustum.boundsInFrustum(patch.boundingBox)) {
+                            val model = batch.render()
+                            model.set(patch.model)
+                            if (blendToLand != null) {
+                                model.shader = if (blendToLand) TERRAIN_SHADER_W_L else TERRAIN_SHADER_L_W
+                            } else {
+                                model.shader = TERRAIN_SHADER_L_W
+                            }
+                            model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
 
 
-                        // TODO Investigate re-enabling this after having better lod indices
-                        /*if (model.order > lodDistance2) {
-                            model.offset = TERRAIN_PATCH_INDEX_COUNT
-                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
-                        }*/
+                            // TODO Investigate re-enabling this after having better lod indices
+                            /*if (model.order > lodDistance2) {
+                                model.offset = TERRAIN_PATCH_INDEX_COUNT
+                                model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+                            }*/
+                        }
+                    } else /* Land -> Land */ {
+                        assert(baseLand && blendToLand == true)
+
+                        val patch = patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
+                        val blendingTo = blendingTo!!.run{ this.patches[patchAmountX * (y - minPatchY) + (x - minPatchX)] }
+
+                        if (frustum.boundsInFrustum(patch.boundingBox) || frustum.boundsInFrustum(blendingTo.boundingBox)) {
+                            val model = batch.render()
+                            model.set(patch.model)
+                            model.vao = blendVao!![y - blendVaoMinY]
+                            model.shader = TERRAIN_SHADER_L_L
+                            model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+
+
+                            // TODO Investigate re-enabling this after having better lod indices
+                            /*if (model.order > lodDistance2) {
+                                model.offset = TERRAIN_PATCH_INDEX_COUNT
+                                model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+                            }*/
+                        }
                     }
                 }
             }
@@ -342,5 +347,38 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
     override fun dispose() {
         vertexBuffer.dispose()
         vao.dispose()
+    }
+
+    companion object {
+        private val indexBuffer:GlBuffer
+
+        init {
+            val indexBuffer = GlBuffer(GL20.GL_STATIC_DRAW)
+            val normalIndices = generateTerrainPatchIndices()
+            val lod1Indices = generateTerrainPatchIndicesLoD1()
+            indexBuffer.reserve(normalIndices.size + lod1Indices.size, GL20.GL_UNSIGNED_SHORT)
+            indexBuffer.setSubData(0, normalIndices)
+            indexBuffer.setSubData(normalIndices.size, lod1Indices)
+            this.indexBuffer = indexBuffer
+        }
+
+        fun build(spec:WorldSpecifics): Delayed<TerrainPatchwork> {
+            val patchwork = TerrainPatchwork(spec)
+            return object : Delayed<TerrainPatchwork> {
+                override fun get(): TerrainPatchwork? {
+                    return if (patchwork.tryCompleteInitialization()) {
+                        patchwork
+                    } else {
+                        null
+                    }
+                }
+            }
+        }
+
+        fun buildNow(spec:WorldSpecifics):TerrainPatchwork {
+            val patchwork = TerrainPatchwork(spec)
+            patchwork.completeInitialization()
+            return patchwork
+        }
     }
 }

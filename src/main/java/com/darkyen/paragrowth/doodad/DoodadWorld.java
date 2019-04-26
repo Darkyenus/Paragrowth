@@ -39,10 +39,10 @@ public class DoodadWorld implements Renderable, Disposable {
 
     public DoodadWorld(Camera camera, long seed, WorldSpecifics world) {
         this.camera = camera;
-        final int minPatchX = MathUtils.floor(world.offsetX / PATCH_SIZE);
-        final int minPatchY = MathUtils.floor(world.offsetY / PATCH_SIZE);
-        final int maxPatchX = MathUtils.ceil((world.offsetX + world.sizeX()) / PATCH_SIZE);
-        final int maxPatchY = MathUtils.ceil((world.offsetY + world.sizeY()) / PATCH_SIZE);
+        final int minPatchX = MathUtils.floor(world.getOffsetX() / PATCH_SIZE);
+        final int minPatchY = MathUtils.floor(world.getOffsetY() / PATCH_SIZE);
+        final int maxPatchX = MathUtils.ceil((world.getOffsetX() + world.sizeX()) / PATCH_SIZE);
+        final int maxPatchY = MathUtils.ceil((world.getOffsetY() + world.sizeY()) / PATCH_SIZE);
 
         this.patches = new DoodadPatch[(maxPatchX - minPatchX) * (maxPatchY - minPatchY)];
         //noinspection unchecked
@@ -50,13 +50,14 @@ public class DoodadWorld implements Renderable, Disposable {
 
         final RandomXS128 random = new RandomXS128(seed);
 
-        final Array<Doodad> doodadSet = Doodads.createDoodadSet(random, world.characteristics);
+        final Array<Doodad> doodadSet = Doodads.createDoodadSet(random, world.getCharacteristics());
         Array<DoodadInstance> patchInstances = new Array<>(DoodadInstance.class);
         int totalDoodads = 0;
         int i = 0;
         for (int x = minPatchX; x < maxPatchX; x++) {
             for (int y = minPatchY; y < maxPatchX; y++) {
-                final DoodadPatch patch = buildPatch(random, world, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, world.characteristics);
+                final DoodadPatch patch = buildPatch(random, world, x * PATCH_SIZE, y * PATCH_SIZE, doodadSet, patchInstances, world
+                        .getCharacteristics());
                 if (patch == null)
                     continue;
 
@@ -86,7 +87,8 @@ public class DoodadWorld implements Renderable, Disposable {
                 continue;
             }
 
-            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z, world.characteristics);
+            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z, world
+                    .getCharacteristics());
             instances.add(instance);
             instance.build(builder, random, characteristics);
         }

@@ -10,3 +10,6 @@ typealias GdxShortArray = com.badlogic.gdx.utils.ShortArray
 typealias GdxFloatArray = com.badlogic.gdx.utils.FloatArray
 typealias GdxIntArray = com.badlogic.gdx.utils.IntArray
 typealias GdxLongArray = com.badlogic.gdx.utils.LongArray
+
+@Suppress("UNCHECKED_CAST")
+inline fun <reified T> arrayOfSize(size: Int): Array<T> = arrayOfNulls<T>(size) as Array<T>

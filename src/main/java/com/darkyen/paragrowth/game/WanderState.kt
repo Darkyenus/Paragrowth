@@ -90,7 +90,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         //Terrain generation
         val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f, false)
-        terrain = TerrainPatchwork(worldSpecifics)
+        terrain = TerrainPatchwork.buildNow(worldSpecifics)
         doodads = DoodadWorld(worldCam, worldCharacteristics.seed, worldSpecifics)
 
         cameraController = HeightmapPersonController(worldCam) { x, y ->
@@ -114,7 +114,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         Gdx.input.isCursorCatched = true
     }
 
-    private var nextWorldSpecificsTask: ForkJoinTask<WorldSpecifics>? = null
+    private var nextTerrainPatchwork:Delayed<TerrainPatchwork>? = null
 
     override fun render(delta: Float) {
         var nextTerrain = nextTerrain
@@ -128,17 +128,20 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 nextTerrainAlpha = 0f
             }
         } else if (cameraController.CYCLE_TERRAIN_DEBUG.isPressed) {
-            var nextWorldSpecificsTask = nextWorldSpecificsTask
-            if (nextWorldSpecificsTask == null) {
+            var nextTerrainPatchwork = nextTerrainPatchwork
+            if (nextTerrainPatchwork == null) {
                 val seed = System.currentTimeMillis()
                 val centerX = worldCam.position.x
                 val centerY = worldCam.position.y
-                nextWorldSpecificsTask = ParagrowthMain.WORKER_POOL.submit(Callable { WorldSpecifics(WorldCharacteristics.random(seed), centerX, centerY, true) })
-                this.nextWorldSpecificsTask = nextWorldSpecificsTask
-            } else if (nextWorldSpecificsTask.isDone) {
-                val worldSpecifics = nextWorldSpecificsTask.get()
-                this.nextWorldSpecificsTask = null
-                nextTerrain = TerrainPatchwork(worldSpecifics)
+                nextTerrainPatchwork = offload {
+                    WorldSpecifics(WorldCharacteristics.random(seed), centerX, centerY, true)
+                }.then { TerrainPatchwork.build(it) }
+                this.nextTerrainPatchwork = nextTerrainPatchwork
+            }
+
+            nextTerrain = nextTerrainPatchwork.get()
+            if (nextTerrain != null) {
+                this.nextTerrainPatchwork = null
                 this.nextTerrain = nextTerrain
                 terrain.blendTo(nextTerrain)
                 nextTerrainAlpha = 0f
