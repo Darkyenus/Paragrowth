@@ -4,9 +4,11 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.GL20.GL_DEPTH_TEST
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Table
@@ -18,16 +20,14 @@ import com.darkyen.paragrowth.doodad.DoodadWorld
 import com.darkyen.paragrowth.input.GameInput
 import com.darkyen.paragrowth.render.RenderBatch
 import com.darkyen.paragrowth.skybox.Skybox
-import com.darkyen.paragrowth.terrain.*
+import com.darkyen.paragrowth.terrain.TERRAIN_TIME_ATTRIBUTE
 import com.darkyen.paragrowth.terrain.TerrainPatchwork
-import com.darkyen.paragrowth.util.*
+import com.darkyen.paragrowth.util.DebugShader
+import com.darkyen.paragrowth.util.Delayed
+import com.darkyen.paragrowth.util.offload
+import com.darkyen.paragrowth.util.then
 import org.lwjgl.opengl.GL32
-
-import com.badlogic.gdx.graphics.GL20.GL_DEPTH_TEST
-import com.badlogic.gdx.math.MathUtils
 import org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP
-import java.util.concurrent.Callable
-import java.util.concurrent.ForkJoinTask
 
 /**
  * @author Darkyen
@@ -90,8 +90,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         //Terrain generation
         val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f, false)
-        terrain = TerrainPatchwork.buildNow(worldSpecifics)
-        doodads = DoodadWorld(worldCam, worldCharacteristics.seed, worldSpecifics)
+        terrain = TerrainPatchwork.build(worldSpecifics).get()
+        doodads = DoodadWorld.build(worldCharacteristics.seed, worldSpecifics).get()
 
         cameraController = HeightmapPersonController(worldCam) { x, y ->
             val base = terrain.heightAt(x, y)
@@ -139,7 +139,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 this.nextTerrainPatchwork = nextTerrainPatchwork
             }
 
-            nextTerrain = nextTerrainPatchwork.get()
+            nextTerrain = nextTerrainPatchwork.poll()
             if (nextTerrain != null) {
                 this.nextTerrainPatchwork = null
                 this.nextTerrain = nextTerrain
@@ -174,7 +174,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
             Gdx.gl.glDisable(GL_DEPTH_TEST)
             debugRenderer.begin(worldCam.combined, GL20.GL_LINES)
 
-            doodads.renderDebug(debugRenderer)
+            doodads.renderDebug(worldCam, debugRenderer)
 
             debugRenderer.end()
             Gdx.gl.glEnable(GL_DEPTH_TEST)

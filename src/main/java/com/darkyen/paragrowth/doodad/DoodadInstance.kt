@@ -22,6 +22,10 @@ internal class DoodadInstance(val template: Doodad, rootWidth: Float, sides: Int
     val position = Vector3()
     var root: TrunkInstance? = null
 
+    var blendVerticesFrom:Short = -1
+    var blendVerticesTo:Short = -1
+    var blendVerticesHeight:Float = 0f
+
     init {
         this.rootWidth = Math.max(rootWidth, 0.1f)
         this.sides = Math.max(sides, 2)
@@ -59,7 +63,7 @@ internal class DoodadInstance(val template: Doodad, rootWidth: Float, sides: Int
             // ringsPost * end rings
             // 1 - end cap
 
-            val pos = HullLeafInstance.build_pos
+            val pos = Vector3()
             val stepPercentPre = widest / (ringsPre + 1)
             val stepPercentPost = (1f - widest) / (ringsPost + 1)
 
@@ -97,11 +101,6 @@ internal class DoodadInstance(val template: Doodad, rootWidth: Float, sides: Int
 
             val endCap = createCap(builder, end, trunk.direction, 0f, random, color, characteristics.coherence)
             joinRingCap(builder, ring, endCap, sides)
-        }
-
-        companion object {
-
-            private val build_pos = Vector3()
         }
     }
 
@@ -147,15 +146,12 @@ internal class DoodadInstance(val template: Doodad, rootWidth: Float, sides: Int
             return vertex(xyz.x, xyz.y, xyz.z, color)
         }
 
-        private val createRing_rot = Matrix3()
-        private val tmpVec = Vector3()
-
         private fun createRing(builder: ModelBuilder, sides: Int, position: Vector3, normal: Vector3, radius: Float, random: Random, color: Float, coherence: Float): Short {
             val tangent = VectorUtils.generateTangent(normal).scl(radius)
-            val rot = createRing_rot.setToRotation(normal, 360f / sides)
+            val rot = Matrix3().setToRotation(normal, 360f / sides)
 
             var vColor = color.fudge(random, coherence, 0.3f)
-            val vPos = tmpVec.set(position).add(tangent)
+            val vPos = Vector3().set(position).add(tangent)
             val resultIndex = builder.vertex(vPos, vColor)
 
             for (i in 1 until sides) {
@@ -171,7 +167,7 @@ internal class DoodadInstance(val template: Doodad, rootWidth: Float, sides: Int
         }
 
         private fun createCap(builder: ModelBuilder, position: Vector3, normal: Vector3, radius: Float, random: Random, color: Float, coherence: Float): Short {
-            return builder.vertex(tmpVec.set(position).mulAdd(normal, radius), color.fudge(random, coherence, 0.3f))
+            return builder.vertex(Vector3().set(position).mulAdd(normal, radius), color.fudge(random, coherence, 0.3f))
         }
 
         private fun joinRings(builder: ModelBuilder, first: Short, second: Short, sides: Int) {

@@ -365,7 +365,13 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
         fun build(spec:WorldSpecifics): Delayed<TerrainPatchwork> {
             val patchwork = TerrainPatchwork(spec)
             return object : Delayed<TerrainPatchwork> {
-                override fun get(): TerrainPatchwork? {
+
+                override fun get(): TerrainPatchwork {
+                    patchwork.completeInitialization()
+                    return patchwork
+                }
+
+                override fun poll(): TerrainPatchwork? {
                     return if (patchwork.tryCompleteInitialization()) {
                         patchwork
                     } else {
@@ -373,12 +379,6 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
                     }
                 }
             }
-        }
-
-        fun buildNow(spec:WorldSpecifics):TerrainPatchwork {
-            val patchwork = TerrainPatchwork(spec)
-            patchwork.completeInitialization()
-            return patchwork
         }
     }
 }

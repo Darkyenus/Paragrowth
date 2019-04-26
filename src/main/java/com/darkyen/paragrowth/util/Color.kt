@@ -1,6 +1,5 @@
 package com.darkyen.paragrowth.util
 
-import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.MathUtils.clamp
 import com.badlogic.gdx.math.MathUtils.lerp
 import com.badlogic.gdx.utils.NumberUtils
@@ -297,8 +296,8 @@ fun GdxColor.fromHsb(hue: Float, saturation: Float, brightness: Float, alpha:Flo
     this.a = clamp(alpha, 0f, 1f)
 }
 
-fun randomColor(): Color {
-    return java.lang.Float.intBitsToFloat(MathUtils.random.nextInt() or -0x2000000)
+fun Random.randomColor(): Color {
+    return java.lang.Float.intBitsToFloat(nextInt() or -0x2000000)
 }
 
 fun lerpRGB(from:Color, to:Color, progress:Float) =

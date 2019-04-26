@@ -1,12 +1,16 @@
 package com.darkyen.paragrowth.doodad
 
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.GL30
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.darkyen.paragrowth.render.*
+
+val VA_BLEND_OFFSET = VertexAttribute("a_blend_offset", GL30.GL_FLOAT, 1)
 
 val DOODAD_ATTRIBUTES = VertexAttributes(
         VA_POSITION3,
         VA_COLOR1
+        //, VA_BLEND_OFFSET
 )
 
 /**

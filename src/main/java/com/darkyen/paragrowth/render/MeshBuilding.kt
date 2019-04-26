@@ -3,12 +3,12 @@ package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Mesh
+import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
+import com.badlogic.gdx.math.collision.BoundingBox
+import com.darkyen.paragrowth.util.GdxFloatArray
+import com.darkyen.paragrowth.util.GdxShortArray
 import com.badlogic.gdx.graphics.VertexAttribute as GdxVertexAttribute
 import com.badlogic.gdx.graphics.VertexAttributes as GdxVertexAttributes
-import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
-import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.math.collision.BoundingBox
-import com.darkyen.paragrowth.util.*
 
 /**
  * Shared Mesh Builder instance.
@@ -31,19 +31,12 @@ inline fun buildMesh(attributes:GdxVertexAttributes, build:MeshBuilder.() -> Uni
     return builder.end()
 }
 
-
-private val tmpVec3 = Vector3()
-private val tmpGdxCol = GdxColor()
-
-fun MeshBuilder.vertex(x:Float, y:Float, z:Float, color: Color):Short {
-    return vertex(tmpVec3.set(x, y, z), null, tmpGdxCol.set(color.red, color.green, color.blue, color.alpha), null)
-}
-
 class ModelBuilder(val vertexFloats:Int) {
 
     val indices = GdxShortArray()
     val vertices = GdxFloatArray()
-    private var nextIndex:Short = 0
+    var nextIndex:Short = 0
+        private set
 
     fun vertex(vararg v:Float):Short {
         assert(v.size == vertexFloats)
@@ -81,5 +74,18 @@ class ModelBuilder(val vertexFloats:Int) {
 
             out.ext(x, y, z)
         }
+    }
+
+    fun computeMax(offset:Int, stride:Int, count:Int):Float {
+        var max = Float.NEGATIVE_INFINITY
+
+        val vertices = vertices.items
+        var i = offset
+        for (y in 0 until count) {
+            max = maxOf(max, vertices[i])
+            i += stride
+        }
+
+        return max
     }
 }
