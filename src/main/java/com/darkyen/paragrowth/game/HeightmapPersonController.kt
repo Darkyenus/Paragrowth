@@ -12,6 +12,7 @@ import com.darkyen.paragrowth.input.GameInput.Binding.bindMouseButton
 
 /**
  */
+@Suppress("PrivatePropertyName", "PropertyName")
 class HeightmapPersonController(private val camera: Camera, private val heightmap: (x:Float, y:Float) -> Float) {
 
     private val FORWARD = GameInput.function("Forward", bindKeyboard(Keys.W), bindKeyboard(Keys.UP))
@@ -25,13 +26,13 @@ class HeightmapPersonController(private val camera: Camera, private val heightma
                 Gdx.input.isCursorCatched = !pressed
                 true
             }
-    val GENERAL_DEBUG = GameInput.toggleFunction("General Debug", bindKeyboard(Input.Keys.F3))
-    private val MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", bindKeyboard(Input.Keys.F4))
-    val PATCHWORK_DEBUG = GameInput.toggleFunction("Patchwork Debug", bindKeyboard(Input.Keys.F5))
-    val CYCLE_TERRAIN_DEBUG = GameInput.toggleFunction("Cycle Terrains", bindKeyboard(Input.Keys.F6))
+    val GENERAL_DEBUG = GameInput.toggleFunction("General Debug", bindKeyboard(Keys.F3))!!
+    private val MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", bindKeyboard(Keys.F4))
+    val PATCHWORK_DEBUG = GameInput.toggleFunction("Patchwork Debug", bindKeyboard(Keys.F5))!!
+    val CYCLE_TERRAIN_DEBUG = GameInput.toggleFunction("Cycle Terrains", bindKeyboard(Keys.F6))!!
 
     private val TO_WRITE_MODE = GameInput.function("To Write Mode", bindKeyboard(Keys.ESCAPE))
-            .listen { times, pressed ->
+            .listen { _, pressed ->
                 if (pressed) {
                     val oldScreen = ParagrowthMain.INSTANCE.screen
                     ParagrowthMain.INSTANCE.screen = WriteState()
@@ -49,9 +50,9 @@ class HeightmapPersonController(private val camera: Camera, private val heightma
             TO_WRITE_MODE)
 
     /** Velocity in units per second for moving forward, backward and strafing left/right.  */
-    val velocity = 4.5f
+    private val velocity = 4.5f
     /** Sets how many degrees to rotate per pixel the mouse moved.  */
-    val degreesPerPixel = 0.5f
+    private val degreesPerPixel = 0.5f
     /** Height of camera when standing  */
     val height = 1.75f
 
@@ -94,10 +95,10 @@ class HeightmapPersonController(private val camera: Camera, private val heightma
             }
         } else {
             height = this.height
-            if (!SPRINT.isPressed) {
-                velocity = this.velocity * 2f
+            velocity = if (!SPRINT.isPressed) {
+                this.velocity * 2f
             } else {
-                velocity = this.velocity
+                this.velocity
             }
         }
 

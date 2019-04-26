@@ -287,8 +287,9 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
                     assert(baseLand && blendToLand == true)
 
                     val patch = patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
+                    val blendingTo = blendingTo!!.run{ patches[patchAmountX * (y - minPatchY) + (x - minPatchX)] }
 
-                    if (frustum.boundsInFrustum(patch.boundingBox)) {
+                    if (frustum.boundsInFrustum(patch.boundingBox) || frustum.boundsInFrustum(blendingTo.boundingBox)) {
                         val model = batch.render()
                         model.set(patch.model)
                         model.vao = blendVao!![y - blendVaoMinY]

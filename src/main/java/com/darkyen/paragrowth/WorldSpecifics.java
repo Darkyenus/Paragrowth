@@ -26,7 +26,7 @@ public class WorldSpecifics {
     private final float[] beachColor;
     private final float[] terrainColor;
 
-    public WorldSpecifics(WorldCharacteristics characteristics, float centerX, float centerY) {
+    public WorldSpecifics(WorldCharacteristics characteristics, float centerX, float centerY, boolean centerForSpawn) {
         this.characteristics = characteristics;
         colorNoise.initialize(characteristics.seed);
 
@@ -48,14 +48,23 @@ public class WorldSpecifics {
 
         final int worldSize = (int)(MathUtils.clamp((float)Math.sqrt(characteristics.size), 1f, 30f) * 100f);
 
-        this.offsetX = centerX - worldSize * 0.5f;
-        this.offsetY = centerY - worldSize * 0.5f;
-
         noise = Noise.generateSimplexNoise(worldSize, worldSize,
                 characteristics.seed, 1f,
                 1f/200f, 2f, 5, 40f, 0.5f, -1f);
         noise.islandize(1f, -1f);
         noise.max(-1f);
+
+        if (centerForSpawn) {
+            final Vector3 v = new Vector3();
+            final RandomXS128 RNG = setupInitialPosition_RNG;
+            RNG.setSeed(characteristics.seed);
+            noise.findRandomPositionInHeightRange(v, RNG, 0.1f, Float.POSITIVE_INFINITY);
+            this.offsetX = centerX - v.x;
+            this.offsetY = centerY - v.y;
+        } else {
+            this.offsetX = centerX - worldSize * 0.5f;
+            this.offsetY = centerY - worldSize * 0.5f;
+        }
     }
 
     public int sizeX() {
@@ -75,23 +84,13 @@ public class WorldSpecifics {
     }
 
     private static final RandomXS128 setupInitialPosition_RNG = new RandomXS128();
-    public void setupInitialPosition(Vector3 pos) {
+    public boolean findInitialPosition(Vector3 pos) {
         final RandomXS128 RNG = setupInitialPosition_RNG;
         RNG.setSeed(characteristics.seed);
 
-        float x = 0f;
-        float y = 0f;
-        float z = 0f;
-        for (int i = 0; i < 100; i++) {
-            x = RNG.nextFloat() * noise.sizeX;
-            y = RNG.nextFloat() * noise.sizeY;
-            z = noise.getHeight(x, y);
-            if (z > 0.1f) {
-                break;
-            }
-        }
-
-        pos.set(x + offsetX, y + offsetY, z);
+        boolean success = noise.findRandomPositionInHeightRange(pos, RNG, 0.1f, Float.POSITIVE_INFINITY);
+        pos.add(offsetX, offsetY, 0f);
+        return success;
     }
 
     public WorldColorQuery queryColors() {

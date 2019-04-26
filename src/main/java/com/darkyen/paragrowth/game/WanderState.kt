@@ -87,7 +87,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         hudStage.addActor(hudTable)
 
         //Terrain generation
-        val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f)
+        val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f, false)
         terrain = TerrainPatchwork(worldSpecifics)
         doodads = DoodadWorld(worldCam, worldCharacteristics.seed, worldSpecifics)
 
@@ -99,7 +99,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         gameInput = GameInput(*cameraController.INPUT)
         gameInput.build()
 
-        worldSpecifics.setupInitialPosition(worldCam.position)
+        worldSpecifics.findInitialPosition(worldCam.position)
     }
 
     override fun show() {
@@ -124,7 +124,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 nextTerrainAlpha = 0f
             }
         } else if (cameraController.CYCLE_TERRAIN_DEBUG.isPressed) {
-            val worldSpecifics = WorldSpecifics(WorldCharacteristics.random(System.currentTimeMillis()), worldCam.position.x, worldCam.position.y)
+            val worldSpecifics = WorldSpecifics(WorldCharacteristics.random(System.currentTimeMillis()), worldCam.position.x, worldCam.position.y, true)
             nextTerrain = TerrainPatchwork(worldSpecifics)
             this.nextTerrain = nextTerrain
             terrain.blendTo(nextTerrain)

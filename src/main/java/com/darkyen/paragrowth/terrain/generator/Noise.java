@@ -76,6 +76,27 @@ public final class Noise {
         to.set(1f, 0f, up - here).crs(0f, 1f, right - here).nor();
     }
 
+    public boolean findRandomPositionInHeightRange(Vector3 to, Random RNG, float min, float max) {
+        float x = 0f;
+        float y = 0f;
+        float z = 0f;
+        boolean success = false;
+
+        // Not a big deal, usually found within 5 attempts
+        for (int i = 0; i < 100; i++) {
+            x = RNG.nextFloat() * sizeX;
+            y = RNG.nextFloat() * sizeY;
+            z = getHeight(x, y);
+            if (z >= min && z <= max) {
+                success = true;
+                break;
+            }
+        }
+
+        to.set(x, y, z);
+        return success;
+    }
+
     public Noise islandize(float scale, float offset) {
         final int width = sizeX;
         final int height = sizeY;
