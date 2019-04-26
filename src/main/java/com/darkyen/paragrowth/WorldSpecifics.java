@@ -26,10 +26,8 @@ public class WorldSpecifics {
     private final float[] beachColor;
     private final float[] terrainColor;
 
-    public WorldSpecifics(WorldCharacteristics characteristics, float offsetX, float offsetY) {
+    public WorldSpecifics(WorldCharacteristics characteristics, float centerX, float centerY) {
         this.characteristics = characteristics;
-        this.offsetX = offsetX;
-        this.offsetY = offsetY;
         colorNoise.initialize(characteristics.seed);
 
         {
@@ -49,6 +47,9 @@ public class WorldSpecifics {
         }
 
         final int worldSize = (int)(MathUtils.clamp((float)Math.sqrt(characteristics.size), 1f, 30f) * 100f);
+
+        this.offsetX = centerX - worldSize * 0.5f;
+        this.offsetY = centerY - worldSize * 0.5f;
 
         noise = Noise.generateSimplexNoise(worldSize, worldSize,
                 characteristics.seed, 1f,

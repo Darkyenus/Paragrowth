@@ -30,6 +30,7 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
 
     private var blendingTo:TerrainPatchwork? = null
     private var blendVao:Array<GlVertexArrayObject>? = null
+    private var blendVaoMinY = 0
     var blendProgress:Float = 0f
 
     init {
@@ -89,24 +90,26 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
         // Now we have a problem, because we need a separate VAO for each overlapping row
         val minOverlapY = maxOf(minPatchY, tp.minPatchY)
         val maxOverlapY = minOf(maxPatchY, tp.maxPatchY)
+        val rowX = maxOf(minPatchX, tp.minPatchX)
 
         blendVao = Array(maxOf(maxOverlapY - minOverlapY, 0)) { i ->
-            val thisRowStart = minOverlapY + i - minPatchY
-            val blendRowStart = minOverlapY + i - tp.minPatchY
-            val offset = TERRAIN_PATCH_VERTEX_COUNT * (blendRowStart - thisRowStart)
-            // TODO(jp): This will probably explode, at least for negative offsets
-            print(offset)
+            val rowY = minOverlapY + i
+
+            val positionInThis = (rowY - minPatchY) * patchAmountX + (rowX - minPatchX)
+            val positionInThat = (rowY - tp.minPatchY) * tp.patchAmountX + (rowX - tp.minPatchX)
+            val off = TERRAIN_PATCH_VERTEX_COUNT * TERRAIN_PATCH_VERTEX_SIZE * (positionInThat - positionInThis)
 
             GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_BLEND_ATTRIBUTES,
                     GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
                     GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
                     GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4), // normal
 
-                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, offset + 0), // xyz
-                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, offset + 3), // color
-                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, offset + 4) // normal
+                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, off+ 0), // xyz
+                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, off+ 3), // color
+                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, off+ 4) // normal
             )
         }
+        blendVaoMinY = minOverlapY
     }
 
     private fun heightAtVertex(x: Int, y: Int): Float {
@@ -288,6 +291,7 @@ class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
                     if (frustum.boundsInFrustum(patch.boundingBox)) {
                         val model = batch.render()
                         model.set(patch.model)
+                        model.vao = blendVao!![y - blendVaoMinY]
                         model.shader = TERRAIN_SHADER_L_L
                         model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
 

@@ -83,6 +83,9 @@ class RenderBatch(context: RenderContext? = null) {
         var currentVao:GlVertexArrayObject? = null
 
         for (renderable in renderables) {
+            if (renderable.vao.vertexAttributes != renderable.shader.vertexAttributes) {
+                println("TROUBLE")
+            }
             assert(renderable.vao.vertexAttributes == renderable.shader.vertexAttributes) { "VAO and shader vertex attributes don't match (${renderable.shader})" }
         }
 
