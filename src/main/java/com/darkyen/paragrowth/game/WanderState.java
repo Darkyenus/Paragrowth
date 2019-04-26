@@ -119,6 +119,7 @@ public final class WanderState extends ScreenAdapter {
         // (they won't get proper depth-testing, but skybox won't show through)
         Gdx.gl.glEnable(GL_DEPTH_CLAMP);
         modelBatch.getAttributes().get(TerrainPatchKt.getTERRAIN_TIME_ATTRIBUTE())[0] = (System.currentTimeMillis() - startTime) / 1000f;
+        terrain.setupGlobalAttributes(modelBatch);
 
         modelBatch.begin(worldCam);
 

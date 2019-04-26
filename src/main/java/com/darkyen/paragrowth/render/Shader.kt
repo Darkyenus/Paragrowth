@@ -14,8 +14,7 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.BufferUtils
 import com.badlogic.gdx.utils.ObjectIntMap
-import com.darkyen.paragrowth.util.GdxArray
-import com.darkyen.paragrowth.util.stack
+import com.darkyen.paragrowth.util.*
 import java.io.File
 import com.badlogic.gdx.utils.IntArray as GdxIntArray
 
@@ -28,7 +27,8 @@ abstract class Shader(val order:Int,
                       vertexShaderName:String = name,
                       fragmentShaderName:String = name,
                       /** Set to the size of arrays for instanced uniforms */
-                      internal val maxInstances:Int = 0) {
+                      internal val maxInstances:Int = 0,
+                      internal val defines:Map<String, String> = emptyMap()) {
 
     private var program = 0
 
@@ -53,8 +53,8 @@ abstract class Shader(val order:Int,
      * Can be called repeatedly for shader hotswapping.  */
     private fun compile() {
         val gl = Gdx.gl30
-        val vertexShader = createShader(vertexShaderFile, GL20.GL_VERTEX_SHADER)
-        val fragmentShader = createShader(fragmentShaderFile, GL20.GL_FRAGMENT_SHADER)
+        val vertexShader = createShader(vertexShaderFile, GL20.GL_VERTEX_SHADER, defines)
+        val fragmentShader = createShader(fragmentShaderFile, GL20.GL_FRAGMENT_SHADER, defines)
 
         val program = gl.glCreateProgram()
         gl.glAttachShader(program, vertexShader)
@@ -71,7 +71,7 @@ abstract class Shader(val order:Int,
             val attrName = vertexAttributes.attributes[i].name
             val foundLocation = gl.glGetAttribLocation(program, attrName)
             if (expectedLocation != foundLocation) {
-                Gdx.app.error("Shader", "Shader $name did not bind attribute $attrName correctly, expected: $expectedLocation, got: $foundLocation")
+                Gdx.app.error(LOG, "Shader $name ($defines) did not bind attribute $attrName correctly, expected: $expectedLocation, got: $foundLocation")
             }
         }
 
@@ -80,7 +80,7 @@ abstract class Shader(val order:Int,
 
         if (status.get(0) == GL20.GL_FALSE) {
             val log = gl.glGetProgramInfoLog(program)
-            Gdx.app.error("Shader", "Failed to compile shader $name:\n$log")
+            Gdx.app.error(LOG, "Failed to compile shader $name:\n$log")
             gl.glDeleteShader(vertexShader)
             gl.glDeleteShader(fragmentShader)
             gl.glDeleteProgram(program)
@@ -225,7 +225,7 @@ abstract class Shader(val order:Int,
                 shaderProgram = currentShaderProgram
                 location = Gdx.gl30.glGetUniformLocation(currentShaderProgram, name)
                 if (location < 0) {
-                    Gdx.app.log("ParaShader", "${shader.name}: Location of $name uniform not found")
+                    Gdx.app.log(LOG, "${shader.name} (${shader.defines}): Location of $name uniform not found")
                 } else {
                     location1 = Gdx.gl30.glGetUniformLocation(currentShaderProgram, "$name[1]")
                 }
@@ -250,6 +250,10 @@ abstract class Shader(val order:Int,
 
         fun set(value: Color) {
             set(value.r, value.g, value.b, value.a)
+        }
+
+        fun setColor(value: com.darkyen.paragrowth.util.Color) {
+            set(value.red, value.green, value.blue, value.alpha)
         }
 
         fun set(value: Float) {
@@ -305,6 +309,8 @@ abstract class Shader(val order:Int,
         /** Here, for lack of better place to put it. */
         internal val NULL_VAO: GlVertexArrayObject
 
+        private const val LOG = "Shader"
+
         init {
             val EMPTY_VERTEX_ATTRIBUTES = VertexAttributes()
             NULL_SHADER = object : Shader(NEVER_INIT, "", EMPTY_VERTEX_ATTRIBUTES) {}
@@ -313,12 +319,39 @@ abstract class Shader(val order:Int,
 
         /** Create a shader of given [type] from the contents of [shaderSource].
          * @return -1 on failure */
-        private fun createShader(shaderSource: FileHandle, type: Int): Int {
+        private fun createShader(shaderSource: FileHandle, type: Int, defines:Map<String, String>): Int {
             val gl = Gdx.gl30
-            val source = shaderSource.readString()
+            val source = StringBuilder()
+            shaderSource.reader("UTF-8").use {
+                val buffer = CharArray(4096)
+                while (true) {
+                    val read = it.read(buffer)
+                    if (read < 0) {
+                        break
+                    }
+                    source.append(buffer, 0, read)
+                }
+            }
+
+            var definesInsertIndex = source.indexOf("#version")
+            if (definesInsertIndex >= 0) {
+                definesInsertIndex = source.indexOf('\n', definesInsertIndex)
+                if (definesInsertIndex < 0) {
+                    definesInsertIndex = source.length
+                } else {
+                    definesInsertIndex++
+                }
+            }
+
+            val definesSb = StringBuilder()
+            for ((key, value) in defines) {
+                definesSb.append("#define ").append(key).append(' ').append(value).append('\n')
+            }
+            source.insert(definesInsertIndex, definesSb)
+
 
             val shader = gl.glCreateShader(type)
-            gl.glShaderSource(shader, source)
+            gl.glShaderSource(shader, source.toString())
             gl.glCompileShader(shader)
 
             val status = stack {
@@ -329,7 +362,7 @@ abstract class Shader(val order:Int,
 
             if (status == GL20.GL_FALSE) {
                 val log = gl.glGetShaderInfoLog(shader)
-                Gdx.app.error("Shader", "Failed to compile shader " + shaderSource.name() + ":\n" + log)
+                Gdx.app.error(LOG, "Failed to compile shader " + shaderSource.name() + ":\n" + log)
                 gl.glDeleteShader(shader)
                 return -1
             }

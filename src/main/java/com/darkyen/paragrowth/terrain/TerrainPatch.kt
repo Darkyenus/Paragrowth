@@ -9,8 +9,9 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
-import com.darkyen.paragrowth.util.Color
-import com.darkyen.paragrowth.util.rgb
+import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN
+import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN_OCEAN
+import com.darkyen.paragrowth.util.*
 
 /*
 triangles = (size-1)^2*2
@@ -331,49 +332,61 @@ class TerrainPatch(
     }
 }
 
-enum class TerrainShaderType {
-    OCEAN,
-    TERRAIN,
-    TERRAIN_BLEND
+// TODO Better order for better batching
+enum class TerrainShaderType(val order:Int) {
+    LAND_LAND(TERRAIN),
+    LAND_WATER(TERRAIN),
+    WATER_LAND(TERRAIN),
+    WATER_WATER(TERRAIN_OCEAN)
 }
 
-val TERRAIN_SHADER = TerrainShader(TerrainShaderType.TERRAIN)
-val TERRAIN_OCEAN_SHADER = TerrainShader(TerrainShaderType.OCEAN)
-val TERRAIN_BLEND_SHADER = TerrainShader(TerrainShaderType.TERRAIN_BLEND)
+val TERRAIN_SHADER_L_L = TerrainShader(TerrainShaderType.LAND_LAND)
+val TERRAIN_SHADER_L_W = TerrainShader(TerrainShaderType.LAND_WATER)
+val TERRAIN_SHADER_W_L = TerrainShader(TerrainShaderType.WATER_LAND)
+val TERRAIN_SHADER_W_W = TerrainShader(TerrainShaderType.WATER_WATER)
 
-val TERRAIN_OCEAN_OFFSET_ATTRIBUTE = attributeKeyVector2("terrain_ocean_offset")
+/** Time for waves */
 val TERRAIN_TIME_ATTRIBUTE = attributeKeyFloat("terrain_time")
+/** Blend between first and second */
 val TERRAIN_BLEND_ATTRIBUTE = attributeKeyFloat("terrain_blend")
+val TERRAIN_WATER_COLOR_FROM_ATTRIBUTE = attributeKeyFloat("terrain_water_color_from")
+val TERRAIN_WATER_COLOR_TO_ATTRIBUTE = attributeKeyFloat("terrain_water_color_to")
+/** Location offset in the world */
+val TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE = attributeKeyVector2("terrain_ocean_offset")
 
 class TerrainShader(type:TerrainShaderType) : Shader(
-        when (type) {
-            TerrainShaderType.OCEAN -> TERRAIN_OCEAN
-            TerrainShaderType.TERRAIN -> TERRAIN
-            TerrainShaderType.TERRAIN_BLEND -> TERRAIN
-        },
-        when (type) {
-            TerrainShaderType.OCEAN -> "terrain_ocean"
-            TerrainShaderType.TERRAIN -> "terrain"
-            TerrainShaderType.TERRAIN_BLEND -> "terrain_blend"
-        },
-        when (type) {
-            TerrainShaderType.OCEAN, TerrainShaderType.TERRAIN -> TERRAIN_PATCH_ATTRIBUTES
-            TerrainShaderType.TERRAIN_BLEND -> TERRAIN_PATCH_BLEND_ATTRIBUTES
-        }, fragmentShaderName = "terrain",
-        maxInstances = if (type == TerrainShaderType.OCEAN) 64 else 0) {
+        type.order,
+        "terrain",
+        if (type == TerrainShaderType.LAND_LAND) TERRAIN_PATCH_BLEND_ATTRIBUTES else TERRAIN_PATCH_ATTRIBUTES,
+        fragmentShaderName = "terrain",
+        maxInstances = if (type == TerrainShaderType.WATER_WATER) 64 else 0,
+        defines = mapOf(type.toString() to "1")) {
 
     init {
-        if (type == TerrainShaderType.OCEAN) {
+        if (type == TerrainShaderType.WATER_WATER) {
             // Only ocean needs transformation matrix, normal terrain has position baked in
             instancedUniform("u_worldTrans") { uniform, _, renderable ->
-                uniform.set(renderable.attributes[TERRAIN_OCEAN_OFFSET_ATTRIBUTE])
+                uniform.set(renderable.attributes[TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE])
+            }
+
+            globalUniform("u_eye_position") { uniform, camera, _ ->
+                uniform.set(camera.position)
             }
         }
 
-        if (type == TerrainShaderType.TERRAIN_BLEND) {
-            globalUniform("u_blend") { uniform, _, attributes ->
-                uniform.set(attributes[TERRAIN_BLEND_ATTRIBUTE][0])
+        if (type == TerrainShaderType.WATER_LAND) {
+            globalUniform("u_water_color_from") { uniform, _, attributes ->
+                uniform.setColor(attributes[TERRAIN_WATER_COLOR_FROM_ATTRIBUTE][0])
             }
+        }
+        if (type == TerrainShaderType.LAND_WATER || type == TerrainShaderType.WATER_WATER) {
+            globalUniform("u_water_color_to") { uniform, _, attributes ->
+                uniform.setColor(attributes[TERRAIN_WATER_COLOR_TO_ATTRIBUTE][0])
+            }
+        }
+
+        globalUniform("u_blend") { uniform, _, attributes ->
+            uniform.set(attributes[TERRAIN_BLEND_ATTRIBUTE][0])
         }
 
         globalUniform("u_projViewTrans") { uniform, camera, _ ->
@@ -390,16 +403,12 @@ class TerrainShader(type:TerrainShaderType) : Shader(
         val displacement = TextureDescriptor(ParagrowthMain.assetManager.get("Water_001_DISP.png", Texture::class.java), Texture.TextureFilter.Linear, Texture.TextureFilter.Linear, Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
         val normal = TextureDescriptor(ParagrowthMain.assetManager.get("Water_001_NORM.jpg", Texture::class.java), Texture.TextureFilter.Linear, Texture.TextureFilter.Linear, Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat)
 
-        globalUniform("u_displacement") { uniform, _, _ ->
+        globalUniform("u_displacement_texture") { uniform, _, _ ->
             uniform.set(displacement)
         }
 
-        globalUniform("u_normal") { uniform, _, _ ->
+        globalUniform("u_normal_texture") { uniform, _, _ ->
             uniform.set(normal)
-        }
-
-        globalUniform("u_position") { uniform, camera, _ ->
-            uniform.set(camera.position)
         }
     }
 

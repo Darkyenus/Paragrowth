@@ -10,10 +10,7 @@ import com.darkyen.paragrowth.render.*
 /**
  * A collection of terrain patches.
  */
-class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
-
-    private val offsetX = worldSpec.offsetX
-    private val offsetY = worldSpec.offsetY
+class TerrainPatchwork(val worldSpec: WorldSpecifics) : Renderable, Disposable {
 
     // inclusive min
     private val minPatchX = MathUtils.floor(worldSpec.offsetX / PATCH_WIDTH)
@@ -31,7 +28,9 @@ class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
     private val indexBuffer:GlBuffer
     private val vao:GlVertexArrayObject
 
-    private var blendVao:GlVertexArrayObject? = null
+    private var blendingTo:TerrainPatchwork? = null
+    private var blendVao:Array<GlVertexArrayObject>? = null
+    var blendProgress:Float = 0f
 
     init {
         @Suppress("UNCHECKED_CAST")
@@ -85,15 +84,29 @@ class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
     }
 
     fun blendTo(tp:TerrainPatchwork) {
-        blendVao = GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_BLEND_ATTRIBUTES,
-                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
-                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
-                GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4), // normal
+        blendingTo = tp
+        blendProgress = 0f
+        // Now we have a problem, because we need a separate VAO for each overlapping row
+        val minOverlapY = maxOf(minPatchY, tp.minPatchY)
+        val maxOverlapY = minOf(maxPatchY, tp.maxPatchY)
 
-                GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
-                GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
-                GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4) // normal
-        )
+        blendVao = Array(maxOf(maxOverlapY - minOverlapY, 0)) { i ->
+            val thisRowStart = minOverlapY + i - minPatchY
+            val blendRowStart = minOverlapY + i - tp.minPatchY
+            val offset = TERRAIN_PATCH_VERTEX_COUNT * (blendRowStart - thisRowStart)
+            // TODO(jp): This will probably explode, at least for negative offsets
+            print(offset)
+
+            GlVertexArrayObject(indexBuffer, TERRAIN_PATCH_BLEND_ATTRIBUTES,
+                    GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 0), // xyz
+                    GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 3), // color
+                    GlVertexArrayObject.Binding(vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, 4), // normal
+
+                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, offset + 0), // xyz
+                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, offset + 3), // color
+                    GlVertexArrayObject.Binding(tp.vertexBuffer, TERRAIN_PATCH_VERTEX_SIZE, offset + 4) // normal
+            )
+        }
     }
 
     private fun heightAtVertex(x: Int, y: Int): Float {
@@ -176,6 +189,12 @@ class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
         return hBaseLeft * a1 + hBaseRight * a2 + hPoint * a3
     }
 
+    fun setupGlobalAttributes(batch:RenderBatch) {
+        batch.attributes[TERRAIN_WATER_COLOR_FROM_ATTRIBUTE][0] = worldSpec.waterColor
+        batch.attributes[TERRAIN_WATER_COLOR_TO_ATTRIBUTE][0] = (blendingTo ?: this).worldSpec.waterColor
+        batch.attributes[TERRAIN_BLEND_ATTRIBUTE][0] = blendProgress
+    }
+
     private val render_bounds = BoundingBox()
     private val render_boundsSea = BoundingBox()
 
@@ -194,27 +213,24 @@ class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
 
         for (y in lowY..highY) {
             for (x in lowX..highX) {
+                /*
+                Possible modes:
+                w Water
+                w Water -> Water (color!)
+                l Land
+                l Land -> Water
+                l Water -> Land
+                b Land -> Land
 
-                if (x >= minPatchX && y >= minPatchY && x < maxPatchX && y < maxPatchY) {
-                    val patch = patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
-                    if (frustum.boundsInFrustum(patch.boundingBox)) {
-                        val model = batch.render()
-                        model.set(patch.model)
-                        model.shader = TERRAIN_SHADER
-                        blendVao?.let {
-                            model.vao = it
-                            model.shader = TERRAIN_BLEND_SHADER
-                        }
-                        model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+                l = Land <-> Water
+                b = Land <-> Land
+                w = Water <-> Water
+                 */
+                val baseLand = x >= minPatchX && y >= minPatchY && x < maxPatchX && y < maxPatchY
+                val blendToLand = blendingTo?.run { x >= minPatchX && y >= minPatchY && x < maxPatchX && y < maxPatchY }
 
-
-                        // TODO Investigate re-enabling this after having better lod indices
-                        /*if (model.order > lodDistance2) {
-                            model.offset = TERRAIN_PATCH_INDEX_COUNT
-                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
-                        }*/
-                    }
-                } else {
+                // w
+                if ((!baseLand && blendToLand == null) || (!baseLand && blendToLand == false)) {
                     val patch = seaPatch
                     val xOff = x * PATCH_WIDTH
                     val yOff = y * PATCH_HEIGHT
@@ -227,13 +243,60 @@ class TerrainPatchwork(worldSpec: WorldSpecifics) : Renderable, Disposable {
                     if (frustum.boundsInFrustum(box)) {
                         val model = batch.render()
                         model.set(patch.model)
-                        model.shader = TERRAIN_OCEAN_SHADER
-                        model.attributes[TERRAIN_OCEAN_OFFSET_ATTRIBUTE].set(xOff, yOff)
+                        model.shader = TERRAIN_SHADER_W_W
+                        model.attributes[TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE].set(xOff, yOff)
                         model.order = cameraPosition.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
                         if (model.order > lodDistance2) {
                             model.offset = TERRAIN_PATCH_INDEX_COUNT
                             model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
                         }
+                    }
+                } else if /* l */ ((baseLand && blendToLand == null /* Land */)
+                        || (!baseLand && blendToLand == true /* Water -> Land */)
+                        || (baseLand && blendToLand == false /* Land -> Water */)) {
+
+                    val patch = if (blendToLand != true)
+                        patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
+                    else {
+                        val b = blendingTo!!
+                        b.patches[b.patchAmountX * (y - b.minPatchY) + (x - b.minPatchX)]
+                    }
+
+
+                    if (frustum.boundsInFrustum(patch.boundingBox)) {
+                        val model = batch.render()
+                        model.set(patch.model)
+                        if (blendToLand != null) {
+                            model.shader = if (blendToLand) TERRAIN_SHADER_W_L else TERRAIN_SHADER_L_W
+                        } else {
+                            model.shader = TERRAIN_SHADER_L_W
+                        }
+                        model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+
+
+                        // TODO Investigate re-enabling this after having better lod indices
+                        /*if (model.order > lodDistance2) {
+                            model.offset = TERRAIN_PATCH_INDEX_COUNT
+                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+                        }*/
+                    }
+                } else /* Land -> Land */ {
+                    assert(baseLand && blendToLand == true)
+
+                    val patch = patches[patchAmountX * (y - minPatchY) + (x - minPatchX)]
+
+                    if (frustum.boundsInFrustum(patch.boundingBox)) {
+                        val model = batch.render()
+                        model.set(patch.model)
+                        model.shader = TERRAIN_SHADER_L_L
+                        model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+
+
+                        // TODO Investigate re-enabling this after having better lod indices
+                        /*if (model.order > lodDistance2) {
+                            model.offset = TERRAIN_PATCH_INDEX_COUNT
+                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+                        }*/
                     }
                 }
             }

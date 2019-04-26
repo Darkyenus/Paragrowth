@@ -73,20 +73,20 @@ public class DoodadWorld implements Renderable, Disposable {
         System.out.println("Generated "+totalDoodads+" doodads");
     }
 
-    private static DoodadPatch buildPatch(Random random, WorldSpecifics noise, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
+    private static DoodadPatch buildPatch(Random random, WorldSpecifics world, float baseX, float baseY, Array<Doodad> doodadSet, Array<DoodadInstance> instances, WorldCharacteristics characteristics) {
         final ModelBuilder builder = new ModelBuilder(3 + 1);
 
         for (int i = 0; i < DOODADS_PER_PATCH; i++) {
             final float x = baseX + random.nextFloat() * PATCH_SIZE;
             final float y = baseY + random.nextFloat() * PATCH_SIZE;
 
-            final float z = noise.getHeight(x, y);
+            final float z = world.getHeight(x, y);
             // Cull doodads in water or (TODO:) too close
             if (z <= 0.1f) {
                 continue;
             }
 
-            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z, characteristics);
+            final DoodadInstance instance = doodadSet.get(random.nextInt(doodadSet.size)).instantiate(random, x, y, z, world.characteristics);
             instances.add(instance);
             instance.build(builder, random, characteristics);
         }
