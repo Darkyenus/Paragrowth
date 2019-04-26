@@ -45,7 +45,7 @@ class WorldSpecifics(val characteristics: WorldCharacteristics, centerX: Float, 
             val v = Vector3()
             val RNG = setupInitialPosition_RNG
             RNG.setSeed(characteristics.seed)
-            noise.findRandomPositionInHeightRange(v, RNG, 0.1f, java.lang.Float.POSITIVE_INFINITY)
+            noise.findRandomPositionInHeightRange(v, RNG, 1f, java.lang.Float.POSITIVE_INFINITY)
             this.offsetX = centerX - v.x
             this.offsetY = centerY - v.y
         } else {

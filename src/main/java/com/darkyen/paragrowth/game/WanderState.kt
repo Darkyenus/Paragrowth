@@ -16,16 +16,14 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.WorldCharacteristics
 import com.darkyen.paragrowth.WorldSpecifics
+import com.darkyen.paragrowth.doodad.DOODAD_BLEND_ATTRIBUTE
 import com.darkyen.paragrowth.doodad.DoodadWorld
 import com.darkyen.paragrowth.input.GameInput
 import com.darkyen.paragrowth.render.RenderBatch
 import com.darkyen.paragrowth.skybox.Skybox
 import com.darkyen.paragrowth.terrain.TERRAIN_TIME_ATTRIBUTE
 import com.darkyen.paragrowth.terrain.TerrainPatchwork
-import com.darkyen.paragrowth.util.DebugShader
-import com.darkyen.paragrowth.util.Delayed
-import com.darkyen.paragrowth.util.offload
-import com.darkyen.paragrowth.util.then
+import com.darkyen.paragrowth.util.*
 import org.lwjgl.opengl.GL32
 import org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP
 
@@ -48,10 +46,14 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
     //3D Objects
     private val skyboxRenderable: Skybox
+
+    private var worldSpecifics: WorldSpecifics
+
+    private var nextWorldAlpha = 0f
     private var terrain: TerrainPatchwork
     private var nextTerrain: TerrainPatchwork? = null
-    private var nextTerrainAlpha = 0f
-    private val doodads: DoodadWorld
+    private var doodads: DoodadWorld
+    private var nextDoodads: DoodadWorld? = null
 
     //Input
     private val gameInput: GameInput
@@ -90,13 +92,14 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         //Terrain generation
         val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f, false)
+        this.worldSpecifics = worldSpecifics
         terrain = TerrainPatchwork.build(worldSpecifics).get()
         doodads = DoodadWorld.build(worldCharacteristics.seed, worldSpecifics).get()
 
         cameraController = HeightmapPersonController(worldCam) { x, y ->
             val base = terrain.heightAt(x, y)
             val blend = nextTerrain?.heightAt(x, y) ?: base
-            MathUtils.lerp(base, blend, terrain.blendProgress)
+            MathUtils.lerp(base, blend, nextWorldAlpha)
         }
         gameInput = GameInput(*cameraController.INPUT)
         gameInput.build()
@@ -114,38 +117,52 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         Gdx.input.isCursorCatched = true
     }
 
-    private var nextTerrainPatchwork:Delayed<TerrainPatchwork>? = null
+    private var developingNextWorld:Delayed<Pair<TerrainPatchwork, DoodadWorld>>? = null
 
     override fun render(delta: Float) {
-        var nextTerrain = nextTerrain
+        val nextTerrain = nextTerrain
         if (nextTerrain != null) {
-            nextTerrainAlpha += delta //* 0.1f
-            terrain.blendProgress = nextTerrainAlpha
-            if (nextTerrainAlpha > 1f) {
+            nextWorldAlpha += delta //* 0.1f
+            if (nextWorldAlpha > 1f) {
+                nextWorldAlpha = 0f
+
                 terrain.dispose()
                 terrain = nextTerrain
                 this.nextTerrain = null
-                nextTerrainAlpha = 0f
+
+                doodads.dispose()
+                doodads = nextDoodads!!
+                nextDoodads = null
             }
         } else if (cameraController.CYCLE_TERRAIN_DEBUG.isPressed) {
-            var nextTerrainPatchwork = nextTerrainPatchwork
-            if (nextTerrainPatchwork == null) {
+            var developingNextWorld = developingNextWorld
+            if (developingNextWorld == null) {
                 val seed = System.currentTimeMillis()
                 val centerX = worldCam.position.x
                 val centerY = worldCam.position.y
-                nextTerrainPatchwork = offload {
+
+                val worldCharacteristics = offload {
                     WorldSpecifics(WorldCharacteristics.random(seed), centerX, centerY, true)
-                }.then { TerrainPatchwork.build(it) }
-                this.nextTerrainPatchwork = nextTerrainPatchwork
+                }
+                val terrainPatchwork = worldCharacteristics.then { TerrainPatchwork.build(it) }
+                val blendOut = worldCharacteristics.then { doodads.prepareBlendOut(it) }
+                val doodadWorld = worldCharacteristics
+                        .then { DoodadWorld.build(it.characteristics.seed, it) }
+                        .then { it.prepareBlendIn(worldSpecifics) }
+
+                developingNextWorld = terrainPatchwork.pairWith(doodadWorld).andWaitFor(blendOut)
+                this.developingNextWorld = developingNextWorld
             }
 
-            nextTerrain = nextTerrainPatchwork.poll()
-            if (nextTerrain != null) {
-                this.nextTerrainPatchwork = null
-                this.nextTerrain = nextTerrain
-                terrain.blendTo(nextTerrain)
-                nextTerrainAlpha = 0f
-                terrain.blendProgress = nextTerrainAlpha
+            val new = developingNextWorld.poll()
+            if (new != null) {
+                this.developingNextWorld = null
+                val (newTerrain, newDoodads) = new
+
+                this.nextTerrain = newTerrain
+                this.nextDoodads = newDoodads
+                terrain.blendTo(newTerrain)
+                nextWorldAlpha = 0f
             }
         }
 
@@ -159,13 +176,16 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         // (they won't get proper depth-testing, but skybox won't show through)
         Gdx.gl.glEnable(GL_DEPTH_CLAMP)
         modelBatch.attributes[TERRAIN_TIME_ATTRIBUTE][0] = (System.currentTimeMillis() - startTime) / 1000f
-        terrain.setupGlobalAttributes(modelBatch)
+        modelBatch.attributes[DOODAD_BLEND_ATTRIBUTE][0] = nextWorldAlpha
+        terrain.setupGlobalAttributes(modelBatch, nextWorldAlpha)
 
         modelBatch.begin(worldCam)
 
         modelBatch.render(skyboxRenderable)
         modelBatch.render(terrain)
-        modelBatch.render(doodads)
+
+        doodads.render(modelBatch, worldCam, false)
+        nextDoodads?.render(modelBatch, worldCam, true)
 
         rendered = modelBatch.end()
         Gdx.gl.glDisable(GL_DEPTH_CLAMP)
@@ -179,7 +199,6 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
             debugRenderer.end()
             Gdx.gl.glEnable(GL_DEPTH_TEST)
         }
-
 
         if (cameraController.GENERAL_DEBUG.isPressed) {
             hudStage.draw()

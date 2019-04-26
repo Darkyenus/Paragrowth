@@ -114,11 +114,9 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
     private var blendingTo:TerrainPatchwork? = null
     private var blendVao:Array<GlVertexArrayObject>? = null
     private var blendVaoMinY = 0
-    var blendProgress:Float = 0f
 
     fun blendTo(tp:TerrainPatchwork) {
         blendingTo = tp
-        blendProgress = 0f
         // Now we have a problem, because we need a separate VAO for each overlapping row
         val minOverlapY = maxOf(minPatchY, tp.minPatchY)
         val maxOverlapY = minOf(maxPatchY, tp.maxPatchY)
@@ -224,7 +222,7 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
         return hBaseLeft * a1 + hBaseRight * a2 + hPoint * a3
     }
 
-    fun setupGlobalAttributes(batch:RenderBatch) {
+    fun setupGlobalAttributes(batch:RenderBatch, blendProgress:Float) {
         batch.attributes[TERRAIN_WATER_COLOR_FROM_ATTRIBUTE][0] = worldSpec.waterColor
         batch.attributes[TERRAIN_WATER_COLOR_TO_ATTRIBUTE][0] = (blendingTo ?: this).worldSpec.waterColor
         batch.attributes[TERRAIN_BLEND_ATTRIBUTE][0] = blendProgress

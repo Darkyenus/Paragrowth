@@ -10,17 +10,30 @@ val VA_BLEND_OFFSET = VertexAttribute("a_blend_offset", GL30.GL_FLOAT, 1)
 val DOODAD_ATTRIBUTES = VertexAttributes(
         VA_POSITION3,
         VA_COLOR1
-        //, VA_BLEND_OFFSET
+        , VA_BLEND_OFFSET
 )
+
+val DOODAD_BLEND_ATTRIBUTE = attributeKeyFloat("doodad_blend")
+
+val DOODAD_SHADER_BLEND_IN = DoodadShader(true)
+val DOODAD_SHADER_BLEND_OUT = DoodadShader(false)
 
 /**
  *
  */
-object DoodadShader : Shader(DOODADS, "doodad", DOODAD_ATTRIBUTES) {
+class DoodadShader(blendIn:Boolean) : Shader(DOODADS, "doodad", DOODAD_ATTRIBUTES) {
 
     init {
         globalUniform("u_projViewTrans") { uniform, camera, _ ->
             uniform.set(camera.combined)
+        }
+
+        globalUniform("u_blend") { uniform, _, attributes ->
+            if (blendIn) {
+                uniform.set(1f - attributes[DOODAD_BLEND_ATTRIBUTE][0])
+            } else {
+                uniform.set(attributes[DOODAD_BLEND_ATTRIBUTE][0])
+            }
         }
     }
 

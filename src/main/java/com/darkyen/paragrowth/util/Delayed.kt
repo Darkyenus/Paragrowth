@@ -71,6 +71,41 @@ inline fun <T:Any, T2:Any> Delayed<T>.map(crossinline op:(T) -> T2):Delayed<T2> 
     }
 }
 
+/** Allow this [Delayed] to return only after [other] does too. */
+fun <T:Any> Delayed<T>.andWaitFor(other:Delayed<*>):Delayed<T> {
+    return object : Delayed<T> {
+        override fun poll(): T? {
+            if (other.poll() != null) {
+                return this@andWaitFor.poll()
+            }
+            return null
+        }
+
+        override fun get(): T {
+            other.get()
+            return this@andWaitFor.get()
+        }
+
+    }
+}
+
+fun <T1:Any, T2:Any> Delayed<T1>.pairWith(other:Delayed<T2>):Delayed<Pair<T1, T2>> {
+    return object : Delayed<Pair<T1, T2>> {
+        override fun poll(): Pair<T1, T2>? {
+            val v1 = this@pairWith.poll() ?: return null
+            val v2 = other.poll() ?: return null
+            return v1 to v2
+        }
+
+        override fun get(): Pair<T1, T2> {
+            val v1 = this@pairWith.get()
+            val v2 = other.get()
+            return v1 to v2
+        }
+
+    }
+}
+
 /** Offload [op] to a background thread. */
 inline fun <T:Any> offload(crossinline op:()->T):Delayed<T> {
     val task = ParagrowthMain.WORKER_POOL.submit( Callable {

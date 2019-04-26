@@ -18,7 +18,7 @@ import java.nio.FloatBuffer
 /**
  *
  */
-class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Renderable, Disposable {
+class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Disposable {
 
     private val patches: GdxArray<DoodadPatch>
 
@@ -74,7 +74,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
         return true
     }
 
-    override fun render(batch: RenderBatch, camera: Camera) {
+    fun render(batch: RenderBatch, camera: Camera, blendIn:Boolean) {
         val patches = this.patches
         val frustum = camera.frustum
 
@@ -88,11 +88,11 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
             model.primitiveType = GL20.GL_TRIANGLES
             model.count = patch.count
             model.order = camera.position.dst2(patch.boundingBox.centerX, patch.boundingBox.centerY, patch.boundingBox.centerZ)
-            model.shader = DoodadShader
+            model.shader = if (blendIn) DOODAD_SHADER_BLEND_IN else DOODAD_SHADER_BLEND_OUT
         }
     }
 
-    fun prepareBlendIn():Delayed<Unit> {
+    fun prepareBlendIn(from:WorldSpecifics):Delayed<DoodadWorld> {
         for (patch in patches) {
             patch.blendsMappedData = patch.blends.beginMappedAccess(GL15.GL_WRITE_ONLY).asFloatBuffer()
         }
@@ -101,7 +101,8 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
             for (patch in patches) {
                 val blends = patch.blendsMappedData!!
                 for (doodad in patch.doodads) {
-                    val shift = -doodad.blendVerticesHeight - 0.5f
+                    val underZ = from.getHeight(doodad.position.x, doodad.position.y)
+                    val shift = underZ - doodad.position.z - doodad.blendVerticesHeight - 0.5f
                     for (i in doodad.blendVerticesFrom until doodad.blendVerticesTo) {
                         blends.put(i, shift)
                     }
@@ -112,10 +113,11 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
             for (patch in patches) {
                 patch.blends.endMappedAccess()
             }
+            this
         }
     }
 
-    fun prepareBlendOut(from:WorldSpecifics, to:WorldSpecifics): Delayed<Unit> {
+    fun prepareBlendOut(to:WorldSpecifics): Delayed<DoodadWorld> {
         for (patch in patches) {
             patch.blendsMappedData = patch.blends.beginMappedAccess(GL15.GL_WRITE_ONLY).asFloatBuffer()
         }
@@ -124,9 +126,8 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
             for (patch in patches) {
                 val blends = patch.blendsMappedData!!
                 for (doodad in patch.doodads) {
-                    val originalZ = from.getHeight(doodad.position.x, doodad.position.y)
                     val newZ = to.getHeight(doodad.position.x, doodad.position.y)
-                    val shift = newZ - originalZ - doodad.blendVerticesHeight - 0.5f
+                    val shift = newZ - doodad.position.z - doodad.blendVerticesHeight - 0.5f
 
                     for (i in doodad.blendVerticesFrom until doodad.blendVerticesTo) {
                         blends.put(i, shift)
@@ -138,6 +139,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
             for (patch in patches) {
                 patch.blends.endMappedAccess()
             }
+            this
         }
     }
 
@@ -224,8 +226,8 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Rende
 
             val vao = GlVertexArrayObject(indices, DOODAD_ATTRIBUTES,
                     GlVertexArrayObject.Binding(vertices, 4, 0),
-                    GlVertexArrayObject.Binding(vertices, 4, 3)
-                    //, GlVertexArrayObject.Binding(blends, 1, 0)
+                    GlVertexArrayObject.Binding(vertices, 4, 3),
+                    GlVertexArrayObject.Binding(blends, 1, 0)
             )
             val patch = DoodadPatch(indices, vertices, blends, vao, builder.indices.size, instances)
             builder.computeBoundingBox3D(0, 4, patch.boundingBox)
