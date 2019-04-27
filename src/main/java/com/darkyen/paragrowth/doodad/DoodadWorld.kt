@@ -33,6 +33,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         this.patches = GdxArray(false,(maxPatchX - minPatchX) * (maxPatchY - minPatchY), DoodadPatch::class.java)
 
         val doodadSet = Doodads.createDoodadSet(RandomXS128(seed), world.characteristics)
+        //println("doodadSet: ${doodadSet.size}")
 
         for (x in minPatchX until maxPatchX) {
             for (y in minPatchY until maxPatchX) {
@@ -41,10 +42,12 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
                     buildPatch(seed + x + y * (maxPatchX - minPatchY), world, (x * PATCH_SIZE).toFloat(), (y * PATCH_SIZE).toFloat(), doodadSet, instances, world.characteristics)
                 }.map { builder ->
                     if (builder.indices.size == 0) {
+                        //println("map to zero")
                         0
                     } else {
                         val patch = completePatch(builder, instances)
                         patches.add(patch)
+                        //println("map to "+patch.doodads.size)
                         patch.doodads.size
                     }
                 })
@@ -58,7 +61,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         for (task in generatePatchTasks) {
             totalDoodads += task.poll() ?: return false
         }
-        println("Generated $totalDoodads doodads")
+        //println("Generated $totalDoodads doodads")
         this.generatePatchTasks = null
         return true
     }
@@ -69,7 +72,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         for (task in generatePatchTasks) {
             totalDoodads += task.get()
         }
-        println("Generated $totalDoodads doodads")
+        //println("Generated $totalDoodads doodads")
         this.generatePatchTasks = null
         return true
     }
