@@ -378,10 +378,10 @@ class TerrainShader(type:TerrainShaderType) : Shader(
             instancedUniform("u_worldTrans") { uniform, _, renderable ->
                 uniform.set(renderable.attributes[TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE])
             }
+        }
 
-            globalUniform("u_eye_position") { uniform, camera, _ ->
-                uniform.set(camera.position)
-            }
+        globalUniform("u_eye_position") { uniform, camera, _ ->
+            uniform.set(camera.position)
         }
 
         if (type == TerrainShaderType.WATER_LAND) {

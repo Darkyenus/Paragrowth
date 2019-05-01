@@ -47,12 +47,7 @@ class GlBuffer(
 
         Gdx.gl20.apply {
             glBindBuffer(GL20.GL_ARRAY_BUFFER, handle)
-            //if (currentLengthBytes == byteLength) {
-                glBufferData(GL20.GL_ARRAY_BUFFER, byteLength, buffer, usage)
-            //} else {
-            //    // Faster, it does not have to reallocate the buffer
-            //    glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, byteLength, buffer)
-            //}
+            glBufferData(GL20.GL_ARRAY_BUFFER, byteLength, buffer, usage)
             glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
         }
         currentLengthBytes = byteLength
@@ -140,7 +135,8 @@ class GlBuffer(
             var success = true
             if (mappedAccessIsFake) {
                 mappedAccessBuffer.clear()
-                glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, currentLengthBytes, buffer)
+                glBufferSubData(GL20.GL_ARRAY_BUFFER, 0, currentLengthBytes, mappedAccessBuffer)
+                MemoryUtil.memAlignedFree(mappedAccessBuffer)
             } else {
                 if (!GL15.glUnmapBuffer(GL20.GL_ARRAY_BUFFER)) {
                     Gdx.app.log("GlBuffer", "Failed to unmap buffer, memory content may be undefined")
@@ -202,6 +198,10 @@ class GlBuffer(
     }
 
     override fun dispose() {
+        if (mappedAccessBuffer != null) {
+            throw IllegalStateException("Buffer is still mapped")
+        }
+
         Gdx.gl20.apply {
             glDeleteBuffer(handle)
         }
@@ -217,6 +217,9 @@ class GlBuffer(
             if (buffer != null && bytes <= buffer.capacity()) {
                 buffer.clear()
                 return buffer
+            }
+            if (buffer != null) {
+                BufferUtils.disposeUnsafeByteBuffer(buffer)
             }
             val newSize = MathUtils.nextPowerOfTwo(bytes)
             buffer = BufferUtils.newUnsafeByteBuffer(newSize)

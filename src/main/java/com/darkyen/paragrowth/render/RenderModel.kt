@@ -44,6 +44,17 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
         vao = model.vao
     }
 
+    fun reset() {
+        primitiveType = 0
+        offset = 0
+        baseVertex = 0
+        count = 0
+        vao = NULL_VAO
+        shader = NULL_SHADER
+        attributes.clear()
+        order = 0f
+    }
+
     override fun compareTo(other: RenderModel): Int {
         val byShader = shader.order.compareTo(other.shader.order)
         if (byShader != 0) {

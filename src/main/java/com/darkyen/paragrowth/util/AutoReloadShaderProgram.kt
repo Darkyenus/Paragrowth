@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.files.FileHandle
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.glutils.ShaderProgram
-import com.badlogic.gdx.utils.BufferUtils
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -80,23 +79,25 @@ class AutoReloadShaderProgram(val vertexShader:FileHandle, val fragmentShader:Fi
     }
 
     private fun loadShader(type: Int, source: String): Int {
-        val gl = Gdx.gl20
-        val intbuf = BufferUtils.newIntBuffer(1)
+        return stack {
+            val gl = Gdx.gl20
+            val intbuf = mallocInt(1)
 
-        val shader = gl.glCreateShader(type)
-        if (shader == 0) error("Failed to create shader program")
+            val shader = gl.glCreateShader(type)
+            if (shader == 0) error("Failed to create shader program")
 
-        gl.glShaderSource(shader, source)
-        gl.glCompileShader(shader)
-        gl.glGetShaderiv(shader, GL20.GL_COMPILE_STATUS, intbuf)
+            gl.glShaderSource(shader, source)
+            gl.glCompileShader(shader)
+            gl.glGetShaderiv(shader, GL20.GL_COMPILE_STATUS, intbuf)
 
-        val compiled = intbuf.get(0)
-        if (compiled == 0) {
-            val infoLog = gl.glGetShaderInfoLog(shader)
-            error("Failed to compile shader program:\n"+(if (type == GL20.GL_VERTEX_SHADER) "Vertex shader\n" else "Fragment shader:\n")+infoLog)
+            val compiled = intbuf.get(0)
+            if (compiled == 0) {
+                val infoLog = gl.glGetShaderInfoLog(shader)
+                error("Failed to compile shader program:\n"+(if (type == GL20.GL_VERTEX_SHADER) "Vertex shader\n" else "Fragment shader:\n")+infoLog)
+            }
+
+            shader
         }
-
-        return shader
     }
 
     private fun linkProgram(program: Int, vertexShader:Int, fragmentShader:Int): Int {

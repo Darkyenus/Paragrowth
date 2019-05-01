@@ -12,7 +12,6 @@ import com.badlogic.gdx.math.Matrix3
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.utils.BufferUtils
 import com.badlogic.gdx.utils.ObjectIntMap
 import com.darkyen.paragrowth.util.*
 import java.io.File
@@ -52,56 +51,58 @@ abstract class Shader(val order:Int,
     /** Compile this shader program. Call while not bound!
      * Can be called repeatedly for shader hotswapping.  */
     private fun compile() {
-        val gl = Gdx.gl30
-        val vertexShader = createShader(vertexShaderFile, GL20.GL_VERTEX_SHADER, defines)
-        val fragmentShader = createShader(fragmentShaderFile, GL20.GL_FRAGMENT_SHADER, defines)
+        stack {
+            val gl = Gdx.gl30
+            val vertexShader = createShader(vertexShaderFile, GL20.GL_VERTEX_SHADER, defines)
+            val fragmentShader = createShader(fragmentShaderFile, GL20.GL_FRAGMENT_SHADER, defines)
 
-        val program = gl.glCreateProgram()
-        gl.glAttachShader(program, vertexShader)
-        gl.glAttachShader(program, fragmentShader)
+            val program = gl.glCreateProgram()
+            gl.glAttachShader(program, vertexShader)
+            gl.glAttachShader(program, fragmentShader)
 
-        for (i in vertexAttributes.attributes.indices) {
-            gl.glBindAttribLocation(program, vertexAttributes.locations[i], vertexAttributes.attributes[i].name)
-        }
-
-        gl.glLinkProgram(program)
-
-        for (i in vertexAttributes.attributes.indices) {
-            val expectedLocation = vertexAttributes.locations[i]
-            val attrName = vertexAttributes.attributes[i].name
-            val foundLocation = gl.glGetAttribLocation(program, attrName)
-            if (expectedLocation != foundLocation) {
-                Gdx.app.error(LOG, "Shader $name ($defines) did not bind attribute $attrName correctly, expected: $expectedLocation, got: $foundLocation")
+            for (i in vertexAttributes.attributes.indices) {
+                gl.glBindAttribLocation(program, vertexAttributes.locations[i], vertexAttributes.attributes[i].name)
             }
-        }
 
-        val status = BufferUtils.newIntBuffer(1)
-        gl.glGetProgramiv(program, GL20.GL_LINK_STATUS, status)
+            gl.glLinkProgram(program)
 
-        if (status.get(0) == GL20.GL_FALSE) {
-            val log = gl.glGetProgramInfoLog(program)
-            Gdx.app.error(LOG, "Failed to compile shader $name:\n$log")
-            gl.glDeleteShader(vertexShader)
-            gl.glDeleteShader(fragmentShader)
-            gl.glDeleteProgram(program)
-            return
-        }
+            for (i in vertexAttributes.attributes.indices) {
+                val expectedLocation = vertexAttributes.locations[i]
+                val attrName = vertexAttributes.attributes[i].name
+                val foundLocation = gl.glGetAttribLocation(program, attrName)
+                if (expectedLocation != foundLocation) {
+                    Gdx.app.error(LOG, "Shader $name ($defines) did not bind attribute $attrName correctly, expected: $expectedLocation, got: $foundLocation")
+                }
+            }
 
-        if (this.program != 0) {
-            gl.glDeleteShader(this.vertexShader)
-            gl.glDeleteShader(this.fragmentShader)
-            gl.glDeleteProgram(this.program)
-        }
+            val status = mallocInt(1)
+            gl.glGetProgramiv(program, GL20.GL_LINK_STATUS, status)
 
-        this.program = program
-        this.vertexShader = vertexShader
-        this.fragmentShader = fragmentShader
-        for (uniform in uniforms) {
-            uniform.init()
-        }
+            if (status.get(0) == GL20.GL_FALSE) {
+                val log = gl.glGetProgramInfoLog(program)
+                Gdx.app.error(LOG, "Failed to compile shader $name:\n$log")
+                gl.glDeleteShader(vertexShader)
+                gl.glDeleteShader(fragmentShader)
+                gl.glDeleteProgram(program)
+                return
+            }
 
-        for (uniform in uniforms) {
-            uniform.init()
+            if (this@Shader.program != 0) {
+                gl.glDeleteShader(this@Shader.vertexShader)
+                gl.glDeleteShader(this@Shader.fragmentShader)
+                gl.glDeleteProgram(this@Shader.program)
+            }
+
+            this@Shader.program = program
+            this@Shader.vertexShader = vertexShader
+            this@Shader.fragmentShader = fragmentShader
+            for (uniform in uniforms) {
+                uniform.init()
+            }
+
+            for (uniform in uniforms) {
+                uniform.init()
+            }
         }
     }
 

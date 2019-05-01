@@ -15,10 +15,10 @@ flat out vec4 v_color;
 uniform float u_blend;
 
 uniform mat4 u_projViewTrans;
+uniform vec3 u_eye_position;
 
 #if defined(WATER_WATER)
 uniform vec2 u_worldTrans[64];
-uniform vec3 u_eye_position;
 #endif
 
 #if defined(WATER_LAND)
@@ -33,7 +33,7 @@ uniform float u_time;
 uniform sampler2D u_displacement_texture;
 uniform sampler2D u_normal_texture;
 
-const vec3 lightDirection = vec3(0.2, 0.0, 0.9797958975);
+const vec3 lightDirection = normalize(vec3(0.4, 0.0, 1.0));
 #if defined(WATER_WATER)
 const float lodDst = 200;
 const float lodDst2 = lodDst * lodDst;
@@ -64,7 +64,7 @@ void main() {
 	#endif
 
 	float diffuse = dot(b_normal.xyz, lightDirection);
-	v_color = vec4(b_color.rgb * diffuse, 1.0);
+	v_color = vec4(b_color.rgb * mix(0.6, 1.0, diffuse), 1.0);
 
 	vec4 pos = vec4(b_position, 1.0);
 
@@ -94,7 +94,7 @@ void main() {
 
 		// Color
 		vec3 normal = normalize(texture(u_normal_texture, oceanSamplePos).xyz);
-		vec3 cameraToHere = normalize(b_position - pos.xyz);
+		vec3 cameraToHere = normalize(u_eye_position - pos.xyz);
 		vec3 reflection = reflect(-lightDirection, normal);
 		float specularBase = dot(reflection, cameraToHere);
 		float specular = 0.0;

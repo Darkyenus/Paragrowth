@@ -6,9 +6,6 @@ import com.badlogic.gdx.graphics.GL30
 import com.badlogic.gdx.graphics.g3d.utils.DefaultTextureBinder
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.utils.GdxRuntimeException
-import com.badlogic.gdx.utils.Pool
-import com.darkyen.paragrowth.render.Shader.Companion.NULL_SHADER
-import com.darkyen.paragrowth.render.Shader.Companion.NULL_VAO
 import com.darkyen.paragrowth.util.GdxArray
 import com.darkyen.paragrowth.util.stack
 import org.lwjgl.opengl.GL32
@@ -32,23 +29,6 @@ class RenderBatch(context: RenderContext? = null) {
     /** [RenderContext] used by this ModelBatch. */
     private val renderContext: RenderContext = context ?: RenderContext(DefaultTextureBinder(DefaultTextureBinder.WEIGHTED, 1))
 
-    private val renderablesPool = object : Pool<RenderModel>() {
-        override fun newObject(): RenderModel = RenderModel(attributes)
-
-        override fun reset(rm: RenderModel) {
-            rm.apply {
-                primitiveType = 0
-                offset = 0
-                baseVertex = 0
-                count = 0
-                vao = NULL_VAO
-                shader = NULL_SHADER
-                attributes.clear()
-                order = 0f
-            }
-        }
-    }
-
     /** list of Renderables to be rendered in the current batch  */
     private val renderables = GdxArray<RenderModel>(RenderModel::class.java)
 
@@ -62,12 +42,13 @@ class RenderBatch(context: RenderContext? = null) {
         if (ownContext) renderContext.begin()
     }
 
-    private var maxDrawCalls = 0
+    private var maxDrawCalls = 20 // we are interested only in large numbers
 
     /** Flushes the batch, causing all [Renderable]s in the batch to be rendered.
      * Can only be called after the call to [begin] and before the call to [end].
      * @return items rendered*/
     fun flush():Int {
+        val renderables = renderables
         val renderablesSize = renderables.size
         if (renderablesSize == 0)
             return 0
@@ -83,9 +64,6 @@ class RenderBatch(context: RenderContext? = null) {
         var currentVao:GlVertexArrayObject? = null
 
         for (renderable in renderables) {
-            if (renderable.vao.vertexAttributes != renderable.shader.vertexAttributes) {
-                println("TROUBLE")
-            }
             assert(renderable.vao.vertexAttributes == renderable.shader.vertexAttributes) { "VAO and shader vertex attributes don't match (${renderable.shader})" }
         }
 
@@ -117,6 +95,7 @@ class RenderBatch(context: RenderContext? = null) {
                     drawCalls++
                     Gdx.gl30.glDrawArrays(primitiveType, rm.offset, rm.count)
                 }
+                TODO("Not tested")
             } else {
                 // With indices
                 val indicesType = vao.indices.currentType
@@ -133,7 +112,7 @@ class RenderBatch(context: RenderContext? = null) {
                 val drawCount = to - from
 
                 // Different draw methods when uniforms are set and when not
-                if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */ || true) {
+                if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */) {
                     // Must do the slow path
                     for (i in from until to) {
                         val rm = items[i]
@@ -157,10 +136,11 @@ class RenderBatch(context: RenderContext? = null) {
                     }, from, to, shader.maxInstances) {
                         _, insFrom, insTo ->
                         val base = items[insFrom]
+                        val offset = base.offset * offsetSize
 
                         shader.updateInstancedUniforms(items, insFrom, insTo)
                         drawCalls++
-                        GL32.glDrawElementsInstancedBaseVertex(primitiveType, base.count, indicesType, base.offset.toLong(), insTo - insFrom, base.baseVertex)
+                        GL32.glDrawElementsInstancedBaseVertex(primitiveType, base.count, indicesType, offset.toLong(), insTo - insFrom, base.baseVertex)
                     }
                 } else stack {
                     // Can merge everything into common
@@ -189,7 +169,9 @@ class RenderBatch(context: RenderContext? = null) {
             Gdx.app.log("RenderBatch", "Draw call top mark $drawCalls")
         }
 
-        renderablesPool.freeAll(renderables)
+        for (i in 0 until renderables.size) {
+            renderables.items[i].reset()
+        }
         renderables.size = 0
         return renderablesSize
     }
@@ -234,9 +216,20 @@ class RenderBatch(context: RenderContext? = null) {
     /** Add a single [RenderModel] to the batch and return it, so that it may be set up.
      * Can only be called after a call to [begin] and before a call to [end]. */
     fun render():RenderModel {
-        val model = renderablesPool.obtain()
-        renderables.add(model)
-        return model
+        val renderables = renderables
+        val i = renderables.size
+        if (i == renderables.items.size) {
+            // Enlarge buffer if needed
+            renderables.ensureCapacity(i * 2)
+        }
+        renderables.size++
+        var item = renderables.items[i]
+        if (item == null) {
+            item = RenderModel(attributes)
+            renderables.items[i] = item
+        }
+
+        return item
     }
 
     /** Render given [renderable] to this batch.
