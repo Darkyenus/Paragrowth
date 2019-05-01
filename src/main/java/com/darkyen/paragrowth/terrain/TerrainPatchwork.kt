@@ -343,8 +343,12 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
     }
 
     override fun dispose() {
-        vertexBuffer.dispose()
+        blendingTo = null
+        blendVao?.forEach { it.dispose() }
+        blendVao = null
+
         vao.dispose()
+        vertexBuffer.dispose()
     }
 
     companion object {
