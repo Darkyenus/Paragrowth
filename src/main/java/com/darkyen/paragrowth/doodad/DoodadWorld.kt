@@ -33,21 +33,18 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         this.patches = GdxArray(false,(maxPatchX - minPatchX) * (maxPatchY - minPatchY), DoodadPatch::class.java)
 
         val doodadSet = Doodads.createDoodadSet(RandomXS128(seed), world.characteristics)
-        //println("doodadSet: ${doodadSet.size}")
 
         for (x in minPatchX until maxPatchX) {
-            for (y in minPatchY until maxPatchX) {
+            for (y in minPatchY until maxPatchY) {
                 val instances = GdxArray<DoodadInstance>(DoodadInstance::class.java)
                 generatePatchTasks!!.add(offload {
                     buildPatch(seed + x + y * (maxPatchX - minPatchY), world, (x * PATCH_SIZE).toFloat(), (y * PATCH_SIZE).toFloat(), doodadSet, instances, world.characteristics)
                 }.map { builder ->
                     if (builder.indices.size == 0) {
-                        //println("map to zero")
                         0
                     } else {
                         val patch = completePatch(builder, instances)
                         patches.add(patch)
-                        //println("map to "+patch.doodads.size)
                         patch.doodads.size
                     }
                 })
@@ -61,7 +58,6 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         for (task in generatePatchTasks) {
             totalDoodads += task.poll() ?: return false
         }
-        //println("Generated $totalDoodads doodads")
         this.generatePatchTasks = null
         return true
     }
@@ -72,7 +68,6 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         for (task in generatePatchTasks) {
             totalDoodads += task.get()
         }
-        //println("Generated $totalDoodads doodads")
         this.generatePatchTasks = null
         return true
     }
@@ -95,7 +90,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
         }
     }
 
-    fun prepareBlendIn(from:WorldSpecifics):Delayed<DoodadWorld> {
+    fun prepareBlendIn(from: WorldSpecifics):Delayed<DoodadWorld> {
         for (patch in patches) {
             patch.blendsMappedData = patch.blends.beginMappedAccess(GL15.GL_WRITE_ONLY).asFloatBuffer()
         }
@@ -105,7 +100,8 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
                 val blends = patch.blendsMappedData!!
                 for (doodad in patch.doodads) {
                     val underZ = from.getHeight(doodad.position.x, doodad.position.y)
-                    val shift = underZ - doodad.position.z - doodad.blendVerticesHeight - 0.5f
+                    //val shift = underZ - doodad.position.z - doodad.blendVerticesHeight - 0.5f
+                    val shift = underZ - doodad.position.z
                     for (i in doodad.blendVerticesFrom until doodad.blendVerticesTo) {
                         blends.put(i, shift)
                     }
