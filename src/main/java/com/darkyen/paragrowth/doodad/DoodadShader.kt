@@ -39,7 +39,7 @@ class DoodadShader(blendIn:Boolean) : Shader(DOODADS, "doodad", DOODAD_ATTRIBUTE
 
     override fun adjustContext(context: RenderContext) {
         context.setBlending(false, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
-        context.setCullFace(GL20.GL_NONE)
+        context.setCullFace(GL20.GL_NONE)// TODO(jp): Enable, after fixing winding
         context.setDepthTest(GL20.GL_LESS)
         context.setDepthMask(true)
     }

@@ -99,10 +99,6 @@ abstract class Shader(val order:Int,
             for (uniform in uniforms) {
                 uniform.init()
             }
-
-            for (uniform in uniforms) {
-                uniform.init()
-            }
         }
     }
 
@@ -395,6 +391,7 @@ abstract class Shader(val order:Int,
                                 lastSeen.put(vert, vertTime)
                                 Gdx.app.postRunnable {
                                     shader.compile()
+                                    println("${shader.name} reloaded (${System.currentTimeMillis()})")
                                 }
                             }
                         }
