@@ -4,7 +4,7 @@ flat in vec4 v_color;
 out vec4 fragmentColor;
 
 // Dither code: Looks great, but very slow when intersecting
-//#define DITHER
+#define DITHER
 #ifdef DITHER
 const float truncDepth = 3.0;
 const float dScl = truncDepth/64.0;
@@ -23,18 +23,23 @@ const float dither[64] = float[](
 #endif
 
 void main() {
+	fragmentColor = v_color;
+
 #ifdef DITHER
-	float depth = gl_FragCoord.z / gl_FragCoord.w;
-	const float scale = 1.0 / 4.0;
-	int ditherX = int(mod(gl_FragCoord.x * scale, 8));
-	int ditherY = int(mod(gl_FragCoord.y * scale, 8));
+	//float depth = gl_FragCoord.z / gl_FragCoord.w;
 
+	ivec2 ditherXY = (ivec2(gl_FragCoord.xy) >> 2) & 7;
 
-	float d = dither[ditherX + ditherY * 8];
-	if (depth < d) {
+	float d = dither[(ditherXY.x | (ditherXY.y << 3))];
+	//fragmentColor.a = step(d, depth);
+	//if (depth < d) {
+		//fragmentColor.a = 0.0;
+		//fragmentColor.a = step(d, depth);
+		//discard;
+	//}
+
+	if (gl_FragCoord.z < d * gl_FragCoord.w) {
 		discard;
 	}
 #endif DITHER
-
-	fragmentColor = v_color;
 }
