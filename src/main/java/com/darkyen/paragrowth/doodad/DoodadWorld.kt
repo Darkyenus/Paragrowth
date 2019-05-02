@@ -38,7 +38,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
             for (y in minPatchY until maxPatchY) {
                 val instances = GdxArray<DoodadInstance>(DoodadInstance::class.java)
                 generatePatchTasks!!.add(offload {
-                    buildPatch(seed + x + y * (maxPatchX - minPatchY), world, (x * PATCH_SIZE).toFloat(), (y * PATCH_SIZE).toFloat(), doodadSet, instances, world.characteristics)
+                    buildPatch(seed + (x - minPatchX) + (y - minPatchY) * (maxPatchX - minPatchY), world, (x * PATCH_SIZE).toFloat(), (y * PATCH_SIZE).toFloat(), doodadSet, instances, world.characteristics)
                 }.map { builder ->
                     if (builder.indices.size == 0) {
                         0
@@ -73,12 +73,11 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
     }
 
     fun render(batch: RenderBatch, camera: Camera, blendIn:Boolean) {
-        val patches = this.patches
         val frustum = camera.frustum
 
-        for (patch in patches) {
+        patches.each { patch ->
             if (!frustum.boundsInFrustum(patch.boundingBox)) {
-                continue
+                return@each
             }
 
             val model = batch.render()
@@ -91,17 +90,16 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
     }
 
     fun prepareBlendIn(from: WorldSpecifics):Delayed<DoodadWorld> {
-        for (patch in patches) {
+        patches.each { patch ->
             patch.blendsMappedData = patch.blends.beginMappedAccess(GL15.GL_WRITE_ONLY).asFloatBuffer()
         }
 
         return offload {
-            for (patch in patches) {
+            patches.each { patch ->
                 val blends = patch.blendsMappedData!!
                 for (doodad in patch.doodads) {
                     val underZ = from.getHeight(doodad.position.x, doodad.position.y)
-                    //val shift = underZ - doodad.position.z - doodad.blendVerticesHeight - 0.5f
-                    val shift = underZ - doodad.position.z
+                    val shift = underZ - doodad.position.z - doodad.blendVerticesHeight - 0.1f
                     for (i in doodad.blendVerticesFrom until doodad.blendVerticesTo) {
                         blends.put(i, shift)
                     }
@@ -109,7 +107,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
                 patch.blendsMappedData = null
             }
         }.map {
-            for (patch in patches) {
+            patches.each { patch ->
                 patch.blends.endMappedAccess()
             }
             this
@@ -117,16 +115,16 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
     }
 
     fun prepareBlendOut(to:WorldSpecifics): Delayed<DoodadWorld> {
-        for (patch in patches) {
+        patches.each { patch ->
             patch.blendsMappedData = patch.blends.beginMappedAccess(GL15.GL_WRITE_ONLY).asFloatBuffer()
         }
 
-        return immediate {
-            for (patch in patches) {
+        return offload {
+            patches.each { patch ->
                 val blends = patch.blendsMappedData!!
                 for (doodad in patch.doodads) {
                     val newZ = to.getHeight(doodad.position.x, doodad.position.y)
-                    val shift = newZ - doodad.position.z - doodad.blendVerticesHeight - 0.5f
+                    val shift = newZ - doodad.position.z - doodad.blendVerticesHeight - 0.1f
 
                     for (i in doodad.blendVerticesFrom until doodad.blendVerticesTo) {
                         blends.put(i, shift)
@@ -135,7 +133,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
                 patch.blendsMappedData = null
             }
         }.map {
-            for (patch in patches) {
+            patches.each { patch ->
                 patch.blends.endMappedAccess()
             }
             this
@@ -145,7 +143,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
     fun renderDebug(camera:Camera, renderer: ImmediateModeRenderer) {
         val frustum = camera.frustum
 
-        for (patch in patches) {
+        patches.each { patch ->
             val box = patch.boundingBox
             val shown = frustum.boundsInFrustum(box)
 
@@ -159,7 +157,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
     }
 
     override fun dispose() {
-        for (patch in patches) {
+        patches.each { patch ->
             patch.indices.dispose()
             patch.vertices.dispose()
             patch.blends.dispose()

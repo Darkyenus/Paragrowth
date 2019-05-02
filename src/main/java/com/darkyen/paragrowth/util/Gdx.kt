@@ -13,3 +13,9 @@ typealias GdxLongArray = com.badlogic.gdx.utils.LongArray
 
 @Suppress("UNCHECKED_CAST")
 inline fun <reified T> arrayOfSize(size: Int): Array<T> = arrayOfNulls<T>(size) as Array<T>
+
+inline fun <T> GdxArray<T>.each(op:(T)->Unit) {
+    for (i in 0 until size) {
+        op(get(i))
+    }
+}

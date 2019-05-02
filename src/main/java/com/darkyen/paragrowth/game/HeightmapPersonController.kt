@@ -121,6 +121,9 @@ class HeightmapPersonController(private val camera: Camera, private val heightma
 
 
         camera.position.z = Math.max(heightmap(camera.position.x, camera.position.y), -0.5f * height) + height
+        if (MOVEMENT_DEBUG.isPressed && Gdx.input.isKeyPressed(Keys.ALT_LEFT)) {
+            camera.position.z = 50f
+        }
 
         camera.update(true)
     }

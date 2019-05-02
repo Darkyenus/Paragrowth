@@ -47,8 +47,6 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     //3D Objects
     private val skyboxRenderable: Skybox
 
-    private var worldSpecifics: WorldSpecifics
-
     private var nextWorldAlpha = 0f
     private var terrain: TerrainPatchwork
     private var nextTerrain: TerrainPatchwork? = null
@@ -92,7 +90,6 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         //Terrain generation
         val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f, false)
-        this.worldSpecifics = worldSpecifics
         terrain = TerrainPatchwork.build(worldSpecifics).get()
         doodads = DoodadWorld.build(worldCharacteristics.seed, worldSpecifics).get()
 
@@ -142,13 +139,14 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 val centerY = worldCam.position.y
 
                 val worldCharacteristics = offload {
-                    WorldSpecifics(WorldCharacteristics.random(seed), centerX, centerY, true)
+                    val characteristics = WorldCharacteristics.random(seed)
+                    WorldSpecifics(characteristics, centerX, centerY, true)
                 }
                 val terrainPatchwork = worldCharacteristics.then { TerrainPatchwork.build(it) }
                 val blendOut = worldCharacteristics.then { doodads.prepareBlendOut(it) }
                 val doodadWorld = worldCharacteristics
                         .then { DoodadWorld.build(it.characteristics.seed, it) }
-                        .then { it.prepareBlendIn(worldSpecifics) }
+                        .then { it.prepareBlendIn(terrain.worldSpec) }
 
                 developingNextWorld = terrainPatchwork.pairWith(doodadWorld).andWaitFor(blendOut)
                 this.developingNextWorld = developingNextWorld
