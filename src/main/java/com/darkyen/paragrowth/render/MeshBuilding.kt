@@ -2,34 +2,11 @@
 package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.Mesh
-import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.util.GdxFloatArray
 import com.darkyen.paragrowth.util.GdxShortArray
 import com.badlogic.gdx.graphics.VertexAttribute as GdxVertexAttribute
 import com.badlogic.gdx.graphics.VertexAttributes as GdxVertexAttributes
-
-/**
- * Shared Mesh Builder instance.
- */
-@JvmField
-val MESH_BUILDER = MeshBuilder()
-
-/** 3D Position & color attributes  */
-@JvmField
-val POSITION3_COLOR1_ATTRIBUTES = GdxVertexAttributes(
-        GdxVertexAttribute.Position(), //3
-        GdxVertexAttribute.ColorPacked()//1
-)
-
-
-inline fun buildMesh(attributes:GdxVertexAttributes, build:MeshBuilder.() -> Unit): Mesh {
-    val builder = MESH_BUILDER
-    builder.begin(attributes)
-    builder.build()
-    return builder.end()
-}
 
 class ModelBuilder(val vertexFloats:Int) {
 

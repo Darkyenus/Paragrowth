@@ -4,7 +4,7 @@ flat in vec4 v_color;
 out vec4 fragmentColor;
 
 // Dither code: Looks great, but very slow when intersecting
-#define DITHER
+//#define DITHER
 #ifdef DITHER
 const float truncDepth = 3.0;
 const float dScl = truncDepth/64.0;

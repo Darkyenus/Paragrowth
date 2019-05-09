@@ -9,5 +9,5 @@ void main() {
 	vec3 dir = normalize(direction);
 	float uppness = dot(dir, u_cameraUp);
 
-	fragmentColor = vec4(0.0, 1.0 - uppness, 1.0, 1.0);
+	fragmentColor = vec4(/*dir.x * 0.5 + 0.5*/0.0, 1.0 - uppness, 1.0, 1.0);
 }

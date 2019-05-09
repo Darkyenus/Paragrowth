@@ -119,7 +119,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     override fun render(delta: Float) {
         val nextTerrain = nextTerrain
         if (nextTerrain != null) {
-            nextWorldAlpha += delta //* 0.1f
+            nextWorldAlpha += delta * 0.1f
             if (nextWorldAlpha > 1f) {
                 nextWorldAlpha = 0f
 
