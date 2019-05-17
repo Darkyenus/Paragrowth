@@ -63,6 +63,36 @@ const float lodDst = 200;
 const float lodDst2 = lodDst * lodDst;
 #endif
 
+// http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
+vec3 rgb2hsv(vec3 c) {
+	vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+	vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+	vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+	float d = q.x - min(q.w, q.y);
+	float e = 1.0e-10;
+	return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c) {
+	vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+	return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+/*vec3 hsvMix(vec3 a, vec3 b, float alpha) {
+	vec3 aHsv = rgb2hsv(a);
+	vec3 bHsv = rgb2hsv(b);
+	return hsv2rgb(mix(aHsv, bHsv, alpha));
+}*/
+
+vec4 hsvMix(vec4 a, vec4 b, float alpha) {
+	vec3 aHsv = rgb2hsv(a.rgb);
+	vec3 bHsv = rgb2hsv(b.rgb);
+	return vec4(hsv2rgb(mix(aHsv, bHsv, alpha)), 1.0);
+}
+
+
 void main() {
 	float blend;
 	vec3 b_position;
@@ -72,24 +102,24 @@ void main() {
 	b_position.xy = a_position.xy;
 	blend = getBlend(b_position.xy);
 	b_position.z = mix(a_position.z, a_position_blend.z, blend);
-	b_color = mix(a_color, a_color_blend, blend);
+	b_color = hsvMix(a_color, a_color_blend, blend);
 	b_normal = normalize(mix(a_normal.xyz, a_normal_blend.xyz, blend));
 #elif defined(LAND_WATER)
 	b_position.xy = a_position.xy;
 	blend = getBlend(b_position.xy);
 	b_position.z = mix(a_position.z, -1.0, blend);
-	b_color = mix(a_color, u_water_color_to, blend);
+	b_color = hsvMix(a_color, u_water_color_to, blend);
 	b_normal = normalize(mix(a_normal.xyz, vec3(0.0, 0.0, 1.0), blend));
 #elif defined(WATER_LAND)
 	b_position.xy = a_position.xy;
 	blend = getBlend(b_position.xy);
 	b_position.z = mix(-1.0, a_position.z, blend);
-	b_color = mix(u_water_color_from, a_color, blend);
+	b_color = hsvMix(u_water_color_from, a_color, blend);
 	b_normal = normalize(mix(vec3(0.0, 0.0, 1.0), a_normal.xyz, blend));
 #else // WATER_WATER
 	b_position = vec3(a_position.xy + u_worldTrans[gl_InstanceID], -1.0);
 	blend = getBlend(b_position.xy);
-	b_color = mix(a_color, u_water_color_to, blend);
+	b_color = hsvMix(a_color, u_water_color_to, blend);
 	b_normal = a_normal.xyz;//vec3(0.0, 0.0, 1.0);
 #endif
 

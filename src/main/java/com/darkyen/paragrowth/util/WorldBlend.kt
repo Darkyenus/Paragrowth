@@ -57,10 +57,12 @@ fun Attributes.setBlendWalls(camera: PerspectiveCamera) {
 }
 
 fun Attributes.setBlend(value:Float) {
+    val edge = 0.25f
+
     val alpha:Float =
         when {
-            value < 0.25f -> (value / 0.25f) * 0.5f
-            value > 0.75f -> 0.5f + (value - 0.75f) / 0.25f * 0.5f
+            value < edge -> (value / edge) * 0.5f
+            value > 1f - edge -> 0.5f + (value - (1f - edge)) / edge * 0.5f
             else -> 0.5f
         }
 
