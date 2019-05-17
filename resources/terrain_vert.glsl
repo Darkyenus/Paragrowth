@@ -13,6 +13,30 @@ in vec4 a_normal_blend;
 flat out vec4 v_color;
 
 uniform float u_blend;
+uniform vec3 u_blendEdgeLeft;
+uniform vec3 u_blendEdgeRight;
+const float MAX_EDGE_DIST_INV = 1.0 / 50.0;
+
+float getBlend(vec2 pos) {
+	if (u_blend < 0.0) {
+		return 0.0;
+	}
+	float leftDist = dot(vec3(pos, 1.0), u_blendEdgeLeft);
+	float rightDist = dot(vec3(pos, 1.0), u_blendEdgeRight);
+	float maxDist = max(leftDist, rightDist);
+
+	// Goes [0, 1] as u_blend goes [0, 0.5]
+	float outerBlend = clamp(u_blend * 2.0, 0.0, 1.0);
+
+	// Blend value for inside of the wedge
+	// Goes [0, 1] as u_blend goes [0.5, 1]
+	float wedgeBlend = clamp((u_blend - 0.5) * 2.0, 0.0, 1.0);
+
+	// 0 inside the wedge, 1 completely outside wedge, coming closer to 0 when near the wedge
+	float outWedge = clamp(maxDist * MAX_EDGE_DIST_INV, 0, 1);
+	return mix(wedgeBlend, outerBlend, outWedge);
+}
+
 
 uniform mat4 u_projViewTrans;
 uniform vec3 u_eye_position;
@@ -40,28 +64,34 @@ const float lodDst2 = lodDst * lodDst;
 #endif
 
 void main() {
-	float blend = u_blend;
-
+	float blend;
 	vec3 b_position;
 	vec4 b_color;
 	vec3 b_normal;
-	#if defined(LAND_LAND)
-	b_position = mix(a_position, a_position_blend, blend);
+#if defined(LAND_LAND)
+	b_position.xy = a_position.xy;
+	blend = getBlend(b_position.xy);
+	b_position.z = mix(a_position.z, a_position_blend.z, blend);
 	b_color = mix(a_color, a_color_blend, blend);
 	b_normal = normalize(mix(a_normal.xyz, a_normal_blend.xyz, blend));
-	#elif defined(LAND_WATER)
-	b_position = mix(a_position, vec3(a_position.xy, -1.0), blend);
+#elif defined(LAND_WATER)
+	b_position.xy = a_position.xy;
+	blend = getBlend(b_position.xy);
+	b_position.z = mix(a_position.z, -1.0, blend);
 	b_color = mix(a_color, u_water_color_to, blend);
 	b_normal = normalize(mix(a_normal.xyz, vec3(0.0, 0.0, 1.0), blend));
-	#elif defined(WATER_LAND)
-	b_position = mix(vec3(a_position.xy, -1.0), a_position, blend);
+#elif defined(WATER_LAND)
+	b_position.xy = a_position.xy;
+	blend = getBlend(b_position.xy);
+	b_position.z = mix(-1.0, a_position.z, blend);
 	b_color = mix(u_water_color_from, a_color, blend);
 	b_normal = normalize(mix(vec3(0.0, 0.0, 1.0), a_normal.xyz, blend));
-	#else // WATER_WATER
+#else // WATER_WATER
 	b_position = vec3(a_position.xy + u_worldTrans[gl_InstanceID], -1.0);
+	blend = getBlend(b_position.xy);
 	b_color = mix(a_color, u_water_color_to, blend);
 	b_normal = a_normal.xyz;//vec3(0.0, 0.0, 1.0);
-	#endif
+#endif
 
 	float diffuse = dot(b_normal.xyz, lightDirection);
 	v_color = vec4(b_color.rgb * mix(0.6, 1.0, diffuse), 1.0);

@@ -12,7 +12,9 @@ import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN_OCEAN
 import com.darkyen.paragrowth.util.Color
+import com.darkyen.paragrowth.util.WORLD_BLEND_ATTRIBUTE
 import com.darkyen.paragrowth.util.rgb
+import com.darkyen.paragrowth.util.setupBlendWallUniforms
 import java.nio.FloatBuffer
 
 /*
@@ -357,8 +359,6 @@ val TERRAIN_SHADER_W_W = TerrainShader(TerrainShaderType.WATER_WATER)
 
 /** Time for waves */
 val TERRAIN_TIME_ATTRIBUTE = attributeKeyFloat("terrain_time")
-/** Blend between first and second */
-val TERRAIN_BLEND_ATTRIBUTE = attributeKeyFloat("terrain_blend")
 val TERRAIN_WATER_COLOR_FROM_ATTRIBUTE = attributeKeyFloat("terrain_water_color_from")
 val TERRAIN_WATER_COLOR_TO_ATTRIBUTE = attributeKeyFloat("terrain_water_color_to")
 /** Location offset in the world */
@@ -380,6 +380,8 @@ class TerrainShader(type:TerrainShaderType) : Shader(
             }
         }
 
+        setupBlendWallUniforms()
+
         globalUniform("u_eye_position") { uniform, camera, _ ->
             uniform.set(camera.position)
         }
@@ -396,7 +398,7 @@ class TerrainShader(type:TerrainShaderType) : Shader(
         }
 
         globalUniform("u_blend") { uniform, _, attributes ->
-            uniform.set(attributes[TERRAIN_BLEND_ATTRIBUTE][0])
+            uniform.set(attributes[WORLD_BLEND_ATTRIBUTE][0])
         }
 
         globalUniform("u_projViewTrans") { uniform, camera, _ ->

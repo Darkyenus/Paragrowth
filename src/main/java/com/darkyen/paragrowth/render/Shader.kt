@@ -179,14 +179,14 @@ abstract class Shader(val order:Int,
     /** Called after shader is activated. Modify [context] with values which are common for all rendered objects. */
     open fun adjustContext(context:RenderContext) {}
 
-    protected fun localUniform(name:String, setter: LocalSetter) {
+    fun localUniform(name:String, setter: LocalSetter) {
         val uniform = Uniform(this, setter, null)
         uniform.name = name
         uniforms.add(uniform)
         localUniforms.add(uniform)
     }
 
-    protected fun instancedUniform(name:String, setter: LocalSetter) {
+    fun instancedUniform(name:String, setter: LocalSetter) {
         assert(maxInstances > 1)
 
         val uniform = Uniform(this, setter, null)
@@ -195,7 +195,7 @@ abstract class Shader(val order:Int,
         instancedUniforms.add(uniform)
     }
 
-    protected fun globalUniform(name:String, setter: GlobalSetter) {
+    fun globalUniform(name:String, setter: GlobalSetter) {
         val uniform = Uniform(this, null, setter)
         uniform.name = name
         uniforms.add(uniform)

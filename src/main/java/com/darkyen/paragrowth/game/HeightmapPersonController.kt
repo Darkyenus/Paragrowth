@@ -13,7 +13,7 @@ import com.darkyen.paragrowth.input.GameInput.Binding.bindMouseButton
 /**
  */
 @Suppress("PrivatePropertyName", "PropertyName")
-class HeightmapPersonController(private val camera: Camera, private val heightmap: (x:Float, y:Float) -> Float) {
+class HeightmapPersonController constructor(private val camera: Camera, private val heightmap: (x:Float, y:Float) -> Float) {
 
     private val FORWARD = GameInput.function("Forward", bindKeyboard(Keys.W), bindKeyboard(Keys.UP))
     private val BACKWARD = GameInput.function("Backward", bindKeyboard(Keys.S), bindKeyboard(Keys.DOWN))

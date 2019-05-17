@@ -16,7 +16,6 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.WorldCharacteristics
 import com.darkyen.paragrowth.WorldSpecifics
-import com.darkyen.paragrowth.doodad.DOODAD_BLEND_ATTRIBUTE
 import com.darkyen.paragrowth.doodad.DoodadWorld
 import com.darkyen.paragrowth.input.GameInput
 import com.darkyen.paragrowth.render.RenderBatch
@@ -96,7 +95,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         cameraController = HeightmapPersonController(worldCam) { x, y ->
             val base = terrain.heightAt(x, y)
             val blend = nextTerrain?.heightAt(x, y) ?: base
-            MathUtils.lerp(base, blend, nextWorldAlpha)
+            val alpha = modelBatch.attributes.getBlendAt(x, y)
+            MathUtils.lerp(base, blend, alpha)
         }
         gameInput = GameInput(*cameraController.INPUT)
         gameInput.build()
@@ -119,7 +119,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     override fun render(delta: Float) {
         val nextTerrain = nextTerrain
         if (nextTerrain != null) {
-            nextWorldAlpha += delta * 0.1f
+            nextWorldAlpha += delta / 10f
             if (nextWorldAlpha > 1f) {
                 nextWorldAlpha = 0f
 
@@ -160,12 +160,16 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 this.nextTerrain = newTerrain
                 this.nextDoodads = newDoodads
                 terrain.blendTo(newTerrain)
+                modelBatch.attributes.setBlendWalls(worldCam)
                 nextWorldAlpha = 0f
             }
         }
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
         GL32.glProvokingVertex(GL32.GL_FIRST_VERTEX_CONVENTION)// Needed for heightmap
+
+        // Before camera controller update
+        modelBatch.attributes.setBlend(nextWorldAlpha)
 
         updateWorld(delta)
         hudStage.act(delta)
@@ -174,8 +178,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         // (they won't get proper depth-testing, but skybox won't show through)
         Gdx.gl.glEnable(GL_DEPTH_CLAMP)
         modelBatch.attributes[TERRAIN_TIME_ATTRIBUTE][0] = (System.currentTimeMillis() - startTime) / 1000f
-        modelBatch.attributes[DOODAD_BLEND_ATTRIBUTE][0] = nextWorldAlpha
-        terrain.setupGlobalAttributes(modelBatch, nextWorldAlpha)
+        terrain.setupGlobalAttributes(modelBatch)
 
         modelBatch.begin(worldCam)
 

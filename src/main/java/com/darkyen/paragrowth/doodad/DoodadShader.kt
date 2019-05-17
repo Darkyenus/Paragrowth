@@ -4,16 +4,16 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.GL30
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.darkyen.paragrowth.render.*
+import com.darkyen.paragrowth.util.WORLD_BLEND_ATTRIBUTE
+import com.darkyen.paragrowth.util.setupBlendWallUniforms
 
 val VA_BLEND_OFFSET = VertexAttribute("a_blend_offset", GL30.GL_FLOAT, 1)
 
 val DOODAD_ATTRIBUTES = VertexAttributes(
         VA_POSITION3,
-        VA_COLOR1
-        , VA_BLEND_OFFSET
+        VA_COLOR1,
+        VA_BLEND_OFFSET
 )
-
-val DOODAD_BLEND_ATTRIBUTE = attributeKeyFloat("doodad_blend")
 
 val DOODAD_SHADER_BLEND_IN = DoodadShader(true)
 val DOODAD_SHADER_BLEND_OUT = DoodadShader(false)
@@ -29,12 +29,14 @@ class DoodadShader(blendIn:Boolean) : Shader(DOODADS, "doodad", DOODAD_ATTRIBUTE
         }
 
         globalUniform("u_blend") { uniform, _, attributes ->
-            if (blendIn) {
-                uniform.set(1f - attributes[DOODAD_BLEND_ATTRIBUTE][0])
-            } else {
-                uniform.set(attributes[DOODAD_BLEND_ATTRIBUTE][0])
-            }
+            uniform.set(attributes[WORLD_BLEND_ATTRIBUTE][0])
         }
+
+        globalUniform("u_blendIn") { uniform, camera, attributes ->
+            uniform.set(if(blendIn) 1 else 0)
+        }
+
+        setupBlendWallUniforms()
     }
 
     override fun adjustContext(context: RenderContext) {

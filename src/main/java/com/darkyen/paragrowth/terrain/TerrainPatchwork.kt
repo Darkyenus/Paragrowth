@@ -222,10 +222,9 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
         return hBaseLeft * a1 + hBaseRight * a2 + hPoint * a3
     }
 
-    fun setupGlobalAttributes(batch:RenderBatch, blendProgress:Float) {
+    fun setupGlobalAttributes(batch: RenderBatch) {
         batch.attributes[TERRAIN_WATER_COLOR_FROM_ATTRIBUTE][0] = worldSpec.waterColor
         batch.attributes[TERRAIN_WATER_COLOR_TO_ATTRIBUTE][0] = (blendingTo ?: this).worldSpec.waterColor
-        batch.attributes[TERRAIN_BLEND_ATTRIBUTE][0] = blendProgress
     }
 
     private val render_bounds = BoundingBox()

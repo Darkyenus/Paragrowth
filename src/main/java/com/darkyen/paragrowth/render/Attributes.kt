@@ -1,6 +1,7 @@
 package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.math.Vector3
 import com.darkyen.paragrowth.util.GdxArray
 
 /** Each new instance is globally registered and serves as a key for [Attributes] */
@@ -34,6 +35,10 @@ class AttributeKey<T : Any>(private val name:String, internal val new:()->T, int
 
 fun attributeKeyVector2(name:String):AttributeKey<Vector2> {
     return AttributeKey(name, { Vector2() }) { it.setZero() }
+}
+
+fun attributeKeyVector3(name:String):AttributeKey<Vector3> {
+    return AttributeKey(name, { Vector3() }) { it.setZero() }
 }
 
 fun attributeKeyFloat(name:String):AttributeKey<FloatArray> {
