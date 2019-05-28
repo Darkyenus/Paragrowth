@@ -58,10 +58,6 @@ uniform sampler2D u_displacement_texture;
 uniform sampler2D u_normal_texture;
 
 const vec3 lightDirection = normalize(vec3(0.4, 0.0, 1.0));
-#if defined(WATER_WATER)
-const float lodDst = 200;
-const float lodDst2 = lodDst * lodDst;
-#endif
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 vec3 rgb2hsv(vec3 c) {
@@ -136,13 +132,9 @@ void main() {
 		// Position
 		#if defined(WATER_WATER)
 		{
-			vec3 dst = pos.xyz - u_eye_position.xyz;
-			// To prevent sky showing through in distant LODs, flatten the surface
-			if (dot(dst, dst) < lodDst2) {
-				float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
-				float heightDisplacement = displacement - 1.0;
-				pos.z = mix(0.0, heightDisplacement, mixFactor);
-			}
+			float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
+			float heightDisplacement = displacement - 1.0;
+			pos.z = mix(0.0, heightDisplacement, mixFactor);
 		}
 		#else
 		{

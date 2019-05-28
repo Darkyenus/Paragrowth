@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Camera
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.GL30
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.badlogic.gdx.utils.Disposable
 import com.darkyen.paragrowth.ParagrowthMain
@@ -230,11 +231,20 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
     private val render_bounds = BoundingBox()
     private val render_boundsSea = BoundingBox()
 
+    private fun RenderModel.setupOrderAndLod(cameraPosition: Vector3, x:Int, y:Int) {
+        val lodDistance = 150
+        val lodDistance2 = lodDistance * lodDistance
+
+        order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
+        if ((order > lodDistance2) /*|| ((x + y) % 2 == 0)*/) {
+            offset = TERRAIN_PATCH_INDEX_COUNT
+            count = TERRAIN_PATCH_LOD1_INDEX_COUNT
+        }
+    }
+
     override fun render(batch: RenderBatch, camera: Camera) {
         val frustum = camera.frustum
         val cameraPosition = camera.position
-        val lodDistance = 200
-        val lodDistance2 = lodDistance * lodDistance
         val bounds = this.render_bounds.set(frustum.planePoints)
 
         val lowX = Math.floor(((bounds.min.x - X_STEP) / PATCH_WIDTH).toDouble()).toInt()
@@ -279,11 +289,7 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
                         model.set(patch.model)
                         model.shader = TERRAIN_SHADER_W_W
                         model.attributes[TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE].set(xOff, yOff)
-                        model.order = cameraPosition.dst2(xOff + PATCH_WIDTH * 0.5f, yOff + PATCH_HEIGHT * 0.5f, 0f)
-                        if (model.order > lodDistance2) {
-                            model.offset = TERRAIN_PATCH_INDEX_COUNT
-                            model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
-                        }
+                        model.setupOrderAndLod(cameraPosition, x, y)
                     }
                 } else {
                     if /* l */ ((baseLand && blendToLand == null /* Land */)

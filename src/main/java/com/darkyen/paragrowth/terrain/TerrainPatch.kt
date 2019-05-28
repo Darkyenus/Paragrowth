@@ -11,10 +11,7 @@ import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN
 import com.darkyen.paragrowth.render.Shader.Companion.TERRAIN_OCEAN
-import com.darkyen.paragrowth.util.Color
-import com.darkyen.paragrowth.util.WORLD_BLEND_ATTRIBUTE
-import com.darkyen.paragrowth.util.rgb
-import com.darkyen.paragrowth.util.setupBlendWallUniforms
+import com.darkyen.paragrowth.util.*
 import java.nio.FloatBuffer
 
 /*
@@ -40,7 +37,8 @@ const val PATCH_HEIGHT = PATCH_UNIT_SIZE * Y_STEP
 
 /** Amount of indices needed to draw the whole patch */
 const val TERRAIN_PATCH_INDEX_COUNT = (PATCH_UNIT_SIZE * PATCH_UNIT_SIZE * 2) * 3
-const val TERRAIN_PATCH_LOD1_INDEX_COUNT = (PATCH_UNIT_SIZE/2 * (1 + 2 + PATCH_UNIT_SIZE - 1)) * 3
+//const val TERRAIN_PATCH_LOD1_INDEX_COUNT = (PATCH_UNIT_SIZE/2 * (1 + 2 + PATCH_UNIT_SIZE - 1)) * 3
+var TERRAIN_PATCH_LOD1_INDEX_COUNT = 0 // Filled at generation time
 /** Total amount of vertices needed to draw the whole patch.
  * Some triangles must overlap, because there is more triangles than vertices and we need an unique provoking
  * vertex for each one. For EVEN rows, the provoking vertex is the top-left one and top one.
@@ -256,53 +254,138 @@ fun generateTerrainPatchIndices():ShortArray {
 /** Generate indices for the terrain mesh, LoD 1 */
 fun generateTerrainPatchIndicesLoD1():ShortArray {
     val ROW_AMOUNT = PATCH_SIZE + PATCH_SIZE - 2
-    val indices = ShortArray(TERRAIN_PATCH_LOD1_INDEX_COUNT)
-    var i = 0
+    val indices = GdxShortArray()
 
     // Do all of the double-strips
-    var y = 0
-    while (y < PATCH_UNIT_SIZE) {
-        /*
-        Arrangement:
-        0 \  /\  /\  /\ even
-        1 /\/  \/  \/-/ odd
-        2 \  /\  /\  /\
-        3 /\/  \/  \/-/
-        4
-         */
+    for (y in 0 until PATCH_SIZE-1 step 2) {
+        // Row head
 
-        // Begin speck (not equilateral)
-        indices[i++] = (y * ROW_AMOUNT).toShort()
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1).toShort()
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
+        // top
+        indices.add(y * ROW_AMOUNT)
+        indices.add(y * ROW_AMOUNT + 1)
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT)
 
-        // Big tiles with wide top
-        for (x in 0 until PATCH_UNIT_SIZE / 2) {
-            indices[i++] = (x * 4 + y * ROW_AMOUNT).toShort()
-            indices[i++] = (x * 4 + 3 + y * ROW_AMOUNT).toShort()
-            indices[i++] = (x * 4 + 1 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
+        // bottom
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT)
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1)
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT)
+
+        // wedge
+        indices.add(y * ROW_AMOUNT + 1)
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + 1)
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT)
+
+        when {
+            y == 0 -> { // BEGIN ROW
+                for (x in 1 until PATCH_SIZE - 2 step 2) {
+                    // left
+                    indices.add(y * ROW_AMOUNT + x*2)
+                    indices.add(y * ROW_AMOUNT + x*2 + 1)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2)
+
+                    // big
+                    indices.add(y * ROW_AMOUNT + x*2 + 1)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 4)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2)
+
+                    // right
+                    indices.add(y * ROW_AMOUNT + x*2 + 2)
+                    indices.add(y * ROW_AMOUNT + x*2 + 3)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 4)
+                }
+            }
+            y + 3 == PATCH_SIZE -> {// END ROW
+                for (x in 1 until PATCH_SIZE - 2 step 2) {
+                    // left
+                    indices.add(y * ROW_AMOUNT + x*2)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 1)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2)
+
+                    // big
+                    indices.add(y * ROW_AMOUNT + x*2)
+                    indices.add(y * ROW_AMOUNT + x*2 + 3)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 1)
+
+                    // right
+                    indices.add(y * ROW_AMOUNT + x*2 + 3)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 4)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 2)
+                }
+            }
+            (y / 2) % 2 == 0 -> {// BODY A
+                // BODY START (half triangle)
+                indices.add(y * ROW_AMOUNT + 2)
+                indices.add(y * ROW_AMOUNT + 3)
+                indices.add(y * ROW_AMOUNT + 2 * ROW_AMOUNT + 2)
+
+
+                // A-shaped
+                for (x in 1 until PATCH_SIZE - 2 step 2) {
+                    // big
+                    indices.add(y * ROW_AMOUNT + x*2 + 1)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 4)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2)
+                }
+
+                for (x in 2 until PATCH_SIZE - 3 step 2) {
+                    indices.add(y * ROW_AMOUNT + x*2)
+                    indices.add(y * ROW_AMOUNT + x*2 + 3)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 1)
+                }
+
+                // BODY END (half triangle)
+                indices.add(y * ROW_AMOUNT + ROW_AMOUNT - 4)
+                indices.add(y * ROW_AMOUNT + ROW_AMOUNT - 2)
+                indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 2)
+            }
+            else -> {// BODY B (flipped A)
+                // BODY START (half triangle)
+                indices.add(y * ROW_AMOUNT + 2)
+                indices.add(y * ROW_AMOUNT + 2 * ROW_AMOUNT + 3)
+                indices.add(y * ROW_AMOUNT + 2 * ROW_AMOUNT + 2)
+
+
+                // V-shaped
+                for (x in 1 until PATCH_SIZE - 2 step 2) {
+                    indices.add(y * ROW_AMOUNT + x*2)
+                    indices.add(y * ROW_AMOUNT + x*2 + 3)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 1)
+                }
+
+                for (x in 2 until PATCH_SIZE - 3 step 2) {
+                    indices.add(y * ROW_AMOUNT + x*2 + 1)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2 + 4)
+                    indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT + x*2)
+                }
+
+
+                // BODY END (half triangle)
+                indices.add(y * ROW_AMOUNT + ROW_AMOUNT - 3)
+                indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 2)
+                indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 4)
+            }
         }
 
-        // Big tiles with wide bottom
-        for (x in 1 until PATCH_UNIT_SIZE / 2) {
-            indices[i++] = (x * 4 - 1 + y * ROW_AMOUNT).toShort()
-            indices[i++] = (x * 4 + 1 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
-            indices[i++] = (x * 4 - 2 + y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT).toShort()
-        }
+        // Row tail
 
-        // End speck (not equilateral)
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 2).toShort()
+        // top
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT - 2)
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT - 1)
+        indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 2)
 
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 1).toShort()
-        indices[i++] = (y * ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT + ROW_AMOUNT - 2).toShort()
-        y += 2
+        // top right
+        indices.add(y * ROW_AMOUNT + ROW_AMOUNT - 1)
+        indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT - 1)
+        indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 2)
+
+        // bottom right
+        indices.add(y * ROW_AMOUNT + 2*ROW_AMOUNT - 1)
+        indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 1)
+        indices.add(y * ROW_AMOUNT + 3*ROW_AMOUNT - 2)
     }
-    assert(i == indices.size)
 
-    return indices
+    TERRAIN_PATCH_LOD1_INDEX_COUNT = indices.size
+    return indices.toArray()
 }
 
 val VA_NORMAL3_TINY = VertexAttribute("a_normal", GL30.GL_INT_2_10_10_10_REV, 4, true)
