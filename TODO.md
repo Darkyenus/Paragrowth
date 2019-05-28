@@ -1,7 +1,5 @@
 - Sun/lighting source
 - Skybox!
-- Two way world blending and generation, probably on off thread?
-	- Blend-map should probably be polygonional, not raster
 
 
 Terrain inspiration:

@@ -231,12 +231,9 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
     private val render_bounds = BoundingBox()
     private val render_boundsSea = BoundingBox()
 
-    private fun RenderModel.setupOrderAndLod(cameraPosition: Vector3, x:Int, y:Int) {
-        val lodDistance = 150
-        val lodDistance2 = lodDistance * lodDistance
-
+    private fun RenderModel.setupOrderAndLod(cameraPosition: Vector3, x:Int, y:Int, lodDistance:Int) {
         order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
-        if ((order > lodDistance2) /*|| ((x + y) % 2 == 0)*/) {
+        if (order > lodDistance * lodDistance) {
             offset = TERRAIN_PATCH_INDEX_COUNT
             count = TERRAIN_PATCH_LOD1_INDEX_COUNT
         }
@@ -289,7 +286,7 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
                         model.set(patch.model)
                         model.shader = TERRAIN_SHADER_W_W
                         model.attributes[TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE].set(xOff, yOff)
-                        model.setupOrderAndLod(cameraPosition, x, y)
+                        model.setupOrderAndLod(cameraPosition, x, y, 180)
                     }
                 } else {
                     if /* l */ ((baseLand && blendToLand == null /* Land */)
@@ -312,14 +309,8 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
                             } else {
                                 model.shader = TERRAIN_SHADER_L_W
                             }
-                            model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
 
-
-                            // TODO Investigate re-enabling this after having better lod indices
-                            /*if (model.order > lodDistance2) {
-                                model.offset = TERRAIN_PATCH_INDEX_COUNT
-                                model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
-                            }*/
+                            model.setupOrderAndLod(cameraPosition, x, y, 300)
                         }
                     } else /* Land -> Land */ {
                         assert(baseLand && blendToLand == true)
@@ -334,12 +325,7 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
                             model.shader = TERRAIN_SHADER_L_L
                             model.order = cameraPosition.dst2(x * PATCH_WIDTH + PATCH_WIDTH * 0.5f, y * PATCH_HEIGHT + PATCH_HEIGHT * 0.5f, 0f)
 
-
-                            // TODO Investigate re-enabling this after having better lod indices
-                            /*if (model.order > lodDistance2) {
-                                model.offset = TERRAIN_PATCH_INDEX_COUNT
-                                model.count = TERRAIN_PATCH_LOD1_INDEX_COUNT
-                            }*/
+                            model.setupOrderAndLod(cameraPosition, x, y, 300)
                         }
                     }
                 }
