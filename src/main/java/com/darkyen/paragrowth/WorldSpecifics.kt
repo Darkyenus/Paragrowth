@@ -20,6 +20,9 @@ class WorldSpecifics(val characteristics: WorldCharacteristics, centerX: Float, 
     private val beachColor: FloatArray
     private val terrainColor: FloatArray
 
+    val lowSkyboxColor: Color
+    val highSkyboxColor: Color
+
     private val colorNoise = OpenSimplexNoise().apply {
         initialize(characteristics.seed)
     }
@@ -30,6 +33,11 @@ class WorldSpecifics(val characteristics: WorldCharacteristics, centerX: Float, 
         beachColor = floatArrayOf(characteristics.getRandomFudgedColor(random, WorldColors.BEACH), characteristics.getRandomFudgedColor(random, WorldColors.BEACH))
 
         terrainColor = floatArrayOf(characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN), characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN), characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN), characteristics.getRandomFudgedColor(random, WorldColors.TERRAIN))
+
+        val skyboxColors = WorldColors.pick(WorldColors.SKYBOX, random, characteristics.mood)
+
+        lowSkyboxColor = characteristics.possiblyReplaceAndFudgeColor(random, skyboxColors[0].toFloatBits())
+        highSkyboxColor = characteristics.possiblyReplaceAndFudgeColor(random, skyboxColors[1].toFloatBits())
     }
 
     init {

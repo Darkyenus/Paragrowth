@@ -91,6 +91,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         val worldSpecifics = WorldSpecifics(worldCharacteristics, 0f, 0f, false)
         terrain = TerrainPatchwork.build(worldSpecifics).get()
         doodads = DoodadWorld.build(worldCharacteristics.seed, worldSpecifics).get()
+        skyboxRenderable.lowColor = worldSpecifics.lowSkyboxColor
+        skyboxRenderable.highColor = worldSpecifics.highSkyboxColor
 
         cameraController = HeightmapPersonController(worldCam) { x, y ->
             val base = terrain.heightAt(x, y)
@@ -130,6 +132,11 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 doodads.dispose()
                 doodads = nextDoodads!!
                 nextDoodads = null
+
+                skyboxRenderable.apply {
+                    lowColor = lowColorBlend
+                    highColor = highColorBlend
+                }
             }
         } else if (cameraController.CYCLE_TERRAIN_DEBUG.isPressed) {
             var developingNextWorld = developingNextWorld
@@ -161,6 +168,9 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 this.nextDoodads = newDoodads
                 terrain.blendTo(newTerrain)
                 modelBatch.attributes.setBlendWalls(worldCam)
+                skyboxRenderable.lowColorBlend = newTerrain.worldSpec.lowSkyboxColor
+                skyboxRenderable.highColorBlend = newTerrain.worldSpec.highSkyboxColor
+
                 nextWorldAlpha = 0f
             }
         }

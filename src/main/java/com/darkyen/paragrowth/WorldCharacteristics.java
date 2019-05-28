@@ -67,6 +67,13 @@ public class WorldCharacteristics {
         return color;
     }
 
+    public float possiblyReplaceAndFudgeColor(Random random, float color) {
+        if (shouldUseCustomColor(random)) {
+            return ColorKt.fudge(getRandomColor(random).toFloatBits(), random, coherence, 1f);
+        }
+        return ColorKt.fudge(color, random, coherence, 1f);
+    }
+
     public float getRandomFudgedColor(Random random, Color[][] template) {
         Color baseColor = null;
 

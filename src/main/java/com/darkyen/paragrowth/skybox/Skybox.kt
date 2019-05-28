@@ -8,6 +8,8 @@ import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.utils.Disposable
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.util.Color
+import com.darkyen.paragrowth.util.WORLD_BLEND_ATTRIBUTE
+import com.darkyen.paragrowth.util.lerpHSB
 import com.darkyen.paragrowth.util.rgb
 
 val SKYBOX_ATTRIBUTES = VertexAttributes(VA_POSITION3)
@@ -58,10 +60,14 @@ class Skybox : Renderable, Disposable {
     var lowColor:Color = rgb(0f, 1f, 1f)
     var highColor:Color = rgb(0f, 1f, 1f)
 
+    var lowColorBlend:Color = 0f
+    var highColorBlend:Color = 0f
+
     override fun render(batch: RenderBatch, camera: Camera) {
+        val colorBlend = batch.attributes[WORLD_BLEND_ATTRIBUTE][0]
         batch.render().apply {
-            attributes[LOW_COLOR_ATTRIBUTE][0] = lowColor
-            attributes[HIGH_COLOR_ATTRIBUTE][0] = highColor
+            attributes[LOW_COLOR_ATTRIBUTE][0] = lerpHSB(lowColor, lowColorBlend, colorBlend)
+            attributes[HIGH_COLOR_ATTRIBUTE][0] = lerpHSB(highColor, highColorBlend, colorBlend)
             primitiveType = GL20.GL_TRIANGLES
             count = this@Skybox.count
             this.vao = this@Skybox.vao

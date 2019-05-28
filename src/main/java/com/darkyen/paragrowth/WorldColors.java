@@ -93,6 +93,27 @@ public class WorldColors {
             }
     };
 
+    public static final Color[][][] SKYBOX = {
+            // Evil
+            {
+                    {c("000000"), c("888888")}, // WoW death-realm
+                    {c("6f1200"), c("fc8300")}, // Fire
+                    {c("fd282f"), c("1c547a")}, // Blood-sunset
+            },
+            // Normal
+            {
+                    {c("8a8795"), c("273d58")}, // Somewhat dark normal sky
+                    {c("96aec3"), c("2557a9")}, // Normal-colored sky
+                    {c("3f585e"), c("01101b")}, // Almost night
+            },
+            // Good
+            {
+                    {c("00FFFF"), c("0000FF")}, // Programmer art
+                    {c("c92200"), c("0012d4")}, // Way too saturated sunset
+                    {c("fbbfbb"), c("bd70a1")}, // Suspiciously pink
+            }
+    };
+
     public static <T> T pick(T[][] template, Random r, float mood) {
         int category = (int)Math.floor((1f + mood + r.nextFloat() * 0.1f - 0.05f) * template.length);
         if (category < 0) {
