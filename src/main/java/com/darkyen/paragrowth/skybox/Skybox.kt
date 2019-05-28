@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.utils.Disposable
 import com.darkyen.paragrowth.render.*
+import com.darkyen.paragrowth.util.Color
+import com.darkyen.paragrowth.util.rgb
 
 val SKYBOX_ATTRIBUTES = VertexAttributes(VA_POSITION3)
 
@@ -53,8 +55,13 @@ class Skybox : Renderable, Disposable {
         vao.dispose()
     }
 
+    var lowColor:Color = rgb(0f, 1f, 1f)
+    var highColor:Color = rgb(0f, 1f, 1f)
+
     override fun render(batch: RenderBatch, camera: Camera) {
         batch.render().apply {
+            attributes[LOW_COLOR_ATTRIBUTE][0] = lowColor
+            attributes[HIGH_COLOR_ATTRIBUTE][0] = highColor
             primitiveType = GL20.GL_TRIANGLES
             count = this@Skybox.count
             this.vao = this@Skybox.vao
@@ -62,6 +69,9 @@ class Skybox : Renderable, Disposable {
         }
     }
 }
+
+private val LOW_COLOR_ATTRIBUTE = attributeKeyFloat("lowColor")
+private val HIGH_COLOR_ATTRIBUTE = attributeKeyFloat("highColor")
 
 object SkyboxShader : Shader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
 
@@ -76,6 +86,14 @@ object SkyboxShader : Shader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
             val origCam = camera as PerspectiveCamera
             //Sets it to origCam.combined but without the translation part
             uniform.set(resultCombined.set(origCam.projection).mul(tmp.setToLookAt(origCam.direction, origCam.up)))
+        }
+
+        localUniform("u_low_color") {uniform, camera, renderable ->
+            uniform.setColor(renderable.attributes[LOW_COLOR_ATTRIBUTE][0])
+        }
+
+        localUniform("u_high_color") { uniform, _, renderable ->
+            uniform.setColor(renderable.attributes[HIGH_COLOR_ATTRIBUTE][0])
         }
     }
 
