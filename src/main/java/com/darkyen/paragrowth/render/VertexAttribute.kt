@@ -14,6 +14,9 @@ class VertexAttribute(val name:String, val type:Int, val numComponents:Int, val 
     fun withName(name:String):VertexAttribute {
         return VertexAttribute(name, type, numComponents, normalized, arraySize)
     }
+
+    val byteSize:Int
+        get() = GlBuffer.glSizeOf(type) * numComponents * arraySize
 }
 
 val VA_POSITION3 = VertexAttribute("a_position", GL30.GL_FLOAT, 3)
@@ -29,6 +32,10 @@ class VertexAttributes(vararg val attributes:VertexAttribute) {
             sum += attributes[it].arraySize
             result
         }
+    }
+
+    fun getByteSize(align:Int):Int {
+        return attributes.sumBy { ((it.byteSize + align - 1) / align) * align }
     }
 
     override fun hashCode(): Int {

@@ -2,14 +2,16 @@
 package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.util.GdxFloatArray
+import com.darkyen.paragrowth.util.GdxIntArray
 import com.darkyen.paragrowth.util.GdxShortArray
 import com.badlogic.gdx.graphics.VertexAttribute as GdxVertexAttribute
 import com.badlogic.gdx.graphics.VertexAttributes as GdxVertexAttributes
 
 class ModelBuilder(val vertexFloats:Int) {
+
+    constructor(attributes:VertexAttributes):this(attributes.getByteSize(4) / 4)
 
     val indices = GdxShortArray()
     val vertices = GdxFloatArray()
@@ -58,6 +60,38 @@ class ModelBuilder(val vertexFloats:Int) {
         val buffer = GlBuffer(if (static) GL20.GL_STATIC_DRAW else GL20.GL_DYNAMIC_DRAW)
         buffer.setData(indices.items, 0, indices.size)
         return buffer
+    }
+
+    private val models = GdxIntArray()
+
+    fun modelEnd() {
+        models.add(indices.size)
+    }
+
+    fun generateModels(vertexAttributes:VertexAttributes):Array<Model> {
+        assert(models.size > 0)
+
+        val vertices = createVertexBuffer()
+        val indices = createIndexBuffer()
+        val vao = run {
+            var offset = 0
+            val stride = vertexAttributes.getByteSize(4) / 4
+
+            GlVertexArrayObject(indices, vertexAttributes,
+                    *Array(vertexAttributes.attributes.size) { i ->
+                        val binding = GlVertexArrayObject.Binding(vertices, stride, offset)
+                        offset += vertexAttributes.attributes[i].byteSize / 4
+                        binding
+                    }
+            )
+        }
+
+        var indexOffset = 0
+        return Array(models.size) {
+            val model = Model(vao,  models[it] - indexOffset, indexOffset)
+            indexOffset = models[it]
+            model
+        }
     }
 
     fun computeBoundingBox3D(offset:Int, stride:Int, out:BoundingBox) {

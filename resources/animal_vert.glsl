@@ -12,6 +12,8 @@ uniform vec3 u_animalCenter;
 uniform float u_time;
 uniform sampler2D u_displacement_texture;
 
+uniform float u_animalSubmerge;
+
 void main() {
 	v_color = a_color;
 	vec3 pos = a_position;
@@ -26,6 +28,8 @@ void main() {
 		float heightDisplacement = displacement - 1.0;
 		float newAnimalCenterZ = mix(0.0, heightDisplacement, mixFactor);
 		pos.z += newAnimalCenterZ - u_animalCenter.z;
+
+		pos.z += u_animalCenter.z * u_animalSubmerge;
 	}
 
 	gl_Position = u_projViewTrans * u_modelTrans * vec4(pos, 1.0);

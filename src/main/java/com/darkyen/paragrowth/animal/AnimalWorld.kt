@@ -1,5 +1,6 @@
 package com.darkyen.paragrowth.animal
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Camera
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
@@ -15,6 +16,7 @@ import com.darkyen.paragrowth.util.*
 
 private val ANIMAL_TRANSFORM_ATTRIBUTE = attributeKeyMatrix4("animal_transform")
 private val ANIMAL_CENTER_ATTRIBUTE = attributeKeyVector3("animal_center")
+private val ANIMAL_SUBMERGE_ATTRIBUTE = attributeKeyFloat("animal_submerge")
 
 /**
  *
@@ -37,9 +39,14 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
             batch.render().apply {
                 set(animal.model)
                 shader = AnimalShader
-                quaternion.setEulerAnglesRad(animal.rotation.x, animal.rotation.y,  animal.rotation.z)
                 attributes[ANIMAL_CENTER_ATTRIBUTE].set(animal.position)
-                attributes[ANIMAL_TRANSFORM_ATTRIBUTE].translate(animal.position).rotate(quaternion)
+                attributes[ANIMAL_TRANSFORM_ATTRIBUTE].apply {
+                    translate(animal.position)
+                    rotate(quaternion.setFromAxisRad(Vector3.Z, animal.yaw))
+                    rotate(quaternion.setFromAxisRad(Vector3.Y, animal.pitch))
+                    rotate(quaternion.setFromAxisRad(Vector3.X, animal.roll))
+                }
+                attributes[ANIMAL_SUBMERGE_ATTRIBUTE][0] = animal.waterSubmerge
 
                 // TODO(jp): Order
             }
@@ -49,33 +56,47 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
     private val models = GdxArray<Model>()
 
     fun populateWithDucks() {
-        // No ducks given, all generated.
+        // No ducks given, all custom.
 
-        val model = run {
+        val models = run {
             // has to face towards positive X
-            val builder = ModelBuilder(4)
+            val builder = ModelBuilder(ANIMAL_ATTRIBUTES)
 
-            builder.box { x, y, z ->
-                vertex(x, y * 0.5f, z, White)
+            for (model in arrayOf(
+                    "duck.obj",
+                    "duck_female.obj",
+                    "duck_baby.obj"
+            )) {
+                builder.loadObjModel(Gdx.files.local(model)) { x, y, z, material ->
+                    vertex(x, y, z, material.diffuse.toFloatBits())
+                }
+                builder.modelEnd()
             }
 
-            val vertices = builder.createVertexBuffer()
-            val indices = builder.createIndexBuffer()
-            val vao = GlVertexArrayObject(indices, ANIMAL_ATTRIBUTES,
-                    GlVertexArrayObject.Binding(vertices, 4, 0),
-                    GlVertexArrayObject.Binding(vertices, 4, 3)
-            )
-            Model(vao, builder.indices.size)
+            builder.generateModels(ANIMAL_ATTRIBUTES)
         }
 
-        models.add(model)
+        this.models.addAll(*models)
+
+        val (duckMale, duckFemale, duckBaby) = models
+        val adultSubmerge = 0.4f
+        val babySubmerge = 0.2f
 
         val world = getWorldDimensions()
         for (i in 0 until 20) {
-            val animal = Animal(model)
+            val female = MathUtils.randomBoolean()
+
+            val animal = Animal(if (female) duckFemale else duckMale, adultSubmerge)
             animal.position.set(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random(), 0f)
             animal.position.z = getWorldHeight(animal.position.x, animal.position.y)
             animals.add(animal)
+
+            while ((female && MathUtils.randomBoolean(0.5f)) || MathUtils.randomBoolean(0.1f)) {
+                val baby = Animal(duckBaby, babySubmerge)
+                baby.position.set(animal.position).add(MathUtils.random(-10f, 10f), MathUtils.random(-10f, 10f), 0f)
+                baby.parent = animal
+                animals.add(baby)
+            }
         }
     }
 
@@ -91,7 +112,7 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
         for (animal in animals) {
             val color = rgb(0f, 0f, 1f)
 
-            val box = BoundingBox().inf().ext(animal.position, 5f)
+            val box = BoundingBox().inf().ext(animal.position, 2f)
             box.forEdges { x1, y1, z1, x2, y2, z2 ->
                 renderer.color(color)
                 renderer.vertex(x1, y1, z1)
@@ -102,13 +123,20 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
     }
 }
 
-class Animal(val model: Model, val waterSpeed:Float = 2f, val landSpeed:Float = 1f) {
+class Animal(val model: Model, val waterSubmerge:Float, val waterSpeed:Float = 2f, val landSpeed:Float = 1f) {
 
     val position = Vector3()
-    val rotation = Vector3()
+    /** World heading (north, south, etc.) */
+    var yaw = 0f
+    /** Banking, waddling, etc. */
+    var roll = 0f
+    /** Looking up/down */
+    var pitch = 0f
 
     private val target = Vector2()
     private var animationTime = 0f
+
+    var parent:Animal? = null
 
     fun update(worldDimensions:Rectangle, getWorldHeight:(x:Float, y:Float) -> Float, delta:Float) {
         animationTime += delta
@@ -116,27 +144,50 @@ class Animal(val model: Model, val waterSpeed:Float = 2f, val landSpeed:Float = 
             animationTime -= MathUtils.PI*1000f
         }
 
-        // Check if target is correct
-        target.x = MathUtils.clamp(target.x, worldDimensions.x, worldDimensions.x + worldDimensions.width)
-        target.y = MathUtils.clamp(target.y, worldDimensions.y, worldDimensions.y + worldDimensions.height)
+        val parent = parent
+        if (parent == null) {
+            // Check if target is correct
+            target.x = MathUtils.clamp(target.x, worldDimensions.x, worldDimensions.x + worldDimensions.width)
+            target.y = MathUtils.clamp(target.y, worldDimensions.y, worldDimensions.y + worldDimensions.height)
 
-        // Find new target if this one has been reached
-        if (target.epsilonEquals(position.x, position.y, 1f)) {
-            // Reached the target, find new one
-            target.set(worldDimensions.width, worldDimensions.height).scl(MathUtils.random.nextFloat(), MathUtils.random.nextFloat()).add(worldDimensions.x, worldDimensions.y)
+            // Find new target if this one has been reached
+            if (target.epsilonEquals(position.x, position.y, 1f)) {
+                // Reached the target, find new one
+                target.set(worldDimensions.width, worldDimensions.height).scl(MathUtils.random.nextFloat(), MathUtils.random.nextFloat()).add(worldDimensions.x, worldDimensions.y)
+            }
+        } else {
+            target.set(parent.position.x, parent.position.y)
         }
 
         // Move towards target
         val direction = Vector2(target).sub(position.x, position.y)
-        rotation.z = direction.angleRad()
+        yaw = direction.angleRad()
 
         val howMuchInWater = MathUtils.clamp(VectorUtils.map(getWorldHeight(position.x, position.y), -1f, 0f, 1f, 0f), 0f, 1f)
         val speed = MathUtils.lerp(landSpeed, waterSpeed, howMuchInWater)
 
-        val distanceToTravel = speed * delta
+        var distanceToTravel = speed * delta
         val pathLength = direction.len()
-        if (distanceToTravel < pathLength) {
-            direction.scl(distanceToTravel / pathLength)
+
+        if (parent == null) {
+            if (distanceToTravel < pathLength) {
+                direction.scl(distanceToTravel / pathLength)
+            }
+        } else {
+            // Baby behavior
+            if (pathLength < 5f) {
+                // Too close to mama, wait
+                direction.setZero()
+            } else {
+                if (pathLength > 10f) {
+                    // Too far, speed up!
+                    distanceToTravel *= 2f
+                }
+
+                if (distanceToTravel < pathLength) {
+                    direction.scl(distanceToTravel / pathLength)
+                }
+            }
         }
 
         position.x += direction.x
@@ -144,7 +195,7 @@ class Animal(val model: Model, val waterSpeed:Float = 2f, val landSpeed:Float = 
         position.z = getWorldHeight(position.x, position.y)
 
         // Waddle
-        //rotation.x = Math.sin(animationTime.toDouble()).toFloat() * MathUtils.lerp(0.6f, 0.1f, howMuchInWater)
+        roll = Math.sin(animationTime.toDouble() * 8f).toFloat() * MathUtils.lerp(0.2f, 0.05f, howMuchInWater)
     }
 }
 
@@ -167,6 +218,10 @@ object AnimalShader: Shader(ANIMALS, "animal", ANIMAL_ATTRIBUTES) {
 
         localUniform("u_animalCenter") { uniform, _, renderable ->
             uniform.set(renderable.attributes[ANIMAL_CENTER_ATTRIBUTE])
+        }
+
+        localUniform("u_animalSubmerge") { uniform, _, renderable ->
+            uniform.set(renderable.attributes[ANIMAL_SUBMERGE_ATTRIBUTE][0])
         }
 
         globalUniform("u_time") { uniform, _, attributes ->

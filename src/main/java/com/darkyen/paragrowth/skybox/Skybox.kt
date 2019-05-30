@@ -26,7 +26,7 @@ class Skybox : Renderable, Disposable {
     private val count:Int
 
     init {
-        val builder = ModelBuilder(3)
+        val builder = ModelBuilder(SKYBOX_ATTRIBUTES)
 
         builder.box { x, y, z ->
             vertex(x, y, z)
