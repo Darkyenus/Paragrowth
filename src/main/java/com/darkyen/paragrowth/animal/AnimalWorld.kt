@@ -65,7 +65,8 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
             for (model in arrayOf(
                     "duck.obj",
                     "duck_female.obj",
-                    "duck_baby.obj"
+                    "duck_baby.obj",
+                    "deer.obj"
             )) {
                 builder.loadObjModel(Gdx.files.local(model)) { x, y, z, material ->
                     vertex(x, y, z, material.diffuse.toFloatBits())
@@ -78,7 +79,7 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
 
         this.models.addAll(*models)
 
-        val (duckMale, duckFemale, duckBaby) = models
+        val (duckMale, duckFemale, duckBaby, deer) = models
         val adultSubmerge = 0.4f
         val babySubmerge = 0.2f
 
@@ -97,6 +98,13 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
                 baby.parent = animal
                 animals.add(baby)
             }
+        }
+
+        for (i in 0 until 5) {
+            val deerAnimal = Animal(deer, 2.4f, 2f, 4f, 0.05f, 0.05f, 0.01f, 0.1f)
+            deerAnimal.position.set(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random(), 0f)
+            deerAnimal.position.z = getWorldHeight(deerAnimal.position.x, deerAnimal.position.y)
+            animals.add(deerAnimal)
         }
     }
 
@@ -123,7 +131,10 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
     }
 }
 
-class Animal(val model: Model, val waterSubmerge:Float, val waterSpeed:Float = 2f, val landSpeed:Float = 1f) {
+class Animal(val model: Model, val waterSubmerge:Float,
+             val waterSpeed:Float = 2f, val landSpeed:Float = 1f,
+             val waterWaddle:Float = 0.05f, val landWaddle:Float = 0.2f,
+             val waterSteps:Float = 0f, val landSteps:Float = 0f) {
 
     val position = Vector3()
     /** World heading (north, south, etc.) */
@@ -151,7 +162,7 @@ class Animal(val model: Model, val waterSubmerge:Float, val waterSpeed:Float = 2
             target.y = MathUtils.clamp(target.y, worldDimensions.y, worldDimensions.y + worldDimensions.height)
 
             // Find new target if this one has been reached
-            if (target.epsilonEquals(position.x, position.y, 1f)) {
+            if (target.epsilonEquals(position.x, position.y, 1f) || MathUtils.randomBoolean(0.0001f)) {
                 // Reached the target, find new one
                 target.set(worldDimensions.width, worldDimensions.height).scl(MathUtils.random.nextFloat(), MathUtils.random.nextFloat()).add(worldDimensions.x, worldDimensions.y)
             }
@@ -195,7 +206,10 @@ class Animal(val model: Model, val waterSubmerge:Float, val waterSpeed:Float = 2
         position.z = getWorldHeight(position.x, position.y)
 
         // Waddle
-        roll = Math.sin(animationTime.toDouble() * 8f).toFloat() * MathUtils.lerp(0.2f, 0.05f, howMuchInWater)
+        roll = Math.sin(animationTime.toDouble() * 8f).toFloat() * MathUtils.lerp(landWaddle, waterWaddle, howMuchInWater)
+
+        // Steps
+        pitch = Math.sin(animationTime.toDouble() * 4f).toFloat() * MathUtils.lerp(landSteps, waterSteps, howMuchInWater)
     }
 }
 

@@ -9,6 +9,8 @@ import wemi.Keys.runDirectory
 import wemi.Keys.runOptions
 import wemi.util.div
 import wemi.*
+import wemi.dependency.DefaultExclusions
+import wemi.dependency.sonatypeOss
 
 val packResources by key<Unit>("Packs resources")
 
@@ -22,6 +24,8 @@ val paragrowth by project {
     projectGroup set { "com.darkyen" }
     projectVersion set { "0.1-SNAPSHOT" }
 
+    repositories add { sonatypeOss("releases") }
+    
     val gdxVersion = "1.9.7"
 
     libraryDependencies add { dependency("com.badlogicgames.gdx:gdx:$gdxVersion") }
@@ -31,6 +35,8 @@ val paragrowth by project {
     libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-linux") }
     libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-macos") }
     libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-windows") }
+    
+    libraryDependencies add { Dependency(dependencyId("com.badlogicgames.gdx:gdx-ai:1.8.1"), DefaultExclusions + listOf(DependencyExclusion("com.badlogicgames.gdx", "gdx"))) }
 
     packResources set {
         resourcePack(PackingOperation((projectRoot.get() / "resources").toFile(), (projectRoot.get() / "assets").toFile(), listOf(PreferSymlinks to true)))
