@@ -1,5 +1,6 @@
 package com.darkyen.paragrowth.render
 
+import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
 import com.darkyen.paragrowth.util.GdxArray
@@ -43,6 +44,10 @@ fun attributeKeyVector3(name:String):AttributeKey<Vector3> {
 
 fun attributeKeyFloat(name:String):AttributeKey<FloatArray> {
     return AttributeKey(name, { FloatArray(1) }) { it.apply { it[0] = 0f } }
+}
+
+fun attributeKeyMatrix4(name:String):AttributeKey<Matrix4> {
+    return AttributeKey(name, { Matrix4() }, { it.idt() })
 }
 
 private var nextId:Int = 0

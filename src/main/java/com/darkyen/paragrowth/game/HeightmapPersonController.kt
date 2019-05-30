@@ -22,7 +22,7 @@ class HeightmapPersonController constructor(private val camera: Camera, private 
     private val SPRINT = GameInput.function("Sprint", bindKeyboard(Keys.SHIFT_LEFT))
 
     private val FREE_MOUSE = GameInput.toggleFunction("Free Mouse", bindMouseButton(Input.Buttons.RIGHT))
-            .listen { times, pressed ->
+            .listen { _, pressed ->
                 Gdx.input.isCursorCatched = !pressed
                 true
             }

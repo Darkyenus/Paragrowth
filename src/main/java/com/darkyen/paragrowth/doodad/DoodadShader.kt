@@ -32,7 +32,7 @@ class DoodadShader(blendIn:Boolean) : Shader(DOODADS, "doodad", DOODAD_ATTRIBUTE
             uniform.set(attributes[WORLD_BLEND_ATTRIBUTE][0])
         }
 
-        globalUniform("u_blendIn") { uniform, camera, attributes ->
+        globalUniform("u_blendIn") { uniform, _, attributes ->
             uniform.set(if(blendIn) 1 else 0)
         }
 

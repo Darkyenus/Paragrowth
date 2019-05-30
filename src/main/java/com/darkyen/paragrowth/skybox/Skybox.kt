@@ -28,21 +28,9 @@ class Skybox : Renderable, Disposable {
     init {
         val builder = ModelBuilder(3)
 
-        val i000 = builder.vertex(-0.5f, -0.5f, -0.5f)
-        val i100 = builder.vertex( 0.5f, -0.5f, -0.5f)
-        val i110 = builder.vertex( 0.5f,  0.5f, -0.5f)
-        val i010 = builder.vertex(-0.5f,  0.5f, -0.5f)
-        val i001 = builder.vertex(-0.5f, -0.5f,  0.5f)
-        val i101 = builder.vertex( 0.5f, -0.5f,  0.5f)
-        val i111 = builder.vertex( 0.5f,  0.5f,  0.5f)
-        val i011 = builder.vertex(-0.5f,  0.5f,  0.5f)
-
-        builder.triangleRect(i000, i100, i110, i010)
-        builder.triangleRect(i101, i001, i011, i111)
-        builder.triangleRect(i000, i010, i011, i001)
-        builder.triangleRect(i101, i111, i110, i100)
-        builder.triangleRect(i101, i100, i000, i001)
-        builder.triangleRect(i110, i111, i011, i010)
+        builder.box { x, y, z ->
+            vertex(x, y, z)
+        }
 
         vertices = builder.createVertexBuffer()
         indices = builder.createIndexBuffer()
@@ -94,7 +82,7 @@ object SkyboxShader : Shader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
             uniform.set(resultCombined.set(origCam.projection).mul(tmp.setToLookAt(origCam.direction, origCam.up)))
         }
 
-        localUniform("u_low_color") {uniform, camera, renderable ->
+        localUniform("u_low_color") { uniform, _, renderable ->
             uniform.setColor(renderable.attributes[LOW_COLOR_ATTRIBUTE][0])
         }
 

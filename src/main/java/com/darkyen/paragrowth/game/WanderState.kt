@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Table
@@ -16,6 +17,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.WorldCharacteristics
 import com.darkyen.paragrowth.WorldSpecifics
+import com.darkyen.paragrowth.animal.AnimalWorld
 import com.darkyen.paragrowth.doodad.DoodadWorld
 import com.darkyen.paragrowth.input.GameInput
 import com.darkyen.paragrowth.render.RenderBatch
@@ -51,6 +53,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     private var nextTerrain: TerrainPatchwork? = null
     private var doodads: DoodadWorld
     private var nextDoodads: DoodadWorld? = null
+
+    private val animalWorld: AnimalWorld
 
     //Input
     private val gameInput: GameInput
@@ -94,16 +98,38 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         skyboxRenderable.lowColor = worldSpecifics.lowSkyboxColor
         skyboxRenderable.highColor = worldSpecifics.highSkyboxColor
 
-        cameraController = HeightmapPersonController(worldCam) { x, y ->
+        val getWorldHeight: (Float, Float) -> Float = { x, y ->
             val base = terrain.heightAt(x, y)
             val blend = nextTerrain?.heightAt(x, y) ?: base
             val alpha = modelBatch.attributes.getBlendAt(x, y)
             MathUtils.lerp(base, blend, alpha)
         }
+        cameraController = HeightmapPersonController(worldCam, getWorldHeight)
         gameInput = GameInput(*cameraController.INPUT)
         gameInput.build()
 
         worldSpecifics.findInitialPosition(worldCam.position)
+
+        animalWorld = AnimalWorld(getWorldHeight, {
+            val blend = modelBatch.attributes[WORLD_BLEND_ATTRIBUTE][0]
+
+            val x = terrain.worldSpec.offsetX
+            val y = terrain.worldSpec.offsetY
+            val nextX = nextTerrain?.worldSpec?.offsetX ?: x
+            val nextY = nextTerrain?.worldSpec?.offsetY ?: y
+
+            val width = terrain.worldSpec.noise.sizeX.toFloat()
+            val height = terrain.worldSpec.noise.sizeY.toFloat()
+            val nextWidth = nextTerrain?.worldSpec?.noise?.sizeX?.toFloat() ?: width
+            val nextHeight = nextTerrain?.worldSpec?.noise?.sizeY?.toFloat() ?: height
+
+            Rectangle(MathUtils.lerp(x, nextX, blend),
+                    MathUtils.lerp(y, nextY, blend),
+                    MathUtils.lerp(width, nextWidth, blend),
+                    MathUtils.lerp(height, nextHeight, blend))
+        })
+
+        animalWorld.populateWithDucks()
     }
 
     override fun show() {
@@ -197,6 +223,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         doodads.render(modelBatch, worldCam, false)
         nextDoodads?.render(modelBatch, worldCam, true)
+        animalWorld.render(modelBatch, worldCam)
 
         rendered = modelBatch.end()
         Gdx.gl.glDisable(GL_DEPTH_CLAMP)
@@ -206,6 +233,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
             debugRenderer.begin(worldCam.combined, GL20.GL_LINES)
 
             doodads.renderDebug(worldCam, debugRenderer)
+
+            animalWorld.renderDebug(debugRenderer)
 
             debugRenderer.end()
             Gdx.gl.glEnable(GL_DEPTH_TEST)
@@ -223,6 +252,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
     private fun updateWorld(delta: Float) {
         cameraController.update(delta)
+        animalWorld.update(delta)
 
         val stats = StringBuilder(128)
         stats.append("FPS: ").append(Gdx.graphics.framesPerSecond)
@@ -241,5 +271,6 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         terrain.dispose()
         nextTerrain?.dispose()
         doodads.dispose()
+        animalWorld.dispose()
     }
 }

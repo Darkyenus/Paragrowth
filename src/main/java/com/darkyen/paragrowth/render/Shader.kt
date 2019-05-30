@@ -295,6 +295,7 @@ abstract class Shader(val order:Int,
     }
 
     companion object {
+        const val ANIMALS = 21
         const val DOODADS = 20
         const val TERRAIN_OCEAN = 11
         const val TERRAIN = 10

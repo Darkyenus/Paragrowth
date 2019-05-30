@@ -124,25 +124,17 @@ void main() {
 
 	vec4 pos = vec4(b_position, 1.0);
 
-	if (pos.z <= 0.0) {
+	if (pos.z < 0.0) {
 		// General
 		vec2 oceanSamplePos = (pos.xy + vec2(u_time)) * 0.01;
 		float displacement = texture(u_displacement_texture, oceanSamplePos).x;
 
 		// Position
-		#if defined(WATER_WATER)
 		{
 			float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
 			float heightDisplacement = displacement - 1.0;
 			pos.z = mix(0.0, heightDisplacement, mixFactor);
 		}
-		#else
-		{
-			float mixFactor = sqrt(clamp(-pos.z, 0.0, 1.0));
-			float heightDisplacement = displacement - 1.0;
-			pos.z = mix(0.0, heightDisplacement, mixFactor);
-		}
-		#endif
 
 		// Color
 		vec3 normal = normalize(texture(u_normal_texture, oceanSamplePos).xyz);

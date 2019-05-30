@@ -2,6 +2,7 @@
 package com.darkyen.paragrowth.render
 
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.g3d.utils.MeshBuilder
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.util.GdxFloatArray
 import com.darkyen.paragrowth.util.GdxShortArray
@@ -27,6 +28,24 @@ class ModelBuilder(val vertexFloats:Int) {
 
     fun triangleRect(corner00: Short, corner10: Short, corner11: Short, corner01: Short) {
         index(corner00, corner10, corner11, corner11, corner01, corner00)
+    }
+
+    inline fun box(createVertex: ModelBuilder.(x:Float, y:Float, z:Float) -> Short) {
+        val i000 = createVertex(this, -0.5f, -0.5f, -0.5f)
+        val i100 = createVertex(this,  0.5f, -0.5f, -0.5f)
+        val i110 = createVertex(this,  0.5f,  0.5f, -0.5f)
+        val i010 = createVertex(this, -0.5f,  0.5f, -0.5f)
+        val i001 = createVertex(this, -0.5f, -0.5f,  0.5f)
+        val i101 = createVertex(this,  0.5f, -0.5f,  0.5f)
+        val i111 = createVertex(this,  0.5f,  0.5f,  0.5f)
+        val i011 = createVertex(this, -0.5f,  0.5f,  0.5f)
+
+        triangleRect(i000, i100, i110, i010)
+        triangleRect(i101, i001, i011, i111)
+        triangleRect(i000, i010, i011, i001)
+        triangleRect(i101, i111, i110, i100)
+        triangleRect(i101, i100, i000, i001)
+        triangleRect(i110, i111, i011, i010)
     }
 
     fun createVertexBuffer(static:Boolean = true):GlBuffer {
