@@ -23,12 +23,12 @@ private val ANIMAL_SUBMERGE_ATTRIBUTE = attributeKeyFloat("animal_submerge")
  */
 class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, private val getWorldDimensions: () -> Rectangle) : Renderable {
 
-    val animals = GdxArray<Animal>()
+    private val animals = GdxArray<Animal>()
 
-    fun update(delta:Float) {
+    fun update(delta:Float, playerPosition:Vector2) {
         val worldDimensions = getWorldDimensions()
         for (animal in animals) {
-            animal.update(worldDimensions, getWorldHeight, delta)
+            animal.update(worldDimensions, getWorldHeight, playerPosition, delta)
         }
     }
 
@@ -39,10 +39,11 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
             batch.render().apply {
                 set(animal.model)
                 shader = AnimalShader
-                attributes[ANIMAL_CENTER_ATTRIBUTE].set(animal.position)
+                val animalCenter = attributes[ANIMAL_CENTER_ATTRIBUTE]
+                animalCenter.set(animal.movement.x, animal.movement.y, animal.positionZ)
                 attributes[ANIMAL_TRANSFORM_ATTRIBUTE].apply {
-                    translate(animal.position)
-                    rotate(quaternion.setFromAxisRad(Vector3.Z, animal.yaw))
+                    translate(animalCenter)
+                    rotate(quaternion.setFromAxisRad(Vector3.Z, animal.movement.heading))
                     rotate(quaternion.setFromAxisRad(Vector3.Y, animal.pitch))
                     rotate(quaternion.setFromAxisRad(Vector3.X, animal.roll))
                 }
@@ -87,23 +88,26 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
         for (i in 0 until 20) {
             val female = MathUtils.randomBoolean()
 
-            val animal = Animal(if (female) duckFemale else duckMale, adultSubmerge)
-            animal.position.set(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random(), 0f)
-            animal.position.z = getWorldHeight(animal.position.x, animal.position.y)
+            val animal = Animal(if (female) duckFemale else duckMale, adultSubmerge, DUCK_WATER_MOVEMENT, DUCK_LAND_MOVEMENT, duckBehavior)
+            animal.movement.setPosition(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random())
+            animal.positionZ = getWorldHeight(animal.movement.x, animal.movement.y)
             animals.add(animal)
 
+            var childNumber = 0
             while ((female && MathUtils.randomBoolean(0.5f)) || MathUtils.randomBoolean(0.1f)) {
-                val baby = Animal(duckBaby, babySubmerge)
-                baby.position.set(animal.position).add(MathUtils.random(-10f, 10f), MathUtils.random(-10f, 10f), 0f)
+                val baby = Animal(duckBaby, babySubmerge, DUCK_WATER_MOVEMENT, DUCK_LAND_MOVEMENT, duckBehavior)
+                val position = Vector2(animal.movement.x, animal.movement.y).add(MathUtils.random(-10f, 10f), MathUtils.random(-10f, 10f))
+                baby.movement.setPosition(position.x, position.y)
                 baby.parent = animal
+                baby.childNumber = childNumber++
                 animals.add(baby)
             }
         }
 
         for (i in 0 until 5) {
-            val deerAnimal = Animal(deer, 2.4f, 2f, 4f, 0.05f, 0.05f, 0.01f, 0.1f)
-            deerAnimal.position.set(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random(), 0f)
-            deerAnimal.position.z = getWorldHeight(deerAnimal.position.x, deerAnimal.position.y)
+            val deerAnimal = Animal(deer, 2.4f, DEER_WATER_MOVEMENT, DEER_LAND_MOVEMENT, deerBehavior)
+            deerAnimal.movement.setPosition(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random())
+            deerAnimal.positionZ = getWorldHeight(deerAnimal.movement.x, deerAnimal.movement.y)
             animals.add(deerAnimal)
         }
     }
@@ -117,10 +121,14 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
     }
 
     fun renderDebug(renderer: ImmediateModeRenderer) {
+        val box = BoundingBox()
+        val pos = Vector3()
+
         for (animal in animals) {
             val color = rgb(0f, 0f, 1f)
 
-            val box = BoundingBox().inf().ext(animal.position, 2f)
+            pos.set(animal.movement.x, animal.movement.y, animal.positionZ)
+            box.inf().ext(pos, 2f)
             box.forEdges { x1, y1, z1, x2, y2, z2 ->
                 renderer.color(color)
                 renderer.vertex(x1, y1, z1)
@@ -129,87 +137,260 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
             }
         }
     }
+
+    private fun BehaviorBuilder.moveIntoArea(haste:Float, animalKey:Key<Animal>, areaKey:Key<Rectangle>, delta:FloatKey) = none {
+        // Run towards world
+        val animal = animalKey()
+        var targetX = animal.movement.x
+        var targetY = animal.movement.x
+        val area = areaKey()
+
+        if (area.contains(targetX, targetY)) {
+            return@none true
+        }
+
+        targetX = MathUtils.clamp(targetX, area.x, area.x + area.width)
+        targetY = MathUtils.clamp(targetY, area.y, area.y + area.height)
+
+        animal.movement.moveTo(Vector2(targetX, targetY), haste, delta(), animal.movementAttributes, 1f)
+        return@none null
+    }
+
+    private fun BehaviorBuilder.avoidPoint(distance:Float, haste:Float, animalKey:Key<Animal>, pointKey:Key<Vector2>, delta:FloatKey) = none {
+        val animal = animalKey()
+        val point = pointKey()
+
+        val animalPos = animal.createPosition()
+
+        if (point.dst(animalPos) >= distance) {
+            return@none true
+        }
+
+        animal.movement.move(animalPos.sub(point).angleRad(), haste, delta(), animal.movementAttributes)
+        return@none null
+    }
+
+    private fun BehaviorBuilder.createParentFollowFormationPoint(formationWidth:Int, rankOffset:Float, columnOffset:Float, animalKey:Key<Animal>, outPointKey:Key<Vector2>) = none {
+        val animal = animalKey()
+        val parent = animal.parent ?: return@none false
+
+        val position = outPointKey().set(parent.movement.x, parent.movement.y)
+        val parentHeadingVector = Vector2(1f, 0f).rotateRad(parent.movement.heading)
+        val rank = animal.childNumber / maxOf(formationWidth, 1)
+        val column = animal.childNumber % maxOf(formationWidth, 1)
+
+        position.mulAdd(parentHeadingVector, -(rank + 1f) * rankOffset)
+
+        val rankWidth = maxOf(formationWidth - 1, 0) * columnOffset
+        val xOffset = column * columnOffset - rankWidth * 0.5f
+        parentHeadingVector.rotate90(0)
+        position.mulAdd(parentHeadingVector, xOffset)
+        true
+    }
+
+    private fun BehaviorBuilder.pickRandomPointInArea(areaKey:Key<Rectangle>, outPointKey:Key<Vector2>) = none {
+        val area = areaKey()
+        outPointKey().set(area.width, area.height).scl(MathUtils.random(), MathUtils.random()).add(area.x, area.y)
+        true
+    }
+
+    private fun BehaviorBuilder.moveToPoint(distance:Float, haste:Float, animalKey:Key<Animal>, pointKey:Key<Vector2>, delta:FloatKey) = none {
+        val animal = animalKey()
+        val point = pointKey()
+
+        val animalPos = animal.createPosition()
+
+        if (point.dst(animalPos) <= distance) {
+            return@none true
+        }
+
+        animal.movement.moveTo(point, haste, delta(), animal.movementAttributes)
+        return@none null
+    }
+
+    private fun BehaviorBuilder.waitForAWhile(center:Float, spread:Float, delta:FloatKey) {
+
+        val countdown = register(-1f)
+
+        return none {
+            var cd = countdown()
+
+            if (cd < 0f) {
+                // Initial fill
+                cd = center + MathUtils.random(-spread, spread)
+            }
+
+            cd -= delta()
+            if (cd > 0f) {
+                // Ticking down...
+                countdown(cd)
+                return@none null
+            }
+
+            cd = center + MathUtils.random(-spread, spread)
+            countdown(cd)
+            return@none true
+        }
+    }
+
+    private val duckBehavior = behaviorTree {
+        val animal = register<Animal>()
+        val worldDimensions = register<Rectangle>()
+        val playerPosition = register<Vector2>()
+        val delta = register(0f)
+
+        repeatUntil(null)() {
+            hotSequence(Sequence.AND)() {
+                moveIntoArea(1f, animal, worldDimensions, delta)
+
+                avoidPoint(15f, 1f, animal, playerPosition, delta)
+
+                enterIf(true) { animal().parent != null }() {
+                    hotSequence(Sequence.AND)() {
+                        val childFollowPoint = register { Vector2() }
+                        createParentFollowFormationPoint(2, 3f, 3f, animal, childFollowPoint)
+                        moveToPoint(0.1f, 0.7f, animal, childFollowPoint, delta)
+                    }
+                }
+
+                enterIf(true) { animal().parent == null }() {
+                    sequence(Sequence.AND)() {
+                        val targetPoint = register { Vector2() }
+                        pickRandomPointInArea(worldDimensions, targetPoint)
+                        moveToPoint(0.1f, 0.5f, animal, targetPoint, delta)
+                        waitForAWhile(7f, 5f, delta)
+                    }
+                }
+            }
+        }
+    }
+
+    private val deerBehavior = behaviorTree {
+        val animal = register<Animal>()
+        val worldDimensions = register<Rectangle>()
+        val playerPosition = register<Vector2>()
+        val delta = register(0f)
+
+        repeatUntil(null)() {
+            hotSequence(Sequence.AND)() {
+                moveIntoArea(1f, animal, worldDimensions, delta)
+
+                avoidPoint(20f, 0.9f, animal, playerPosition, delta)
+
+                sequence(Sequence.AND)() {
+                    val targetPoint = register { Vector2() }
+                    pickRandomPointInArea(worldDimensions, targetPoint)
+                    moveToPoint(0.1f, 0.5f, animal, targetPoint, delta)
+                    waitForAWhile(7f, 5f, delta)
+                }
+            }
+        }
+    }
+}
+
+class AnimalAttributes : AgentAttributes() {
+    /** How much should the animal sway from right to left while walking */
+    var waddle:Float = 0.1f
+    /** How much should the animal sway from front to back while walking */
+    var steps:Float = 0f
+}
+
+val DUCK_WATER_MOVEMENT = AnimalAttributes().apply {
+    maxAcceleration = 1f
+    maxDeceleration = 1f
+    agility = 0.5f
+    maxSpeed = 4f
+    speedHeft = 0.7f
+    maxTurnSpeed = 2f
+    turnHeft = 0.8f
+    waddle = 0.05f
+    steps = 0f
+}
+
+val DUCK_LAND_MOVEMENT = AnimalAttributes().apply {
+    maxAcceleration = 1f
+    maxDeceleration = 1f
+    agility = 0.5f
+    maxSpeed = 2f
+    speedHeft = 0.7f
+    maxTurnSpeed = 2f
+    turnHeft = 0.8f
+    waddle = 0.2f
+    steps = 0f
+}
+
+val DEER_WATER_MOVEMENT = AnimalAttributes().apply {
+    maxAcceleration = 1f
+    maxDeceleration = 1f
+    agility = 0.5f
+    maxSpeed = 4f
+    speedHeft = 0.7f
+    maxTurnSpeed = 2f
+    turnHeft = 0.8f
+    waddle = 0.01f
+    steps = 0.01f
+}
+
+val DEER_LAND_MOVEMENT = AnimalAttributes().apply {
+    maxAcceleration = 1f
+    maxDeceleration = 1f
+    agility = 0.5f
+    maxSpeed = 8f
+    speedHeft = 0.7f
+    maxTurnSpeed = 2f
+    turnHeft = 0.8f
+    waddle = 0.05f
+    steps = 0.1f
 }
 
 class Animal(val model: Model, val waterSubmerge:Float,
-             val waterSpeed:Float = 2f, val landSpeed:Float = 1f,
-             val waterWaddle:Float = 0.05f, val landWaddle:Float = 0.2f,
-             val waterSteps:Float = 0f, val landSteps:Float = 0f) {
+             private val waterMovement:AnimalAttributes,
+             private val landMovement:AnimalAttributes,
+             behaviorTemplate:BehaviorTreeTemplate) {
 
-    val position = Vector3()
-    /** World heading (north, south, etc.) */
-    var yaw = 0f
+    private val behavior = BehaviorTree(behaviorTemplate, this, Rectangle(), Vector2())
+
+    val movementAttributes = AnimalAttributes().apply {
+        set(waterMovement)
+    }
+
+    val movement = MovementAgent()
+    var positionZ = 0f
+
     /** Banking, waddling, etc. */
     var roll = 0f
     /** Looking up/down */
     var pitch = 0f
 
-    private val target = Vector2()
+    fun createPosition() = Vector2(movement.x, movement.y)
+
     private var animationTime = 0f
 
     var parent:Animal? = null
+    var childNumber = -1
 
-    fun update(worldDimensions:Rectangle, getWorldHeight:(x:Float, y:Float) -> Float, delta:Float) {
+    fun update(worldDimensions:Rectangle, getWorldHeight:(x:Float, y:Float) -> Float, playerPosition:Vector2, delta:Float) {
         animationTime += delta
         if (animationTime > MathUtils.PI*1000f) {
             animationTime -= MathUtils.PI*1000f
         }
 
-        val parent = parent
-        if (parent == null) {
-            // Check if target is correct
-            target.x = MathUtils.clamp(target.x, worldDimensions.x, worldDimensions.x + worldDimensions.width)
-            target.y = MathUtils.clamp(target.y, worldDimensions.y, worldDimensions.y + worldDimensions.height)
+        behavior.floatStorage[0] = delta
+        (behavior.storage[1] as Rectangle).set(worldDimensions)
+        (behavior.storage[2] as Vector2).set(playerPosition)
 
-            // Find new target if this one has been reached
-            if (target.epsilonEquals(position.x, position.y, 1f) || MathUtils.randomBoolean(0.0001f)) {
-                // Reached the target, find new one
-                target.set(worldDimensions.width, worldDimensions.height).scl(MathUtils.random.nextFloat(), MathUtils.random.nextFloat()).add(worldDimensions.x, worldDimensions.y)
-            }
-        } else {
-            target.set(parent.position.x, parent.position.y)
-        }
+        behavior.act()
 
-        // Move towards target
-        val direction = Vector2(target).sub(position.x, position.y)
-        yaw = direction.angleRad()
+        val howMuchInWater = MathUtils.clamp(VectorUtils.map(getWorldHeight(movement.x, movement.y), -1f, 0f, 1f, 0f), 0f, 1f)
+        movementAttributes.setToLerp(landMovement, waterMovement, howMuchInWater)
 
-        val howMuchInWater = MathUtils.clamp(VectorUtils.map(getWorldHeight(position.x, position.y), -1f, 0f, 1f, 0f), 0f, 1f)
-        val speed = MathUtils.lerp(landSpeed, waterSpeed, howMuchInWater)
-
-        var distanceToTravel = speed * delta
-        val pathLength = direction.len()
-
-        if (parent == null) {
-            if (distanceToTravel < pathLength) {
-                direction.scl(distanceToTravel / pathLength)
-            }
-        } else {
-            // Baby behavior
-            if (pathLength < 5f) {
-                // Too close to mama, wait
-                direction.setZero()
-            } else {
-                if (pathLength > 10f) {
-                    // Too far, speed up!
-                    distanceToTravel *= 2f
-                }
-
-                if (distanceToTravel < pathLength) {
-                    direction.scl(distanceToTravel / pathLength)
-                }
-            }
-        }
-
-        position.x += direction.x
-        position.y += direction.y
-        position.z = getWorldHeight(position.x, position.y)
+        positionZ = getWorldHeight(movement.x, movement.y)
 
         // Waddle
-        roll = Math.sin(animationTime.toDouble() * 8f).toFloat() * MathUtils.lerp(landWaddle, waterWaddle, howMuchInWater)
+        roll = Math.sin(animationTime.toDouble() * 8f).toFloat() * movementAttributes.waddle
 
         // Steps
-        pitch = Math.sin(animationTime.toDouble() * 4f).toFloat() * MathUtils.lerp(landSteps, waterSteps, howMuchInWater)
+        pitch = Math.sin(animationTime.toDouble() * 4f).toFloat() * movementAttributes.steps
     }
 }
 

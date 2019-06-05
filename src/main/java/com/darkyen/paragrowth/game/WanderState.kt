@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
+import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Table
@@ -252,7 +253,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
     private fun updateWorld(delta: Float) {
         cameraController.update(delta)
-        animalWorld.update(delta)
+        animalWorld.update(delta, Vector2(worldCam.position.x, worldCam.position.y))
 
         val stats = StringBuilder(128)
         stats.append("FPS: ").append(Gdx.graphics.framesPerSecond)
