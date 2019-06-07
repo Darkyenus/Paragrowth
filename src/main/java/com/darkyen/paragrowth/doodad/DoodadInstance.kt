@@ -7,8 +7,8 @@ import com.badlogic.gdx.utils.Array
 import com.darkyen.paragrowth.WorldCharacteristics
 import com.darkyen.paragrowth.render.ModelBuilder
 import com.darkyen.paragrowth.util.Color
-import com.darkyen.paragrowth.util.VectorUtils
 import com.darkyen.paragrowth.util.fudge
+import com.darkyen.paragrowth.util.generateTangent
 
 import java.util.Random
 
@@ -147,7 +147,7 @@ internal class DoodadInstance(val template: Doodad, rootWidth: Float, sides: Int
         }
 
         private fun createRing(builder: ModelBuilder, sides: Int, position: Vector3, normal: Vector3, radius: Float, random: Random, color: Float, coherence: Float): Short {
-            val tangent = VectorUtils.generateTangent(normal).scl(radius)
+            val tangent = generateTangent(normal).scl(radius)
             val rot = Matrix3().setToRotation(normal, 360f / sides)
 
             var vColor = color.fudge(random, coherence, 0.3f)

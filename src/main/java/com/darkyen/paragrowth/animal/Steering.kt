@@ -2,7 +2,10 @@ package com.darkyen.paragrowth.animal
 
 import com.badlogic.gdx.math.MathUtils.*
 import com.badlogic.gdx.math.Vector2
+import com.darkyen.paragrowth.util.addRotated
+import com.darkyen.paragrowth.util.angleRad
 import java.lang.Math.abs
+import kotlin.math.sqrt
 
 /**
  * Movement attributes for an agent.
@@ -114,9 +117,10 @@ class MovementAgent(private val timestep:Float = 1f / 120f) {
         3. Deceleration needed is higher than max possible deceleration.
            We will overshoot, otherwise use logic from 2.
          */
-        val moveChange = Vector2(target).sub(newPosition)
-        val distance = moveChange.len()
-        val targetHeading = moveChange.angleRad()
+        val moveChangeX = target.x - newPosition.x
+        val moveChangeY = target.y - newPosition.y
+        val distance = Vector2.len(moveChangeX, moveChangeY)
+        val targetHeading = angleRad(moveChangeX, moveChangeY)
 
         val comfortableDeceleration = attributes.maxDeceleration * haste
         val maxDeceleration = attributes.maxDeceleration
@@ -217,26 +221,33 @@ class MovementAgent(private val timestep:Float = 1f / 120f) {
         newVelocity = maxOf(newVelocity + delta * acceleration, 0f)
         newHeading += (turnSpeed * delta) % PI2
 
-        val movement = Vector2()
+        var movementX:Float
+        var movementY:Float
         if (isZero(turnSpeed)) {
             // Simple movement equation
-            movement.set(distance, 0f)
+            movementX = distance
+            movementY = 0f
         } else {
             // Moving on a circle
             val angleMoved = delta * turnSpeed
             //val circumference = distance / (angleMoved / PI2)
             //val circleRadius = circumference * (1f / PI2)
             val circleRadius = distance / angleMoved
-            movement.set(Math.sin(angleMoved.toDouble()).toFloat() * circleRadius, -(Math.cos(angleMoved.toDouble()).toFloat() - 1f) * circleRadius)
+            movementX = Math.sin(angleMoved.toDouble()).toFloat() * circleRadius
+            movementY = -(Math.cos(angleMoved.toDouble()).toFloat() - 1f) * circleRadius
 
             // There may be some precision issues with very small deltas
             if (delta < 0.1f * timestep) {
-                movement.limit(distance)
+                val len2 = Vector2.len2(movementX, movementY)
+                if (len2 > distance * distance) {
+                    val invLen = (1.0 / sqrt(len2)).toFloat()
+                    movementX *= invLen
+                    movementY *= invLen
+                }
             }
         }
 
-        movement.rotateRad(newHeading)
-        newPosition.add(movement)
+        newPosition.addRotated(movementX, movementY, newHeading)
     }
 
 }

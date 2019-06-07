@@ -160,13 +160,14 @@ class AnimalWorld(private val world:WorldQuery) : Renderable {
         val animal = animalKey()
         val point = pointKey()
 
-        val animalPos = animal.createPosition()
+        val animalPosX = animal.movement.x
+        val animalPosY = animal.movement.y
 
-        if (point.dst(animalPos) >= distance) {
+        if (point.dst2(animalPosX, animalPosY) >= distance * distance) {
             return@none true
         }
 
-        animal.movement.move(animalPos.sub(point).angleRad(), haste, delta(), animal.movementAttributes)
+        animal.movement.move(angleRad(animalPosX - point.x, animalPosY - point.y), haste, delta(), animal.movementAttributes)
         return@none null
     }
 
@@ -198,9 +199,10 @@ class AnimalWorld(private val world:WorldQuery) : Renderable {
         val animal = animalKey()
         val point = pointKey()
 
-        val animalPos = animal.createPosition()
+        val animalPosX = animal.movement.x
+        val animalPosY = animal.movement.y
 
-        if (point.dst(animalPos) <= distance) {
+        if (point.dst2(animalPosX, animalPosY) <= distance * distance) {
             return@none true
         }
 
@@ -362,8 +364,6 @@ class Animal(val model: Model, val waterSubmerge:Float,
     /** Looking up/down */
     var pitch = 0f
 
-    fun createPosition() = Vector2(movement.x, movement.y)
-
     private var animationTime = 0f
 
     var parent:Animal? = null
@@ -381,7 +381,7 @@ class Animal(val model: Model, val waterSubmerge:Float,
 
         behavior.act()
 
-        val howMuchInWater = MathUtils.clamp(VectorUtils.map(world.getHeightAt(movement.x, movement.y), -1f, 0f, 1f, 0f), 0f, 1f)
+        val howMuchInWater = MathUtils.clamp(map(world.getHeightAt(movement.x, movement.y), -1f, 0f, 1f, 0f), 0f, 1f)
         movementAttributes.setToLerp(landMovement, waterMovement, howMuchInWater)
 
         positionZ = world.getHeightAt(movement.x, movement.y)
