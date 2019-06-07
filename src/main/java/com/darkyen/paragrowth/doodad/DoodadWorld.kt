@@ -99,7 +99,7 @@ class DoodadWorld private constructor(seed: Long, world: WorldSpecifics) : Dispo
                 val blends = patch.blendsMappedData!!
                 for (doodad in patch.doodads) {
                     val underZ = from.getHeight(doodad.position.x, doodad.position.y)
-                    val shift = underZ - doodad.position.z - doodad.blendVerticesHeight - 0.4f
+                    val shift = underZ - doodad.position.z - doodad.blendVerticesHeight + 3f
                     for (i in doodad.blendVerticesFrom until doodad.blendVerticesTo) {
                         blends.put(i, shift)
                     }

@@ -202,7 +202,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
     }
 
     fun update(delta:Float, playerPosition:Vector2, world: WorldQuery) {
-        val fadeChange = if (enabled) delta / 25f else delta
+        val fadeChange = if (enabled) delta / 40f else delta
         val collectedFadeChange = delta * 2f
 
         placedWords.removeAll { ww ->
@@ -219,7 +219,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
                 }
             }
 
-            if (enabled && ww.fade > 0.5f && !ww.collected && playerPosition.dst2(ww.position.x, ww.position.y) < 9f) {
+            if (enabled && ww.fade > 0.2f && !ww.collected && playerPosition.dst2(ww.position.x, ww.position.y) < 9f) {
                 ww.collected = true
                 ww.fade = 1f
                 ww.fadeIn = false
@@ -242,7 +242,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
     class WorldWord(val word:String, color:Color) {
         val position = Vector3()
 
-        var fade = MathUtils.random(-10f, 0f)
+        var fade = MathUtils.random(-1f, 0f)
         var fadeIn = true
         var collected = false
 

@@ -252,7 +252,7 @@ class MovementAgent(private val timestep:Float = 1f / 120f) {
             if (delta < 0.1f * timestep) {
                 val len2 = Vector2.len2(movementX, movementY)
                 if (len2 > distance * distance) {
-                    val invLen = (1.0 / sqrt(len2)).toFloat()
+                    val invLen = distance / sqrt(len2)
                     movementX *= invLen
                     movementY *= invLen
                 }
