@@ -10,7 +10,7 @@ import com.darkyen.paragrowth.render.GlBuffer.Companion.glNameOfType
  * @param normalized `true` = convert the full range of the value to `0..1` or `-1..1` range, `false` = convert to float directly, `null` = no conversion, shader type is integer
  * @param arraySize amount of vectors in array, matrix or combination of thereof
  */
-class VertexAttribute(val name:String, val type:Int, val numComponents:Int, val normalized:Boolean? = false, val arraySize:Int = 1) {
+class VertexAttribute(val name:String, val type:Int, val numComponents:Int, val normalized:Boolean? = false, val arraySize:Int = 1, val instancingDivisor:Int = 0) {
     fun withName(name:String):VertexAttribute {
         return VertexAttribute(name, type, numComponents, normalized, arraySize)
     }

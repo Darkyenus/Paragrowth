@@ -23,6 +23,9 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
      * [Mesh.getNumIndices] > 0), this is the number of indices, otherwise it is the number of vertices.  */
     var count: Int = 0
 
+    /** Amount of instances to draw. 0 to distable instancing. */
+    var instances:Int = 0
+
     /** Holds bound buffers to render. */
     var vao:GlVertexArrayObject = NULL_VAO
 
@@ -49,6 +52,7 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
         offset = 0
         baseVertex = 0
         count = 0
+        instances = 0
         vao = NULL_VAO
         shader = NULL_SHADER
         attributes.clear()

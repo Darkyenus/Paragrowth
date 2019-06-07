@@ -149,10 +149,11 @@ class GlBuffer(
         }
     }
 
+    private var accessMapped_oldBuffer:ByteBuffer? = null
     fun accessMapped(access:Int, operation:(ByteBuffer) -> Unit) {
         Gdx.gl20.apply {
             glBindBuffer(GL20.GL_ARRAY_BUFFER, handle)
-            val mapped = GL15.glMapBuffer(GL20.GL_ARRAY_BUFFER, access, currentLengthBytes.toLong(), null)
+            val mapped = GL15.glMapBuffer(GL20.GL_ARRAY_BUFFER, access, currentLengthBytes.toLong(), accessMapped_oldBuffer)
             if (mapped == null) {
                 Gdx.app.log("GlBuffer", "Failed to map buffer, using fallback")
                 stack {
@@ -169,6 +170,7 @@ class GlBuffer(
                 if (!GL15.glUnmapBuffer(GL20.GL_ARRAY_BUFFER)) {
                     Gdx.app.log("GlBuffer", "Failed to unmap buffer, memory content may be undefined")
                 }
+                accessMapped_oldBuffer = mapped
             }
             glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
         }

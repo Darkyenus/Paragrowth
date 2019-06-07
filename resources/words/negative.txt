@@ -1524,7 +1524,7 @@ fallen
 falling
 fallout
 falls
-FALSE
+false
 falsehood
 falsely
 falsify

@@ -21,6 +21,12 @@ val Color.blue:Float
 val Color.alpha:Float
     get() = ((NumberUtils.floatToIntColor(this) ushr (8*3)) and 0xFF) / 0xFF.toFloat()
 
+fun Color.withAlpha(alpha:Float):Color {
+    var intColor = NumberUtils.floatToIntColor(this) and 0xFF_FF_FF
+    intColor = intColor or ((clamp((alpha * 0xFF).toInt(), 0, 0xFF) and 0xFF) shl 24)
+    return NumberUtils.intBitsToFloat(intColor)
+}
+
 val Color.hue:Float
     get() {
         val r:Float = this.red

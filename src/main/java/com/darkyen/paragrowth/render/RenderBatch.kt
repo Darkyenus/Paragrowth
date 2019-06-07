@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.darkyen.paragrowth.util.GdxArray
 import com.darkyen.paragrowth.util.stack
+import org.lwjgl.opengl.GL31.glDrawArraysInstanced
 import org.lwjgl.opengl.GL32
 
 /** Collects [RenderModel]s, sorts them and renders them. */
@@ -68,7 +69,7 @@ class RenderBatch(context: RenderContext? = null) {
         }
 
         renderables.forSimilarRenderables({ a, b ->
-            a.vao === b.vao && a.shader === b.shader && a.primitiveType == b.primitiveType
+            a.vao === b.vao && a.shader === b.shader && a.primitiveType == b.primitiveType && a.instances <= 1 && b.instances <= 1
         }) { items, from, to ->
             val first = items[from]
             // Bind shader and VAO
@@ -85,7 +86,7 @@ class RenderBatch(context: RenderContext? = null) {
             }
 
             val primitiveType = first.primitiveType
-            // Check if we can do any optimizations
+            // Check various drawing strategies
             if (vao.indices == null) {
                 // No indices
                 // TODO(jp): Optimize when needed
@@ -93,7 +94,12 @@ class RenderBatch(context: RenderContext? = null) {
                     val rm = items[i]
                     assert(rm.baseVertex == 0) { "Can't use baseVertex without indices" }
                     drawCalls++
-                    Gdx.gl30.glDrawArrays(primitiveType, rm.offset, rm.count)
+
+                    if (rm.instances > 1) {
+                        glDrawArraysInstanced(primitiveType, rm.offset, rm.count, rm.instances)
+                    } else {
+                        Gdx.gl30.glDrawArrays(primitiveType, rm.offset, rm.count)
+                    }
                 }
                 TODO("Not tested")
             } else {
@@ -112,7 +118,14 @@ class RenderBatch(context: RenderContext? = null) {
                 val drawCount = to - from
 
                 // Different draw methods when uniforms are set and when not
-                if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */) {
+                if (first.instances > 1) {
+                    // Explicit Instancing
+                    for (i in from until to) {
+                        val rm = items[i]
+                        drawCalls++
+                        GL32.glDrawElementsInstancedBaseVertex(primitiveType, rm.count, indicesType, rm.offset.toLong(), rm.instances, rm.baseVertex)
+                    }
+                } else if (shader.hasLocalUniforms || drawCount <= 1 /* This is faster when we deal with only one item */) {
                     // Must do the slow path
                     for (i in from until to) {
                         val rm = items[i]

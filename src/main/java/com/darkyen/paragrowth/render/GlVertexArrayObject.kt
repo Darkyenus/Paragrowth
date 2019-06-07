@@ -31,6 +31,7 @@ class GlVertexArrayObject(val indices:GlBuffer?, val vertexAttributes:VertexAttr
                 } else {
                     glVertexAttribIPointer(i, attr.numComponents, attr.type, binding.stride * binding.elementSize, binding.offset * binding.elementSize)
                 }
+                glVertexAttribDivisor(i, attr.instancingDivisor)
             }
             glBindBuffer(GL20.GL_ARRAY_BUFFER, 0)
             // Bind indices, if any

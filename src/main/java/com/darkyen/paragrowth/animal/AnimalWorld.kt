@@ -21,12 +21,11 @@ private val ANIMAL_SUBMERGE_ATTRIBUTE = attributeKeyFloat("animal_submerge")
 /**
  *
  */
-class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, private val getWorldDimensions: () -> Rectangle) : Renderable {
+class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float) : Renderable {
 
     private val animals = GdxArray<Animal>()
 
-    fun update(delta:Float, playerPosition:Vector2) {
-        val worldDimensions = getWorldDimensions()
+    fun update(delta:Float, worldDimensions:Rectangle, playerPosition:Vector2) {
         for (animal in animals) {
             animal.update(worldDimensions, getWorldHeight, playerPosition, delta)
         }
@@ -56,7 +55,7 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
 
     private val models = GdxArray<Model>()
 
-    fun populateWithDucks() {
+    fun populateWithDucks(worldDimensions:Rectangle) {
         // No ducks given, all custom.
 
         val models = run {
@@ -84,12 +83,11 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
         val adultSubmerge = 0.4f
         val babySubmerge = 0.2f
 
-        val world = getWorldDimensions()
         for (i in 0 until 20) {
             val female = MathUtils.randomBoolean()
 
             val animal = Animal(if (female) duckFemale else duckMale, adultSubmerge, DUCK_WATER_MOVEMENT, DUCK_LAND_MOVEMENT, duckBehavior)
-            animal.movement.setPosition(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random())
+            animal.movement.setPosition(worldDimensions.x + worldDimensions.width * MathUtils.random(), worldDimensions.y + worldDimensions.height * MathUtils.random())
             animal.positionZ = getWorldHeight(animal.movement.x, animal.movement.y)
             animals.add(animal)
 
@@ -106,7 +104,7 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float, privat
 
         for (i in 0 until 5) {
             val deerAnimal = Animal(deer, 2.4f, DEER_WATER_MOVEMENT, DEER_LAND_MOVEMENT, deerBehavior)
-            deerAnimal.movement.setPosition(world.x + world.width * MathUtils.random(), world.y + world.height * MathUtils.random())
+            deerAnimal.movement.setPosition(worldDimensions.x + worldDimensions.width * MathUtils.random(), worldDimensions.y + worldDimensions.height * MathUtils.random())
             deerAnimal.positionZ = getWorldHeight(deerAnimal.movement.x, deerAnimal.movement.y)
             animals.add(deerAnimal)
         }

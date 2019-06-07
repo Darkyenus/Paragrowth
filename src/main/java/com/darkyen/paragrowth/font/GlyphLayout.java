@@ -3,6 +3,7 @@ package com.darkyen.paragrowth.font;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Colors;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -499,7 +500,7 @@ public final class GlyphLayout {
     /** @param x/y where upper left corner of the text should be drawn */
 	public void draw (Batch batch, float x, float y) {
 		for (GlyphRun run : runs) {
-			final float color = run.color;
+			batch.setColor(run.color);
 
 			final int glyphCount = run.glyphs.size;
 			assert run.glyphXPos.size >= glyphCount;
@@ -512,7 +513,6 @@ public final class GlyphLayout {
 				if (glyph == null) continue;
 				final float glyphXOffset = run.glyphXPos.get(g) + glyph.xOffset;
 
-				batch.setColor(color);
 				batch.draw(font.pages[glyph.pageIndex],
 						runX + glyphXOffset,
 						runYBaseline - glyph.yOffset,
@@ -521,6 +521,34 @@ public final class GlyphLayout {
 						glyph.u, glyph.v,
 						glyph.u2, glyph.v2
 						);
+			}
+		}
+	}
+
+	public void draw(DrawDelegate delegate, float x, float y) {
+		for (GlyphRun run : runs) {
+			delegate.setColor(run.color);
+
+			final int glyphCount = run.glyphs.size;
+			assert run.glyphXPos.size >= glyphCount;
+
+			final float runX = run.x + x;
+			final float runYBaseline = y - font.ascent - run.lineIndex * font.lineHeight - font.descent;
+
+			for (int g = 0; g < glyphCount; g++) {
+				final Glyph glyph = run.glyphs.get(g);
+				if (glyph == null) continue;
+				final float glyphXOffset = run.glyphXPos.get(g) + glyph.xOffset;
+
+
+				delegate.draw(glyph.pageIndex,
+						runX + glyphXOffset,
+						runYBaseline - glyph.yOffset,
+						glyph.width,
+						-glyph.height,
+						glyph.u, glyph.v,
+						glyph.u2, glyph.v2
+				);
 			}
 		}
 	}
@@ -682,5 +710,11 @@ public final class GlyphLayout {
 			isWrapOverflow = false;
 			lineIndex = -1;
 		}
+	}
+
+	public interface DrawDelegate {
+		void setColor(float color);
+
+		void draw(int page, float x, float y, float width, float height, float u, float v, float u2, float v2);
 	}
 }

@@ -4,11 +4,15 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.FloatArray;
 import com.badlogic.gdx.utils.IntArray;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
@@ -338,5 +342,53 @@ public final class TextAnalyzer {
             INSTANCE = new TextAnalyzer();
         }
         return INSTANCE;
+    }
+
+    public void exportPositive(Array<String> outWords) {
+        final int additionalCapacity = positiveWords.size();
+        outWords.ensureCapacity(additionalCapacity);
+        for (String word : positiveWords) {
+            outWords.add(word);
+        }
+    }
+
+    public void exportNegative(Array<String> outWords) {
+        final int additionalCapacity = negativeWords.size();
+        outWords.ensureCapacity(additionalCapacity);
+
+        for (String word : negativeWords) {
+            outWords.add(word);
+        }
+    }
+
+    public void export(Array<String> outWords, FloatArray outColors) {
+        final int additionalCapacity = colors.children.size() * 2;
+        outWords.ensureCapacity(additionalCapacity);
+        outColors.ensureCapacity(additionalCapacity);
+
+        export(new StringBuilder(), colors, outWords, outColors);
+    }
+
+    private void export(StringBuilder name, ColorNode node, Array<String> outWords, FloatArray outColors) {
+        for (Color color : node.color) {
+            outWords.add(name.toString());
+            outColors.add(color.toFloatBits());
+        }
+
+        final TreeMap<String, ColorNode> children = node.children;
+        if (children != null) {
+            children.forEach((k, v) -> {
+                final int length = name.length();
+                try {
+                    if (length > 0) {
+                        name.append(' ');
+                    }
+                    name.append(k);
+                    export(name, v, outWords, outColors);
+                } finally {
+                    name.setLength(length);
+                }
+            });
+        }
     }
 }

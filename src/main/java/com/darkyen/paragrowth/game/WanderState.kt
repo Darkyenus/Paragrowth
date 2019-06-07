@@ -26,6 +26,7 @@ import com.darkyen.paragrowth.skybox.Skybox
 import com.darkyen.paragrowth.terrain.TERRAIN_TIME_ATTRIBUTE
 import com.darkyen.paragrowth.terrain.TerrainPatchwork
 import com.darkyen.paragrowth.util.*
+import com.darkyen.paragrowth.words.Words
 import org.lwjgl.opengl.GL32
 import org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP
 
@@ -56,6 +57,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     private var nextDoodads: DoodadWorld? = null
 
     private val animalWorld: AnimalWorld
+    private val words: Words
 
     //Input
     private val gameInput: GameInput
@@ -64,6 +66,9 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     private val startTime = System.currentTimeMillis()
 
     private var rendered = 0
+
+    private val getWorldHeight: (Float, Float) -> Float
+    private val getWorldDimensions: () -> Rectangle
 
     init {
         println(worldCharacteristics)
@@ -99,7 +104,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         skyboxRenderable.lowColor = worldSpecifics.lowSkyboxColor
         skyboxRenderable.highColor = worldSpecifics.highSkyboxColor
 
-        val getWorldHeight: (Float, Float) -> Float = { x, y ->
+        getWorldHeight = { x, y ->
             val base = terrain.heightAt(x, y)
             val blend = nextTerrain?.heightAt(x, y) ?: base
             val alpha = modelBatch.attributes.getBlendAt(x, y)
@@ -111,7 +116,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         worldSpecifics.findInitialPosition(worldCam.position)
 
-        animalWorld = AnimalWorld(getWorldHeight, {
+        getWorldDimensions = {
             val blend = modelBatch.attributes[WORLD_BLEND_ATTRIBUTE][0]
 
             val x = terrain.worldSpec.offsetX
@@ -128,9 +133,19 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                     MathUtils.lerp(y, nextY, blend),
                     MathUtils.lerp(width, nextWidth, blend),
                     MathUtils.lerp(height, nextHeight, blend))
-        })
+        }
+        animalWorld = AnimalWorld(getWorldHeight)
 
-        animalWorld.populateWithDucks()
+        animalWorld.populateWithDucks(getWorldDimensions())
+
+        words = Words { words, text ->
+            if (developingNextWorld == null) {
+                words.enabled = false
+                developingNextWorld = startDevelopingNextWorld {
+                    WorldCharacteristics.fromText(text)
+                }
+            }
+        }
     }
 
     override fun show() {
@@ -144,6 +159,23 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     }
 
     private var developingNextWorld:Delayed<Pair<TerrainPatchwork, DoodadWorld>>? = null
+
+    private fun startDevelopingNextWorld(characteristics:() -> WorldCharacteristics): Delayed<Pair<TerrainPatchwork, DoodadWorld>> {
+        val centerX = worldCam.position.x
+        val centerY = worldCam.position.y
+
+        val worldCharacteristics = offload {
+            WorldSpecifics(characteristics(), centerX, centerY, true)
+        }
+        val terrainPatchwork = worldCharacteristics.then { TerrainPatchwork.build(it) }
+        val blendOut = worldCharacteristics.then { doodads.prepareBlendOut(it) }
+        val doodadWorld = worldCharacteristics
+                .then { DoodadWorld.build(it.characteristics.seed, it) }
+                .then { it.prepareBlendIn(terrain.worldSpec) }
+
+        return terrainPatchwork.pairWith(doodadWorld).andWaitFor(blendOut)
+    }
+
 
     override fun render(delta: Float) {
         val nextTerrain = nextTerrain
@@ -164,42 +196,27 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                     lowColor = lowColorBlend
                     highColor = highColorBlend
                 }
+
+                words.enabled = true
             }
         } else if (cameraController.CYCLE_TERRAIN_DEBUG.isPressed) {
-            var developingNextWorld = developingNextWorld
             if (developingNextWorld == null) {
-                val seed = System.currentTimeMillis()
-                val centerX = worldCam.position.x
-                val centerY = worldCam.position.y
-
-                val worldCharacteristics = offload {
-                    val characteristics = WorldCharacteristics.random(seed)
-                    WorldSpecifics(characteristics, centerX, centerY, true)
+                developingNextWorld = startDevelopingNextWorld {
+                    WorldCharacteristics.random(System.currentTimeMillis())
                 }
-                val terrainPatchwork = worldCharacteristics.then { TerrainPatchwork.build(it) }
-                val blendOut = worldCharacteristics.then { doodads.prepareBlendOut(it) }
-                val doodadWorld = worldCharacteristics
-                        .then { DoodadWorld.build(it.characteristics.seed, it) }
-                        .then { it.prepareBlendIn(terrain.worldSpec) }
-
-                developingNextWorld = terrainPatchwork.pairWith(doodadWorld).andWaitFor(blendOut)
-                this.developingNextWorld = developingNextWorld
             }
+        }
 
-            val new = developingNextWorld.poll()
-            if (new != null) {
-                this.developingNextWorld = null
-                val (newTerrain, newDoodads) = new
+        developingNextWorld?.poll()?.let { (newTerrain, newDoodads) ->
+            this.developingNextWorld = null
+            this.nextTerrain = newTerrain
+            this.nextDoodads = newDoodads
+            terrain.blendTo(newTerrain)
+            modelBatch.attributes.setBlendWalls(worldCam)
+            skyboxRenderable.lowColorBlend = newTerrain.worldSpec.lowSkyboxColor
+            skyboxRenderable.highColorBlend = newTerrain.worldSpec.highSkyboxColor
 
-                this.nextTerrain = newTerrain
-                this.nextDoodads = newDoodads
-                terrain.blendTo(newTerrain)
-                modelBatch.attributes.setBlendWalls(worldCam)
-                skyboxRenderable.lowColorBlend = newTerrain.worldSpec.lowSkyboxColor
-                skyboxRenderable.highColorBlend = newTerrain.worldSpec.highSkyboxColor
-
-                nextWorldAlpha = 0f
-            }
+            nextWorldAlpha = 0f
         }
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
@@ -225,6 +242,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         doodads.render(modelBatch, worldCam, false)
         nextDoodads?.render(modelBatch, worldCam, true)
         animalWorld.render(modelBatch, worldCam)
+        words.render(modelBatch)
 
         rendered = modelBatch.end()
         Gdx.gl.glDisable(GL_DEPTH_CLAMP)
@@ -253,7 +271,10 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
     private fun updateWorld(delta: Float) {
         cameraController.update(delta)
-        animalWorld.update(delta, Vector2(worldCam.position.x, worldCam.position.y))
+        val playerPosition = Vector2(worldCam.position.x, worldCam.position.y)
+        val worldDimensions = getWorldDimensions()
+        animalWorld.update(delta, worldDimensions, playerPosition)
+        words.update(delta, worldDimensions, playerPosition, getWorldHeight)
 
         val stats = StringBuilder(128)
         stats.append("FPS: ").append(Gdx.graphics.framesPerSecond)
@@ -261,7 +282,7 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                 .append("\nY: ").append(worldCam.position.y)
                 .append("\nZ: ").append(worldCam.position.z)
                 .append("\nRendered: ").append(rendered)
-                .append("\n")
+                .append("\nWords: ").append(words.placedWords.size)
 
         statsLabel.setText(stats)
     }
