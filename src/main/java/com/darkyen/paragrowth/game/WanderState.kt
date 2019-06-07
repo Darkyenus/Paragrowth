@@ -25,6 +25,7 @@ import com.darkyen.paragrowth.render.RenderBatch
 import com.darkyen.paragrowth.skybox.Skybox
 import com.darkyen.paragrowth.terrain.TERRAIN_TIME_ATTRIBUTE
 import com.darkyen.paragrowth.terrain.TerrainPatchwork
+import com.darkyen.paragrowth.terrain.WorldQuery
 import com.darkyen.paragrowth.util.*
 import com.darkyen.paragrowth.words.Words
 import org.lwjgl.opengl.GL32
@@ -59,6 +60,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     private val animalWorld: AnimalWorld
     private val words: Words
 
+    private val worldQuery: WorldQuery
+
     //Input
     private val gameInput: GameInput
     private val cameraController: HeightmapPersonController
@@ -66,9 +69,6 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     private val startTime = System.currentTimeMillis()
 
     private var rendered = 0
-
-    private val getWorldHeight: (Float, Float) -> Float
-    private val getWorldDimensions: () -> Rectangle
 
     init {
         println(worldCharacteristics)
@@ -104,39 +104,42 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         skyboxRenderable.lowColor = worldSpecifics.lowSkyboxColor
         skyboxRenderable.highColor = worldSpecifics.highSkyboxColor
 
-        getWorldHeight = { x, y ->
-            val base = terrain.heightAt(x, y)
-            val blend = nextTerrain?.heightAt(x, y) ?: base
-            val alpha = modelBatch.attributes.getBlendAt(x, y)
-            MathUtils.lerp(base, blend, alpha)
+        worldQuery = object : WorldQuery {
+            override fun getHeightAt(x: Float, y: Float): Float {
+                val base = terrain.heightAt(x, y)
+                val blend = nextTerrain?.heightAt(x, y) ?: base
+                val alpha = modelBatch.attributes.getBlendAt(x, y)
+                return MathUtils.lerp(base, blend, alpha)
+            }
+
+            override fun getDimensions(): Rectangle {
+                val blend = modelBatch.attributes[WORLD_BLEND_ATTRIBUTE][0]
+
+                val x = terrain.worldSpec.offsetX
+                val y = terrain.worldSpec.offsetY
+                val nextX = nextTerrain?.worldSpec?.offsetX ?: x
+                val nextY = nextTerrain?.worldSpec?.offsetY ?: y
+
+                val width = terrain.worldSpec.noise.sizeX.toFloat()
+                val height = terrain.worldSpec.noise.sizeY.toFloat()
+                val nextWidth = nextTerrain?.worldSpec?.noise?.sizeX?.toFloat() ?: width
+                val nextHeight = nextTerrain?.worldSpec?.noise?.sizeY?.toFloat() ?: height
+
+                return Rectangle(MathUtils.lerp(x, nextX, blend),
+                        MathUtils.lerp(y, nextY, blend),
+                        MathUtils.lerp(width, nextWidth, blend),
+                        MathUtils.lerp(height, nextHeight, blend))
+            }
         }
-        cameraController = HeightmapPersonController(worldCam, getWorldHeight)
+
+        cameraController = HeightmapPersonController(worldCam, worldQuery)
         gameInput = GameInput(*cameraController.INPUT)
         gameInput.build()
 
         worldSpecifics.findInitialPosition(worldCam.position)
 
-        getWorldDimensions = {
-            val blend = modelBatch.attributes[WORLD_BLEND_ATTRIBUTE][0]
-
-            val x = terrain.worldSpec.offsetX
-            val y = terrain.worldSpec.offsetY
-            val nextX = nextTerrain?.worldSpec?.offsetX ?: x
-            val nextY = nextTerrain?.worldSpec?.offsetY ?: y
-
-            val width = terrain.worldSpec.noise.sizeX.toFloat()
-            val height = terrain.worldSpec.noise.sizeY.toFloat()
-            val nextWidth = nextTerrain?.worldSpec?.noise?.sizeX?.toFloat() ?: width
-            val nextHeight = nextTerrain?.worldSpec?.noise?.sizeY?.toFloat() ?: height
-
-            Rectangle(MathUtils.lerp(x, nextX, blend),
-                    MathUtils.lerp(y, nextY, blend),
-                    MathUtils.lerp(width, nextWidth, blend),
-                    MathUtils.lerp(height, nextHeight, blend))
-        }
-        animalWorld = AnimalWorld(getWorldHeight)
-
-        animalWorld.populateWithDucks(getWorldDimensions())
+        animalWorld = AnimalWorld(worldQuery)
+        animalWorld.populateWithDucks(worldQuery.getDimensions())
 
         words = Words { words, text ->
             if (developingNextWorld == null) {
@@ -272,9 +275,8 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     private fun updateWorld(delta: Float) {
         cameraController.update(delta)
         val playerPosition = Vector2(worldCam.position.x, worldCam.position.y)
-        val worldDimensions = getWorldDimensions()
-        animalWorld.update(delta, worldDimensions, playerPosition)
-        words.update(delta, worldDimensions, playerPosition, getWorldHeight)
+        animalWorld.update(delta, playerPosition)
+        words.update(delta, playerPosition, worldQuery)
 
         val stats = StringBuilder(128)
         stats.append("FPS: ").append(Gdx.graphics.framesPerSecond)

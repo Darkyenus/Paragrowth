@@ -12,6 +12,7 @@ import com.darkyen.paragrowth.TextAnalyzer
 import com.darkyen.paragrowth.font.FontLoader
 import com.darkyen.paragrowth.font.GlyphLayout
 import com.darkyen.paragrowth.render.*
+import com.darkyen.paragrowth.terrain.WorldQuery
 import com.darkyen.paragrowth.util.*
 import org.lwjgl.opengl.GL15.GL_WRITE_ONLY
 import kotlin.math.roundToInt
@@ -82,7 +83,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
         )
     }
 
-    private fun generateWords(amount:Int, area: Rectangle, avoid: Vector2, height:(x:Float, y:Float) -> Float) {
+    private fun generateWords(amount:Int, area: Rectangle, avoid: Vector2, world: WorldQuery) {
         placedWords.ensureCapacity(amount)
         val avoidDistance = 50f
         val avoidDistance2 = avoidDistance * avoidDistance
@@ -92,7 +93,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
         for (j in 0 until 10 * amount) {
             val x = area.x + area.width * MathUtils.random()
             val y = area.y + area.height * MathUtils.random()
-            val z = height(x, y)
+            val z = world.getHeightAt(x, y)
 
             if (z < 0f || avoid.dst2(x, y) < avoidDistance2) {
                 continue
@@ -134,7 +135,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
     fun render(batch:RenderBatch) {
         var letters = 0
 
-        vertices.accessMapped(GL_WRITE_ONLY) { byteVerts ->
+        vertices.accessMapped(GL_WRITE_ONLY, resetBefore=true) { byteVerts ->
 
             val verts = byteVerts.asFloatBuffer()
             val vertDrawDelegate = object : GlyphLayout.DrawDelegate {
@@ -200,7 +201,7 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
         }
     }
 
-    fun update(delta:Float, worldArea:Rectangle, playerPosition:Vector2, getHeight:(x:Float, y:Float) -> Float) {
+    fun update(delta:Float, playerPosition:Vector2, world: WorldQuery) {
         val fadeChange = if (enabled) delta / 25f else delta
         val collectedFadeChange = delta * 2f
 
@@ -230,9 +231,10 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
         }
 
         if (enabled) {
+            val worldArea = world.getDimensions()
             val targetWordAmount = MathUtils.clamp((worldArea.area() / (100f * 100f)).roundToInt(), 3, maxPlacedWords)
             if (placedWords.size < targetWordAmount) {
-                generateWords(minOf(targetWordAmount - placedWords.size, 5), worldArea, playerPosition, getHeight)
+                generateWords(minOf(targetWordAmount - placedWords.size, 5), worldArea, playerPosition, world)
             }
         }
     }

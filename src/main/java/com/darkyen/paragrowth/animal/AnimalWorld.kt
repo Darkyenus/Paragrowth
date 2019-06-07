@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.terrain.TERRAIN_TIME_ATTRIBUTE
+import com.darkyen.paragrowth.terrain.WorldQuery
 import com.darkyen.paragrowth.util.*
 
 private val ANIMAL_TRANSFORM_ATTRIBUTE = attributeKeyMatrix4("animal_transform")
@@ -21,13 +22,14 @@ private val ANIMAL_SUBMERGE_ATTRIBUTE = attributeKeyFloat("animal_submerge")
 /**
  *
  */
-class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float) : Renderable {
+class AnimalWorld(private val world:WorldQuery) : Renderable {
 
     private val animals = GdxArray<Animal>()
 
-    fun update(delta:Float, worldDimensions:Rectangle, playerPosition:Vector2) {
+    fun update(delta:Float, playerPosition:Vector2) {
+        val worldDimensions = world.getDimensions()
         for (animal in animals) {
-            animal.update(worldDimensions, getWorldHeight, playerPosition, delta)
+            animal.update(worldDimensions, world, playerPosition, delta)
         }
     }
 
@@ -88,7 +90,7 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float) : Rend
 
             val animal = Animal(if (female) duckFemale else duckMale, adultSubmerge, DUCK_WATER_MOVEMENT, DUCK_LAND_MOVEMENT, duckBehavior)
             animal.movement.setPosition(worldDimensions.x + worldDimensions.width * MathUtils.random(), worldDimensions.y + worldDimensions.height * MathUtils.random())
-            animal.positionZ = getWorldHeight(animal.movement.x, animal.movement.y)
+            animal.positionZ = world.getHeightAt(animal.movement.x, animal.movement.y)
             animals.add(animal)
 
             var childNumber = 0
@@ -105,7 +107,7 @@ class AnimalWorld(private val getWorldHeight:(x:Float, y:Float) -> Float) : Rend
         for (i in 0 until 5) {
             val deerAnimal = Animal(deer, 2.4f, DEER_WATER_MOVEMENT, DEER_LAND_MOVEMENT, deerBehavior)
             deerAnimal.movement.setPosition(worldDimensions.x + worldDimensions.width * MathUtils.random(), worldDimensions.y + worldDimensions.height * MathUtils.random())
-            deerAnimal.positionZ = getWorldHeight(deerAnimal.movement.x, deerAnimal.movement.y)
+            deerAnimal.positionZ = world.getHeightAt(deerAnimal.movement.x, deerAnimal.movement.y)
             animals.add(deerAnimal)
         }
     }
@@ -367,7 +369,7 @@ class Animal(val model: Model, val waterSubmerge:Float,
     var parent:Animal? = null
     var childNumber = -1
 
-    fun update(worldDimensions:Rectangle, getWorldHeight:(x:Float, y:Float) -> Float, playerPosition:Vector2, delta:Float) {
+    fun update(worldDimensions:Rectangle, world: WorldQuery, playerPosition:Vector2, delta:Float) {
         animationTime += delta
         if (animationTime > MathUtils.PI*1000f) {
             animationTime -= MathUtils.PI*1000f
@@ -379,10 +381,10 @@ class Animal(val model: Model, val waterSubmerge:Float,
 
         behavior.act()
 
-        val howMuchInWater = MathUtils.clamp(VectorUtils.map(getWorldHeight(movement.x, movement.y), -1f, 0f, 1f, 0f), 0f, 1f)
+        val howMuchInWater = MathUtils.clamp(VectorUtils.map(world.getHeightAt(movement.x, movement.y), -1f, 0f, 1f, 0f), 0f, 1f)
         movementAttributes.setToLerp(landMovement, waterMovement, howMuchInWater)
 
-        positionZ = getWorldHeight(movement.x, movement.y)
+        positionZ = world.getHeightAt(movement.x, movement.y)
 
         // Waddle
         roll = Math.sin(animationTime.toDouble() * 8f).toFloat() * movementAttributes.waddle

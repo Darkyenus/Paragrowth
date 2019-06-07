@@ -33,7 +33,7 @@ public class ParagrowthMain extends Game {
 
     @Override
     public void create() {
-        final ShaderProgram batchShader = new AutoReloadShaderProgram(
+        final ShaderProgram batchShader = new ShaderProgram(
                 Gdx.files.local("default_vert.glsl"),
                 Gdx.files.local("default_frag.glsl")
         );

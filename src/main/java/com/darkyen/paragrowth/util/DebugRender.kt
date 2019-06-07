@@ -1,6 +1,7 @@
 package com.darkyen.paragrowth.util
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.graphics.glutils.ShaderProgram
 import com.badlogic.gdx.math.collision.BoundingBox
 
 /**
@@ -27,5 +28,5 @@ fun BoundingBox.forEdges(action:(x1:Float, y1:Float, z1:Float, x2:Float, y2:Floa
 }
 
 val DebugShader by lazy {
-    AutoReloadShaderProgram(Gdx.files.local("debug_vert.glsl"), Gdx.files.local("debug_frag.glsl"))
+    ShaderProgram(Gdx.files.local("debug_vert.glsl"), Gdx.files.local("debug_frag.glsl"))
 }

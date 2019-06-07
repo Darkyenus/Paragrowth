@@ -9,11 +9,12 @@ import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.input.GameInput
 import com.darkyen.paragrowth.input.GameInput.Binding.bindKeyboard
 import com.darkyen.paragrowth.input.GameInput.Binding.bindMouseButton
+import com.darkyen.paragrowth.terrain.WorldQuery
 
 /**
  */
 @Suppress("PrivatePropertyName", "PropertyName")
-class HeightmapPersonController constructor(private val camera: Camera, private val heightmap: (x:Float, y:Float) -> Float) {
+class HeightmapPersonController constructor(private val camera: Camera, private val world: WorldQuery) {
 
     private val FORWARD = GameInput.function("Forward", bindKeyboard(Keys.W), bindKeyboard(Keys.UP))
     private val BACKWARD = GameInput.function("Backward", bindKeyboard(Keys.S), bindKeyboard(Keys.DOWN))
@@ -120,7 +121,7 @@ class HeightmapPersonController constructor(private val camera: Camera, private 
         }
 
 
-        camera.position.z = Math.max(heightmap(camera.position.x, camera.position.y), -0.5f * height) + height
+        camera.position.z = Math.max(world.getHeightAt(camera.position.x, camera.position.y), -0.5f * height) + height
         if (MOVEMENT_DEBUG.isPressed && Gdx.input.isKeyPressed(Keys.ALT_LEFT)) {
             camera.position.z = 50f
         }
