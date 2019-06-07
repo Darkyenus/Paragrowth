@@ -33,8 +33,9 @@ class AnimalWorld(private val world:WorldQuery) : Renderable {
         }
     }
 
+    private val render_quaternion = Quaternion()
     override fun render(batch: RenderBatch, camera: Camera) {
-        val quaternion = Quaternion()
+        val quaternion = render_quaternion
 
         for (animal in animals) {
             batch.render().apply {
@@ -296,6 +297,7 @@ class AnimalAttributes : AgentAttributes() {
     /** How much should the animal sway from front to back while walking */
     var steps:Float = 0f
 }
+private val ANIMAL_ATTRIBUTES_METHODS = createAgentAttributesMethods<AnimalAttributes>()
 
 val DUCK_WATER_MOVEMENT = AnimalAttributes().apply {
     maxAcceleration = 1f
@@ -353,7 +355,7 @@ class Animal(val model: Model, val waterSubmerge:Float,
     private val behavior = BehaviorTree(behaviorTemplate, this, Rectangle(), Vector2())
 
     val movementAttributes = AnimalAttributes().apply {
-        set(waterMovement)
+        ANIMAL_ATTRIBUTES_METHODS.apply { set(waterMovement) }
     }
 
     val movement = MovementAgent()
@@ -382,7 +384,7 @@ class Animal(val model: Model, val waterSubmerge:Float,
         behavior.act()
 
         val howMuchInWater = MathUtils.clamp(map(world.getHeightAt(movement.x, movement.y), -1f, 0f, 1f, 0f), 0f, 1f)
-        movementAttributes.setToLerp(landMovement, waterMovement, howMuchInWater)
+        ANIMAL_ATTRIBUTES_METHODS.apply { movementAttributes.setToLerp(landMovement, waterMovement, howMuchInWater) }
 
         positionZ = world.getHeightAt(movement.x, movement.y)
 

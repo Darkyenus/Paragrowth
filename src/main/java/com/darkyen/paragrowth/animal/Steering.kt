@@ -34,15 +34,27 @@ open class AgentAttributes {
     var turnHeft:Float = 0.75f
 }
 
-inline fun <reified A:AgentAttributes> A.setToLerp(a0: AgentAttributes, a1: AgentAttributes, progress: Float) {
-    for (field in A::class.java.fields) {
-        field.setFloat(this, lerp(field.getFloat(a0), field.getFloat(a1), progress))
-    }
+interface AgentAttributesMethods<A:AgentAttributes> {
+    fun A.setToLerp(a0:A, a1:A, progress:Float)
+    fun A.set(to:A)
 }
 
-inline fun <reified A:AgentAttributes> A.set(to: AgentAttributes) {
-    for (field in A::class.java.fields) {
-        field.setFloat(this, field.getFloat(to))
+inline fun <reified A:AgentAttributes> createAgentAttributesMethods():AgentAttributesMethods<A> {
+    val fields = A::class.java.fields
+
+    return object : AgentAttributesMethods<A> {
+        override fun A.setToLerp(a0: A, a1: A, progress: Float) {
+            for (field in fields) {
+                field.setFloat(this, lerp(field.getFloat(a0), field.getFloat(a1), progress))
+            }
+        }
+
+        override fun A.set(to: A) {
+            for (field in fields) {
+                field.setFloat(this, field.getFloat(to))
+            }
+        }
+
     }
 }
 

@@ -157,16 +157,19 @@ class RenderBatch(context: RenderContext? = null) {
                     }
                 } else stack {
                     // Can merge everything into common
-                    val countArr = IntArray(drawCount)
+                    val countArr = mallocInt(drawCount)
                     val offsetBuf = mallocPointer(drawCount)
-                    val baseVertexArr = IntArray(drawCount)
+                    val baseVertexArr = mallocInt(drawCount)
 
-                    for ((bufI, i) in (from until to).withIndex()) {
+                    var bufI = 0
+                    @Suppress("UseWithIndex")// Not optimized, creates garbage
+                    for (i in from until to) {
                         val rm = items[i]
 
-                        countArr[bufI] = rm.count
+                        countArr.put(bufI, rm.count)
                         offsetBuf.put(bufI, (rm.offset * offsetSize).toLong())
-                        baseVertexArr[bufI] = rm.baseVertex
+                        baseVertexArr.put(bufI, rm.baseVertex)
+                        bufI++
                     }
 
                     drawCalls++

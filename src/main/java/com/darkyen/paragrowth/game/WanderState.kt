@@ -228,8 +228,12 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         // Before camera controller update
         modelBatch.attributes.setBlend(nextWorldAlpha)
 
-        updateWorld(delta)
-        hudStage.act(delta)
+        run {
+            cameraController.update(delta)
+            val playerPosition = Vector2(worldCam.position.x, worldCam.position.y)
+            animalWorld.update(delta, playerPosition)
+            words.update(delta, playerPosition, worldQuery)
+        }
 
         // Used for skybox and for objects too close to camera
         // (they won't get proper depth-testing, but skybox won't show through)
@@ -263,6 +267,17 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
         }
 
         if (cameraController.GENERAL_DEBUG.isPressed) {
+            val stats = StringBuilder(128)
+            stats.append("FPS: ").append(Gdx.graphics.framesPerSecond)
+                    .append("\nX: ").append(worldCam.position.x)
+                    .append("\nY: ").append(worldCam.position.y)
+                    .append("\nZ: ").append(worldCam.position.z)
+                    .append("\nRendered: ").append(rendered)
+                    .append("\nWords: ").append(words.placedWords.size)
+
+            statsLabel.setText(stats)
+
+            hudStage.act(delta)
             hudStage.draw()
         }
     }
@@ -270,23 +285,6 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
     override fun resize(width: Int, height: Int) {
         worldView.update(width, height)
         hudView.update(width, height, true)
-    }
-
-    private fun updateWorld(delta: Float) {
-        cameraController.update(delta)
-        val playerPosition = Vector2(worldCam.position.x, worldCam.position.y)
-        animalWorld.update(delta, playerPosition)
-        words.update(delta, playerPosition, worldQuery)
-
-        val stats = StringBuilder(128)
-        stats.append("FPS: ").append(Gdx.graphics.framesPerSecond)
-                .append("\nX: ").append(worldCam.position.x)
-                .append("\nY: ").append(worldCam.position.y)
-                .append("\nZ: ").append(worldCam.position.z)
-                .append("\nRendered: ").append(rendered)
-                .append("\nWords: ").append(words.placedWords.size)
-
-        statsLabel.setText(stats)
     }
 
     override fun dispose() {

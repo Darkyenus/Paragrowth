@@ -148,9 +148,12 @@ abstract class Shader(val order:Int,
             assert(uniform.location1 > originalLocation)
             val stride = uniform.location1 - originalLocation
             try {
-                for ((instance, renderableI) in (from until to).withIndex()) {
+                var instance = 0
+                @Suppress("UseWithIndex")//Not optimized, creates garbage
+                for (renderableI in from until to) {
                     uniform.location = originalLocation + instance * stride
                     uniform.localSetter!!.invoke(uniform, camera, renderables[renderableI])
+                    instance++
                 }
             } finally {
                 uniform.location = originalLocation
