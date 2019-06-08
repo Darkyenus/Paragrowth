@@ -30,6 +30,8 @@ import com.darkyen.paragrowth.util.*
 import com.darkyen.paragrowth.words.Words
 import org.lwjgl.opengl.GL32
 import org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * @author Darkyen
@@ -129,6 +131,34 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
                         MathUtils.lerp(y, nextY, blend),
                         MathUtils.lerp(width, nextWidth, blend),
                         MathUtils.lerp(height, nextHeight, blend))
+            }
+
+            override fun adjustPointToHeightRange(point: Vector2, minHeight: Float, maxHeight: Float):Boolean {
+                val terrain = nextTerrain ?: terrain
+                if (terrain.heightAt(point.x, point.y) in minHeight..maxHeight) {
+                    return true
+                }
+
+                var xOff = 1f
+                var yOff = 0f
+                val cos = cos(5f * MathUtils.degreesToRadians)
+                val sin = sin(5f * MathUtils.degreesToRadians)
+
+                for (i in 0..100) {
+                    val x = point.x + xOff
+                    val y = point.y + yOff
+                    if (terrain.fastHeightAt(x, y) in minHeight..maxHeight) {
+                        point.set(x, y)
+                        return true
+                    }
+
+                    val newOffX = (xOff * cos - yOff * sin) * 1.1f
+                    val newOffY = (xOff * sin + yOff * cos) * 1.1f
+                    xOff = newOffX
+                    yOff = newOffY
+                }
+
+                return false
             }
         }
 

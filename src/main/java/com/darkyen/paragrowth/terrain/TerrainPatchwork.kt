@@ -14,6 +14,7 @@ import com.darkyen.paragrowth.util.Delayed
 import com.darkyen.paragrowth.util.arrayOfSize
 import org.lwjgl.opengl.GL15.GL_WRITE_ONLY
 import java.util.concurrent.ForkJoinTask
+import kotlin.math.roundToInt
 
 /**
  * A collection of terrain patches.
@@ -156,6 +157,10 @@ class TerrainPatchwork private constructor(val worldSpec: WorldSpecifics) : Rend
         val inPatchX = Math.floorMod(x, PATCH_UNIT_SIZE)
         val inPatchY = Math.floorMod(y, PATCH_UNIT_SIZE)
         return patches[(patchY - minPatchY) * patchAmountX + (patchX - minPatchX)].heightMap[inPatchY * PATCH_SIZE + inPatchX]
+    }
+
+    fun fastHeightAt(x:Float, y:Float):Float {
+        return heightAtVertex((x / X_STEP).roundToInt(), (y / Y_STEP).roundToInt())
     }
 
     // For easier to debug math

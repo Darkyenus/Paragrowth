@@ -1,9 +1,7 @@
 @file:JvmName("VectorUtils")
 package com.darkyen.paragrowth.util
 
-import com.badlogic.gdx.math.Matrix3
-import com.badlogic.gdx.math.Vector2
-import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.math.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -53,4 +51,10 @@ fun Vector2.addRotated(x:Float, y:Float, radians:Float):Vector2 {
     val newX = x * cos - y * sin
     val newY = x * sin + y * cos
     return add(newX, newY)
+}
+
+fun Vector2.clampTo(area: Rectangle):Vector2 {
+    x = MathUtils.clamp(x, area.x, area.x + area.width)
+    y = MathUtils.clamp(y, area.y, area.y + area.height)
+    return this
 }

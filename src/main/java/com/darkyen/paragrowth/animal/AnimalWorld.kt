@@ -8,12 +8,14 @@ import com.badlogic.gdx.graphics.g3d.utils.RenderContext
 import com.badlogic.gdx.graphics.g3d.utils.TextureDescriptor
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer
 import com.badlogic.gdx.math.*
+import com.badlogic.gdx.math.MathUtils.lerp
 import com.badlogic.gdx.math.collision.BoundingBox
 import com.darkyen.paragrowth.ParagrowthMain
 import com.darkyen.paragrowth.render.*
 import com.darkyen.paragrowth.terrain.TERRAIN_TIME_ATTRIBUTE
 import com.darkyen.paragrowth.terrain.WorldQuery
 import com.darkyen.paragrowth.util.*
+import kotlin.math.sqrt
 
 private val ANIMAL_TRANSFORM_ATTRIBUTE = attributeKeyMatrix4("animal_transform")
 private val ANIMAL_CENTER_ATTRIBUTE = attributeKeyVector3("animal_center")
@@ -176,23 +178,38 @@ class AnimalWorld(private val world:WorldQuery) : Renderable {
         val animal = animalKey()
         val parent = animal.parent ?: return@none false
 
-        val position = outPointKey().set(parent.movement.x, parent.movement.y)
-        val parentHeadingVector = Vector2(1f, 0f).rotateRad(parent.movement.heading)
         val rank = animal.childNumber / maxOf(formationWidth, 1)
         val column = animal.childNumber % maxOf(formationWidth, 1)
-
-        position.mulAdd(parentHeadingVector, -(rank + 1f) * rankOffset)
-
+        val offsetX = -(rank + 1f) * rankOffset
         val rankWidth = maxOf(formationWidth - 1, 0) * columnOffset
-        val xOffset = column * columnOffset - rankWidth * 0.5f
-        parentHeadingVector.rotate90(0)
-        position.mulAdd(parentHeadingVector, xOffset)
+        val offsetY = column * columnOffset - rankWidth * 0.5f
+
+        outPointKey().set(parent.movement.x, parent.movement.y).addRotated(offsetX, offsetY, parent.movement.heading)
         true
     }
 
     private fun BehaviorBuilder.pickRandomPointInArea(areaKey:Key<Rectangle>, outPointKey:Key<Vector2>) = none {
         val area = areaKey()
         outPointKey().set(area.width, area.height).scl(MathUtils.random(), MathUtils.random()).add(area.x, area.y)
+        true
+    }
+
+    private fun BehaviorBuilder.pickRandomPointInAreaNearAnimal(areaKey:Key<Rectangle>, outPointKey:Key<Vector2>, near:Key<Animal>, minDistance:Float, maxDistance:Float) = none {
+        val distance = lerp(minDistance, maxDistance, sqrt(MathUtils.random()))
+        val angle = MathUtils.random(MathUtils.PI2)
+
+        val nearAnimal = near()
+        outPointKey()
+                .set(nearAnimal.movement.x, nearAnimal.movement.y)
+                .addRotated(distance, 0f, angle)
+                .clampTo(areaKey())
+
+        true
+    }
+
+    private fun BehaviorBuilder.adjustPointToHeightRange(adjustedPointKey:Key<Vector2>, minHeight:Float, maxHeight:Float) = none {
+        val point = adjustedPointKey()
+        world.adjustPointToHeightRange(point, minHeight, maxHeight)
         true
     }
 
@@ -259,7 +276,10 @@ class AnimalWorld(private val world:WorldQuery) : Renderable {
                 enterIf(true) { animal().parent == null }() {
                     sequence(Sequence.AND)() {
                         val targetPoint = register { Vector2() }
-                        pickRandomPointInArea(worldDimensions, targetPoint)
+                        pickRandomPointInAreaNearAnimal(worldDimensions, targetPoint, animal, 5f, 40f)
+                        enterIf(true){ MathUtils.randomBoolean(0.3f) }() {
+                            adjustPointToHeightRange(targetPoint, Float.NEGATIVE_INFINITY, 0.5f)
+                        }
                         moveToPoint(0.1f, 0.5f, animal, targetPoint, delta)
                         waitForAWhile(7f, 5f, delta)
                     }
@@ -282,7 +302,8 @@ class AnimalWorld(private val world:WorldQuery) : Renderable {
 
                 sequence(Sequence.AND)() {
                     val targetPoint = register { Vector2() }
-                    pickRandomPointInArea(worldDimensions, targetPoint)
+                    pickRandomPointInAreaNearAnimal(worldDimensions, targetPoint, animal, 20f, 80f)
+                    adjustPointToHeightRange(targetPoint, -0.5f, Float.POSITIVE_INFINITY)
                     moveToPoint(0.1f, 0.5f, animal, targetPoint, delta)
                     waitForAWhile(7f, 5f, delta)
                 }
