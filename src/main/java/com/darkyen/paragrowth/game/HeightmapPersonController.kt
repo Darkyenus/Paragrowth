@@ -31,6 +31,7 @@ class HeightmapPersonController constructor(private val camera: Camera, private 
     private val MOVEMENT_DEBUG = GameInput.toggleFunction("Movement Debug", bindKeyboard(Keys.F4))
     val PATCHWORK_DEBUG = GameInput.toggleFunction("Patchwork Debug", bindKeyboard(Keys.F5))!!
     val CYCLE_TERRAIN_DEBUG = GameInput.toggleFunction("Cycle Terrains", bindKeyboard(Keys.F6))!!
+    val WIREFRAME_DEBUG = GameInput.toggleFunction("Wireframe", bindKeyboard(Keys.F7))!!
 
     private val TO_WRITE_MODE = GameInput.function("To Write Mode", bindKeyboard(Keys.ESCAPE))
             .listen { _, pressed ->
@@ -47,7 +48,7 @@ class HeightmapPersonController constructor(private val camera: Camera, private 
     internal val INPUT = arrayOf(
             FORWARD, BACKWARD, STRAFE_LEFT, STRAFE_RIGHT,
             SPRINT, FREE_MOUSE,
-            GENERAL_DEBUG, MOVEMENT_DEBUG, PATCHWORK_DEBUG, CYCLE_TERRAIN_DEBUG,
+            GENERAL_DEBUG, MOVEMENT_DEBUG, PATCHWORK_DEBUG, CYCLE_TERRAIN_DEBUG, WIREFRAME_DEBUG,
             TO_WRITE_MODE)
 
     /** Velocity in units per second for moving forward, backward and strafing left/right.  */

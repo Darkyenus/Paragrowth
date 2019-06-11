@@ -61,6 +61,16 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
     private val maxPlacedWords = 128
     val placedWords = GdxArray<WorldWord>(maxPlacedWords)
     var enabled = true
+        set(value) {
+            if (field != value) {
+                if (value) {
+                    initialMode = false
+                }
+                field = value
+            }
+        }
+
+    private var initialMode = false
 
     private val indices = GlBuffer(GL_STATIC_DRAW).apply {
         setData(shortArrayOf(
@@ -102,21 +112,26 @@ class Words(private val onCollectedTextChange:(Words, String) -> Unit) {
 
             val word:String
             val color:Color
-            when (MathUtils.random.nextInt(3)) {
-                0 -> {
-                    val wordIndex = MathUtils.random.nextInt(AvailableWords.positiveWords.size)
-                    word = AvailableWords.positiveWords[wordIndex]
-                    color = rgb(1f, 1f, 1f, 1f)
-                }
-                1 -> {
-                    val wordIndex = MathUtils.random.nextInt(AvailableWords.negativeWords.size)
-                    word = AvailableWords.negativeWords[wordIndex]
-                    color = rgb(0f, 0f, 0f, 1f)
-                }
-                else -> {
-                    val wordIndex = MathUtils.random.nextInt(AvailableWords.colorWords.size)
-                    word = AvailableWords.colorWords[wordIndex]
-                    color = AvailableWords.colors[wordIndex]
+            if (initialMode) {
+                word = "Paragrowth"
+                color = MathUtils.random.randomColor()
+            } else {
+                when (MathUtils.random.nextInt(3)) {
+                    0 -> {
+                        val wordIndex = MathUtils.random.nextInt(AvailableWords.positiveWords.size)
+                        word = AvailableWords.positiveWords[wordIndex]
+                        color = rgb(1f, 1f, 1f, 1f)
+                    }
+                    1 -> {
+                        val wordIndex = MathUtils.random.nextInt(AvailableWords.negativeWords.size)
+                        word = AvailableWords.negativeWords[wordIndex]
+                        color = rgb(0f, 0f, 0f, 1f)
+                    }
+                    else -> {
+                        val wordIndex = MathUtils.random.nextInt(AvailableWords.colorWords.size)
+                        word = AvailableWords.colorWords[wordIndex]
+                        color = AvailableWords.colors[wordIndex]
+                    }
                 }
             }
 

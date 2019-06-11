@@ -5,6 +5,7 @@ import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.GL20.GL_DEPTH_TEST
+import com.badlogic.gdx.graphics.GL20.GL_FRONT_AND_BACK
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20
@@ -28,6 +29,7 @@ import com.darkyen.paragrowth.terrain.TerrainPatchwork
 import com.darkyen.paragrowth.terrain.WorldQuery
 import com.darkyen.paragrowth.util.*
 import com.darkyen.paragrowth.words.Words
+import org.lwjgl.opengl.GL11.*
 import org.lwjgl.opengl.GL32
 import org.lwjgl.opengl.GL32.GL_DEPTH_CLAMP
 import kotlin.math.cos
@@ -254,6 +256,12 @@ class WanderState(worldCharacteristics: WorldCharacteristics) : ScreenAdapter() 
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
         GL32.glProvokingVertex(GL32.GL_FIRST_VERTEX_CONVENTION)// Needed for heightmap
+
+        if (cameraController.WIREFRAME_DEBUG.isPressed) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        } else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        }
 
         // Before camera controller update
         modelBatch.attributes.setBlend(nextWorldAlpha)
