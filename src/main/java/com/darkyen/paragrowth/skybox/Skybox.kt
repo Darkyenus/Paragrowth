@@ -64,8 +64,8 @@ class Skybox : Renderable, Disposable {
     }
 }
 
-private val LOW_COLOR_ATTRIBUTE = attributeKeyFloat("lowColor")
-private val HIGH_COLOR_ATTRIBUTE = attributeKeyFloat("highColor")
+private val LOW_COLOR_ATTRIBUTE = attributeKeyFloat("lowColor", ModelAttributeLayer)
+private val HIGH_COLOR_ATTRIBUTE = attributeKeyFloat("highColor", ModelAttributeLayer)
 
 object SkyboxShader : Shader(SKYBOX, "sky", SKYBOX_ATTRIBUTES) {
 

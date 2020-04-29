@@ -441,11 +441,11 @@ val TERRAIN_SHADER_W_L = TerrainShader(TerrainShaderType.WATER_LAND)
 val TERRAIN_SHADER_W_W = TerrainShader(TerrainShaderType.WATER_WATER)
 
 /** Time for waves */
-val TERRAIN_TIME_ATTRIBUTE = attributeKeyFloat("terrain_time")
-val TERRAIN_WATER_COLOR_FROM_ATTRIBUTE = attributeKeyFloat("terrain_water_color_from")
-val TERRAIN_WATER_COLOR_TO_ATTRIBUTE = attributeKeyFloat("terrain_water_color_to")
+val TERRAIN_TIME_ATTRIBUTE = attributeKeyFloat("terrain_time", GlobalAttributeLayer)
+val TERRAIN_WATER_COLOR_FROM_ATTRIBUTE = attributeKeyFloat("terrain_water_color_from", GlobalAttributeLayer)
+val TERRAIN_WATER_COLOR_TO_ATTRIBUTE = attributeKeyFloat("terrain_water_color_to", GlobalAttributeLayer)
 /** Location offset in the world */
-val TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE = attributeKeyVector2("terrain_ocean_offset")
+val TERRAIN_W_W_OCEAN_OFFSET_ATTRIBUTE = attributeKeyVector2("terrain_ocean_offset", ModelAttributeLayer)
 
 class TerrainShader(type:TerrainShaderType) : Shader(
         type.order,

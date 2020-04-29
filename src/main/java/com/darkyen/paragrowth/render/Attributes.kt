@@ -3,68 +3,71 @@ package com.darkyen.paragrowth.render
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
-import com.darkyen.paragrowth.util.GdxArray
 
 /** Each new instance is globally registered and serves as a key for [Attributes] */
 @kotlin.Suppress("unused") // Type T
-class AttributeKey<T : Any>(private val name:String, internal val new:()->T, internal val clear:(T) -> T?) {
+class AttributeKey<T : Any>(private val name:String, layer:AttributeLayer, internal val new:()->T, internal val clear:(T) -> T?) {
 
-    val id = nextId++
-    init {
-        REGISTERED_KEYS.add(this)
-    }
+    val id = layer.register(this)
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+    override fun toString(): String = "$id:$name"
+}
 
-        other as AttributeKey<*>
+class AttributeLayer {
+    private var nextId = 0
+    private val registeredKeys = arrayOfNulls<AttributeKey<*>>(64)
 
-        if (id != other.id) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
+    internal fun register(key:AttributeKey<*>):Int {
+        val id = nextId++
+        registeredKeys[id] = key
         return id
     }
 
-    override fun toString(): String {
-        return "$id:$name"
+    internal fun assertRegistered(key:AttributeKey<*>) {
+        assert(registeredKeys[key.id] === key)
     }
+
+    internal val keys:Array<AttributeKey<*>?>
+        get() = registeredKeys
+
+    internal val size:Int
+        get() = nextId
 }
 
-fun attributeKeyVector2(name:String):AttributeKey<Vector2> {
-    return AttributeKey(name, { Vector2() }) { it.setZero() }
+val GlobalAttributeLayer = AttributeLayer()
+val ModelAttributeLayer = AttributeLayer()
+
+fun attributeKeyVector2(name:String, layer:AttributeLayer):AttributeKey<Vector2> {
+    return AttributeKey(name, layer, { Vector2() }) { it.setZero() }
 }
 
-fun attributeKeyVector3(name:String):AttributeKey<Vector3> {
-    return AttributeKey(name, { Vector3() }) { it.setZero() }
+fun attributeKeyVector3(name:String, layer:AttributeLayer):AttributeKey<Vector3> {
+    return AttributeKey(name, layer, { Vector3() }) { it.setZero() }
 }
 
-fun attributeKeyFloat(name:String):AttributeKey<FloatArray> {
-    return AttributeKey(name, { FloatArray(1) }) { it.apply { it[0] = 0f } }
+fun attributeKeyFloat(name:String, layer:AttributeLayer):AttributeKey<FloatArray> {
+    return AttributeKey(name, layer, { FloatArray(1) }) { it.apply { it[0] = 0f } }
 }
 
-fun attributeKeyMatrix4(name:String):AttributeKey<Matrix4> {
-    return AttributeKey(name, { Matrix4() }, { it.idt() })
+fun attributeKeyMatrix4(name:String, layer:AttributeLayer):AttributeKey<Matrix4> {
+    return AttributeKey(name, layer, { Matrix4() }, { it.idt() })
 }
 
-private var nextId:Int = 0
-private val REGISTERED_KEYS = GdxArray<AttributeKey<*>>(AttributeKey::class.java)
 private val NO_VALUES:Array<Any?> = emptyArray()
 
 /** Key-value map for [AttributeKey] keys and [AttributeKey].T values.
  * Can be layered, where keys are retrieved from the whole stack (with top having a priority)
  * and values are set only to current instance. */
-class Attributes(private val parent:Attributes?) {
+class Attributes(private val layer:AttributeLayer) {
 
     private var values:Array<Any?> = NO_VALUES
 
     operator fun <T : Any> get(key:AttributeKey<T>):T {
+        layer.assertRegistered(key)
+
         var values = values
         if (key.id >= values.size) {
-            values = values.copyOf(nextId)
+            values = values.copyOf(layer.size)
             this.values = values
         }
 
@@ -79,23 +82,25 @@ class Attributes(private val parent:Attributes?) {
     }
 
     operator fun <T : Any> set(key:AttributeKey<T>, value:T) {
+        layer.assertRegistered(key)
+
         var values = values
         if (key.id >= values.size) {
-            values = values.copyOf(nextId)
+            values = values.copyOf(layer.size)
             this.values = values
         }
         values[key.id] = value
     }
 
-    /** Clear this container for attributes.
-     * The parent, if any, is not modified. */
+    /** Clear this container's attributes. */
     fun clear() {
         val values = values
+        val keys = layer.keys
         for (i in values.indices) {
             val value = values[i]
             if (value != null) {
                 @Suppress("UNCHECKED_CAST")
-                values[i] = (REGISTERED_KEYS.items[i] as AttributeKey<Any>).clear(value)
+                values[i] = (keys[i] as AttributeKey<Any>).clear(value)
             }
         }
     }

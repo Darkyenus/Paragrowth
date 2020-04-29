@@ -9,9 +9,9 @@ import com.darkyen.paragrowth.render.*
 /**
  *
  */
-val WORLD_BLEND_LEFT_ATTR = attributeKeyVector3("blend_left")
-val WORLD_BLEND_RIGHT_ATTR = attributeKeyVector3("blend_right")
-val WORLD_BLEND_ATTRIBUTE = attributeKeyFloat("world_blend")
+val WORLD_BLEND_LEFT_ATTR = attributeKeyVector3("blend_left", GlobalAttributeLayer)
+val WORLD_BLEND_RIGHT_ATTR = attributeKeyVector3("blend_right", GlobalAttributeLayer)
+val WORLD_BLEND_ATTRIBUTE = attributeKeyFloat("world_blend", GlobalAttributeLayer)
 
 /** Blend wall which rises (distance from) to the right. */
 private fun Attributes.setBlendWall(attr: AttributeKey<Vector3>, center:Vector2, direction: Vector2) {

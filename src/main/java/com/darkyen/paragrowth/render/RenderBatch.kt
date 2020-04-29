@@ -16,7 +16,7 @@ class RenderBatch(context: RenderContext? = null) {
 
     /** Fallback attributes used for all [RenderModel]s drawn by this [RenderBatch].
      * Do not modify use between [begin] and [end]. */
-    val attributes = Attributes(null)
+    val attributes = Attributes(GlobalAttributeLayer)
 
     /** Whether [renderContext] is owned and managed by this [RenderBatch].
      * When it isn't, caller is responsible for calling the [RenderContext.begin] and
@@ -241,7 +241,7 @@ class RenderBatch(context: RenderContext? = null) {
         renderables.size++
         var item = renderables.items[i]
         if (item == null) {
-            item = RenderModel(attributes)
+            item = RenderModel()
             renderables.items[i] = item
         }
 

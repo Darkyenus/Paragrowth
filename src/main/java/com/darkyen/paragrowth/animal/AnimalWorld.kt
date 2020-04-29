@@ -17,9 +17,9 @@ import com.darkyen.paragrowth.terrain.WorldQuery
 import com.darkyen.paragrowth.util.*
 import kotlin.math.sqrt
 
-private val ANIMAL_TRANSFORM_ATTRIBUTE = attributeKeyMatrix4("animal_transform")
-private val ANIMAL_CENTER_ATTRIBUTE = attributeKeyVector3("animal_center")
-private val ANIMAL_SUBMERGE_ATTRIBUTE = attributeKeyFloat("animal_submerge")
+private val ANIMAL_TRANSFORM_ATTRIBUTE = attributeKeyMatrix4("animal_transform", ModelAttributeLayer)
+private val ANIMAL_CENTER_ATTRIBUTE = attributeKeyVector3("animal_center", ModelAttributeLayer)
+private val ANIMAL_SUBMERGE_ATTRIBUTE = attributeKeyFloat("animal_submerge", ModelAttributeLayer)
 
 /**
  *

@@ -36,7 +36,7 @@ val paragrowth by project {
     libraryDependencies add { dependency("org.lwjgl:lwjgl-stb:3.1.3", classifier = "natives-windows") }
     
     packResources set {
-        resourcePack(PackingOperation((projectRoot.get() / "resources").toFile(), (projectRoot.get() / "assets").toFile(), listOf(PreferSymlinks to true)))
+        resourcePack(PackingOperation((projectRoot.get() / "resources").toFile(), (projectRoot.get() / "assets").toFile(), listOf(PreferSymlinks to false)))
     }
 
     mainClass set { "com.darkyen.paragrowth.ParagrowthMain" }

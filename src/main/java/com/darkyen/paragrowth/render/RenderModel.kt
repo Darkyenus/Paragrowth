@@ -6,7 +6,7 @@ import com.darkyen.paragrowth.render.Shader.Companion.NULL_SHADER
 import com.darkyen.paragrowth.render.Shader.Companion.NULL_VAO
 
 /** Holds info needed to draw something. */
-class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
+class RenderModel : Comparable<RenderModel> {
 
     /** The primitive type, OpenGL constant e.g: [GL20.GL_TRIANGLES], [GL20.GL_POINTS], [GL20.GL_LINES],
      * [GL20.GL_LINE_STRIP], [GL20.GL_TRIANGLE_STRIP]  */
@@ -33,7 +33,7 @@ class RenderModel(parentAttributes:Attributes?) : Comparable<RenderModel> {
     var shader:Shader = NULL_SHADER
 
     /** Attributes to pass on to shaders for this object. Backed by attributes of the [RenderBatch]. */
-    val attributes = Attributes(parentAttributes)
+    val attributes = Attributes(ModelAttributeLayer)
 
     /** After sorting by shader, items are ordered by this. Smaller values are sorted earlier.
      * Can be anything, typically it is a distance to the camera. */
