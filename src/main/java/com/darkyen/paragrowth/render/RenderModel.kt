@@ -23,7 +23,7 @@ class RenderModel : Comparable<RenderModel> {
      * [Mesh.getNumIndices] > 0), this is the number of indices, otherwise it is the number of vertices.  */
     var count: Int = 0
 
-    /** Amount of instances to draw. 0 to distable instancing. */
+    /** Amount of instances to draw. 0 to disable instancing. */
     var instances:Int = 0
 
     /** Holds bound buffers to render. */

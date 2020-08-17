@@ -13,9 +13,13 @@ import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.ObjectIntMap
-import com.darkyen.paragrowth.util.*
+import com.darkyen.paragrowth.util.GdxArray
+import com.darkyen.paragrowth.util.alpha
+import com.darkyen.paragrowth.util.blue
+import com.darkyen.paragrowth.util.green
+import com.darkyen.paragrowth.util.red
+import com.darkyen.paragrowth.util.stack
 import java.io.File
-import com.badlogic.gdx.utils.IntArray as GdxIntArray
 
 typealias LocalSetter = (uniform: Shader.Uniform, camera:Camera, renderable: RenderModel) -> Unit
 typealias GlobalSetter = (uniform: Shader.Uniform, camera:Camera, attributes:Attributes) -> Unit
@@ -183,8 +187,7 @@ abstract class Shader(val order:Int,
     open fun adjustContext(context:RenderContext) {}
 
     fun localUniform(name:String, setter: LocalSetter) {
-        val uniform = Uniform(this, setter, null)
-        uniform.name = name
+        val uniform = Uniform(this, name, setter, null)
         uniforms.add(uniform)
         localUniforms.add(uniform)
     }
@@ -192,25 +195,22 @@ abstract class Shader(val order:Int,
     fun instancedUniform(name:String, setter: LocalSetter) {
         assert(maxInstances > 1)
 
-        val uniform = Uniform(this, setter, null)
-        uniform.name = name
+        val uniform = Uniform(this, name, setter, null)
         uniforms.add(uniform)
         instancedUniforms.add(uniform)
     }
 
     fun globalUniform(name:String, setter: GlobalSetter) {
-        val uniform = Uniform(this, null, setter)
-        uniform.name = name
+        val uniform = Uniform(this, name, null, setter)
         uniforms.add(uniform)
         globalUniforms.add(uniform)
     }
 
     class Uniform internal constructor(
             private val shader: Shader,
+            private val name: String,
             internal val localSetter: LocalSetter?,
             internal val globalSetter: GlobalSetter?) {
-
-        internal var name:String = ""
 
         private var shaderProgram:Int = 0
         internal var location = -2
